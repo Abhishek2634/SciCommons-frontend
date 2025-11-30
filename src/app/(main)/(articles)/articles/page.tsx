@@ -15,6 +15,7 @@ import TabComponent from '@/components/communities/TabComponent';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { FIVE_MINUTES_IN_MS, SCREEN_WIDTH_SM } from '@/constants/common.constants';
 import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
+import { useIsMounted, useMode } from '@/hooks/useMode';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
@@ -41,6 +42,7 @@ interface TabContentProps {
   isActive: boolean;
   viewType: 'grid' | 'list' | 'preview';
   setViewType: (viewType: 'grid' | 'list' | 'preview') => void;
+  listVariant?: 'default' | 'minimal';
 }
 
 const TabContent: React.FC<TabContentProps> = ({
@@ -52,6 +54,7 @@ const TabContent: React.FC<TabContentProps> = ({
   isActive,
   viewType,
   setViewType,
+  listVariant = 'default',
 }) => {
   const [articles, setArticles] = useState<ArticlesListOut[]>([]);
   const [totalItems, setTotalItems] = useState<number>(0);
@@ -102,7 +105,7 @@ const TabContent: React.FC<TabContentProps> = ({
   const { data, isPending, error } = useArticlesApiGetArticles<ArticlesResponse>(
     {
       page,
-      per_page: 50,
+      per_page: 100,
       search,
     },
     {
@@ -192,7 +195,11 @@ const TabContent: React.FC<TabContentProps> = ({
         <ResizablePanel
           className={cn(
             'h-[calc(100vh-130px)] overflow-y-auto',
-            viewType === 'preview' ? 'pr-2' : 'p-4 md:p-4'
+            viewType === 'preview'
+              ? 'pr-2'
+              : listVariant === 'minimal'
+                ? 'p-0 md:p-0'
+                : 'p-4 md:p-4'
           )}
           style={{ overflow: 'auto' }}
           defaultSize={60}
@@ -219,11 +226,15 @@ const TabContent: React.FC<TabContentProps> = ({
               'grid grid-cols-1 gap-3',
               viewType === 'preview'
                 ? 'h-full md:grid-cols-1 lg:grid-cols-1'
-                : 'md:grid-cols-2 lg:grid-cols-3'
+                : listVariant === 'minimal'
+                  ? 'md:grid-cols-2 lg:grid-cols-4'
+                  : 'md:grid-cols-2 lg:grid-cols-3',
+              listVariant === 'minimal' && 'gap-2'
             )}
             showViewTypeIcons={true}
             setViewType={setViewType}
             viewType={viewType}
+            variant={listVariant}
           />
         </ResizablePanel>
         {viewType === 'preview' && (
@@ -256,6 +267,7 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
   isActive,
   viewType,
   setViewType,
+  listVariant = 'default',
 }) => {
   const [articles, setArticles] = useState<ArticlesListOut[]>([]);
   const [totalItems, setTotalItems] = useState<number>(0);
@@ -306,7 +318,7 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
   const { data, isPending, error } = useUsersApiListMyArticles<ArticlesResponse>(
     {
       page,
-      per_page: 50,
+      per_page: 100,
       search,
     },
     {
@@ -397,7 +409,11 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
         <ResizablePanel
           className={cn(
             'h-[calc(100vh-130px)] overflow-y-auto',
-            viewType === 'preview' ? 'pr-2' : 'p-4 md:p-4'
+            viewType === 'preview'
+              ? 'pr-2'
+              : listVariant === 'minimal'
+                ? 'p-0 md:p-0'
+                : 'p-4 md:p-4'
           )}
           style={{ overflow: 'auto' }}
           defaultSize={60}
@@ -424,11 +440,15 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
               'grid grid-cols-1 gap-3',
               viewType === 'preview'
                 ? 'h-full md:grid-cols-1 lg:grid-cols-1'
-                : 'md:grid-cols-2 lg:grid-cols-3'
+                : listVariant === 'minimal'
+                  ? 'md:grid-cols-2 lg:grid-cols-4'
+                  : 'md:grid-cols-2 lg:grid-cols-3',
+              listVariant === 'minimal' && 'gap-2'
             )}
             showViewTypeIcons={true}
             setViewType={setViewType}
             viewType={viewType}
+            variant={listVariant}
           />
         </ResizablePanel>
         {viewType === 'preview' && (
@@ -475,15 +495,24 @@ const Articles: React.FC = () => {
 
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
+  const mode = useMode();
+  const isMounted = useIsMounted();
+  // Only apply simple mode after mount to prevent hydration errors
+  const isSimpleMode = isMounted && mode === 'simple';
+  const listVariant = isMounted && isSimpleMode ? 'minimal' : 'default';
 
   return (
-    <div className="p-2 py-8 pt-4 md:pb-0 md:pt-4">
-      <div className="pb-4">
+    <div
+      className={cn('p-2 py-8 pt-4 md:pb-0 md:pt-4', isSimpleMode && 'py-2 pt-2 md:py-1 md:pt-1')}
+      suppressHydrationWarning
+    >
+      <div className={cn('pb-4', isSimpleMode && 'pb-1')} suppressHydrationWarning>
         {user && (
           <TabComponent
             tabs={[Tabs.ARTICLES, Tabs.MY_ARTICLES]}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
+            variant={listVariant}
           />
         )}
       </div>
@@ -496,6 +525,7 @@ const Articles: React.FC = () => {
           isActive={activeTab === Tabs.ARTICLES}
           viewType={viewType}
           setViewType={handleViewTypeChange}
+          listVariant={listVariant}
         />
         {user && accessToken && (
           <MyArticlesTabContent
@@ -507,6 +537,7 @@ const Articles: React.FC = () => {
             isActive={activeTab === Tabs.MY_ARTICLES}
             viewType={viewType}
             setViewType={handleViewTypeChange}
+            listVariant={listVariant}
           />
         )}
       </div>

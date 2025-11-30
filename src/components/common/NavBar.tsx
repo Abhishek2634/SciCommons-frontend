@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
@@ -26,14 +26,20 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import useIdenticon from '@/hooks/useIdenticons';
+import { useMode } from '@/hooks/useMode';
 import usePWAInstallPrompt from '@/hooks/usePWAInstallPrompt';
 import useStore from '@/hooks/useStore';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
+import { useModeStore } from '@/stores/modeStore';
 
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
@@ -177,6 +183,8 @@ const ProfileDropdown: React.FC = () => {
   const imageData = useIdenticon(40);
   const { handleAppInstall } = usePWAInstallPrompt('install');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const mode = useMode();
+  const setMode = useModeStore((state) => state.setMode);
 
   const { data } = useCurrentUser();
 
@@ -185,6 +193,11 @@ const ProfileDropdown: React.FC = () => {
   const handleLogout = () => {
     logout();
     toast.success('Logged out successfully');
+  };
+
+  const handleModeChange = (nextMode: 'simple' | 'advanced') => {
+    setMode(nextMode);
+    setIsDropdownOpen(false);
   };
 
   return (
@@ -212,6 +225,28 @@ const ProfileDropdown: React.FC = () => {
             <NotebookTabs size={16} className="mr-2" /> Contributions
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>Mode</DropdownMenuSubTrigger>
+          <DropdownMenuSubContent className="min-w-[10rem]">
+            <DropdownMenuItem
+              className={cn('justify-between', mode === 'simple' && 'text-text-primary')}
+              onClick={() => handleModeChange('simple')}
+              suppressHydrationWarning
+            >
+              Simple mode
+              {mode === 'simple'}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className={cn('justify-between', mode === 'advanced' && 'text-text-primary')}
+              onClick={() => handleModeChange('advanced')}
+              suppressHydrationWarning
+            >
+              Advanced mode
+              {mode === 'advanced'}
+            </DropdownMenuItem>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
         <DropdownMenuItem onClick={() => setIsDropdownOpen(false)}>
           <button
             onClick={handleAppInstall}
@@ -241,19 +276,39 @@ const ThemeSwitch = ({
   showTitle?: boolean;
   iconSize?: number;
 }) => {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch by only rendering theme-dependent content after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Use resolvedTheme if available, otherwise fallback to theme
+  const currentTheme = resolvedTheme || theme;
+
+  // During SSR and initial render, show a placeholder to match server/client
+  if (!mounted) {
+    return (
+      <div className="flex cursor-pointer items-center space-x-2" suppressHydrationWarning>
+        <MoonIcon size={iconSize} className="mr-2" />
+        {showTitle && <>Dark Mode</>}
+      </div>
+    );
+  }
 
   return (
     <div
       className="flex cursor-pointer items-center space-x-2"
-      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+      onClick={() => setTheme(currentTheme === 'light' ? 'dark' : 'light')}
+      suppressHydrationWarning
     >
-      {theme === 'light' ? (
+      {currentTheme === 'light' ? (
         <MoonIcon size={iconSize} className="mr-2" />
       ) : (
         <SunMediumIcon size={iconSize} className="mr-2" />
       )}
-      {showTitle && <>{theme === 'light' ? 'Dark' : 'Light'} Mode</>}
+      {showTitle && <>{currentTheme === 'light' ? 'Dark' : 'Light'} Mode</>}
     </div>
   );
 };

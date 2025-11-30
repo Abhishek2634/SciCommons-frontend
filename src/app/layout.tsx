@@ -9,6 +9,7 @@ import PathTracker from '@/HOCs/withPathTracker';
 import { ReactQueryClientProvider } from '@/api/ReactQueryClientProvider';
 import BottomBar from '@/components/common/BottomBar';
 import RealtimeStatus from '@/components/common/RealtimeStatus';
+import { StoreHydration } from '@/components/common/StoreHydration';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -51,6 +52,7 @@ export default function RootLayout({
     <ReactQueryClientProvider>
       <html lang="en">
         <body className={cn(inter.className, 'relative bg-common-background')}>
+          <StoreHydration />
           <NextTopLoader showSpinner={false} color="#64e466" shadow={false} />
           <SessionExpirationDialog />
           <PathTracker />

@@ -45,6 +45,7 @@ interface SearchableListProps<T> {
   showViewTypeIcons?: boolean;
   setViewType?: (viewType: 'grid' | 'list' | 'preview') => void;
   allowedViewTypes?: Array<'grid' | 'list' | 'preview'>;
+  variant?: 'default' | 'minimal';
 }
 
 function SearchableList<T>({
@@ -70,6 +71,7 @@ function SearchableList<T>({
   viewType = 'grid',
   setViewType,
   allowedViewTypes,
+  variant = 'default',
 }: SearchableListProps<T>) {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
@@ -112,67 +114,101 @@ function SearchableList<T>({
 
   const hasMore = items.length < totalItems;
 
+  const isMinimal = variant === 'minimal';
+  const shouldShowResultsMeta = !isLoading && totalItems > 0;
+
+  const ViewTypeControls = () =>
+    showViewTypeIcons ? (
+      <div className="flex items-center gap-2">
+        {(!allowedViewTypes || allowedViewTypes.includes('grid')) && (
+          <Button
+            variant={viewType === 'grid' ? 'gray' : 'transparent'}
+            className="aspect-square p-1"
+            onClick={() => setViewType?.('grid')}
+            disabled={isMinimal}
+          >
+            <ButtonIcon>
+              <LayoutGrid size={18} className="text-text-secondary" />
+            </ButtonIcon>
+          </Button>
+        )}
+        {(!allowedViewTypes || allowedViewTypes.includes('list')) && !isMinimal && (
+          <Button
+            variant={viewType === 'list' ? 'gray' : 'transparent'}
+            className="aspect-square p-1"
+            onClick={() => setViewType?.('list')}
+            disabled={isMinimal}
+          >
+            <ButtonIcon>
+              <List size={18} className="text-text-secondary" />
+            </ButtonIcon>
+          </Button>
+        )}
+        {(!allowedViewTypes || allowedViewTypes.includes('preview')) && !isMinimal && (
+          <Button
+            variant={viewType === 'preview' ? 'gray' : 'transparent'}
+            className="hidden aspect-square p-1 md:block"
+            onClick={() => setViewType?.('preview')}
+            disabled={isMinimal}
+          >
+            <ButtonIcon>
+              <PanelLeft size={18} className="text-text-secondary" />
+            </ButtonIcon>
+          </Button>
+        )}
+      </div>
+    ) : null;
+
   return (
-    <div className="space-y-4">
-      <div className="mb-6 flex w-full flex-col items-center justify-between gap-8 pt-1 md:flex-row">
-        {title && (
+    <div className={cn('space-y-4', isMinimal && 'space-y-2')}>
+      <div
+        className={cn(
+          'mb-6 flex w-full flex-col items-center justify-between gap-8 pt-1 md:flex-row',
+          isMinimal && 'mb-1 items-center gap-3 pt-0 md:justify-between'
+        )}
+      >
+        {!isMinimal && title && (
           <h1 className="whitespace-nowrap text-3xl font-bold text-text-primary">{title}</h1>
+        )}
+        {isMinimal && title && (
+          <h2 className="pb-0 text-base font-semibold text-text-primary">{title}</h2>
         )}
         <Input
           type="text"
           placeholder={searchPlaceholder}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-[720px] text-text-primary focus-visible:ring-foreground"
+          className={cn(
+            'max-w-[720px] text-text-primary focus-visible:ring-foreground',
+            isMinimal && 'max-w-[360px] rounded-md border-common-minimal bg-transparent text-sm'
+          )}
         />
       </div>
 
+      {isMinimal && shouldShowResultsMeta && (
+        <div className="-mt-1 flex items-center justify-between pt-0">
+          <span className="text-xs text-text-tertiary">
+            Results: {totalItems} {title}
+          </span>
+          <ViewTypeControls />
+        </div>
+      )}
+
       <div className={cn('flex h-fit flex-col space-y-4')}>
-        {!isLoading && totalItems > 0 && (
-          <div className="flex w-full items-center justify-between">
+        {!isMinimal && shouldShowResultsMeta && (
+          <div
+            className={cn(
+              'flex w-full items-center',
+              showViewTypeIcons ? 'justify-between' : 'justify-start'
+            )}
+          >
             <span className="text-sm text-text-tertiary">
               Results: {totalItems} {title}
             </span>
-            {showViewTypeIcons && (
-              <div className="flex items-center gap-2">
-                {(!allowedViewTypes || allowedViewTypes.includes('grid')) && (
-                  <Button
-                    variant={viewType === 'grid' ? 'gray' : 'transparent'}
-                    className="aspect-square p-1"
-                    onClick={() => setViewType?.('grid')}
-                  >
-                    <ButtonIcon>
-                      <LayoutGrid size={18} className="text-text-secondary" />
-                    </ButtonIcon>
-                  </Button>
-                )}
-                {(!allowedViewTypes || allowedViewTypes.includes('list')) && (
-                  <Button
-                    variant={viewType === 'list' ? 'gray' : 'transparent'}
-                    className="aspect-square p-1"
-                    onClick={() => setViewType?.('list')}
-                  >
-                    <ButtonIcon>
-                      <List size={18} className="text-text-secondary" />
-                    </ButtonIcon>
-                  </Button>
-                )}
-                {(!allowedViewTypes || allowedViewTypes.includes('preview')) && (
-                  <Button
-                    variant={viewType === 'preview' ? 'gray' : 'transparent'}
-                    className="hidden aspect-square p-1 md:block"
-                    onClick={() => setViewType?.('preview')}
-                  >
-                    <ButtonIcon>
-                      <PanelLeft size={18} className="text-text-secondary" />
-                    </ButtonIcon>
-                  </Button>
-                )}
-              </div>
-            )}
+            <ViewTypeControls />
           </div>
         )}
-        <div className={cn(listContainerClassName)}>
+        <div className={cn(listContainerClassName, isMinimal && 'gap-2')}>
           {items.map((item, index) => (
             <div key={index}>{renderItem(item)}</div>
           ))}
