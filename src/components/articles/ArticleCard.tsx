@@ -31,13 +31,6 @@ const ArticleCard: FC<ArticleCardProps> = ({
   const isMounted = useIsMounted();
   const isSimpleMode = isMounted && mode === 'simple';
 
-  // Determine if we are on the "articles" listing page.
-  const isArticlesPage =
-    isMounted &&
-    !forCommunity &&
-    typeof window !== 'undefined' &&
-    window.location.pathname.includes('/articles');
-
   return (
     <div
       className={cn(
@@ -67,6 +60,9 @@ const ArticleCard: FC<ArticleCardProps> = ({
                 : `/article/${article.slug}`
             }
           >
+            {/* <h2 className="line-clamp-2 text-wrap font-semibold text-text-primary res-text-lg hover:underline">
+              {article.title}
+            </h2> */}
             <div style={isSimpleMode ? { fontSize: '0.875rem' } : undefined}>
               <RenderParsedHTML
                 rawContent={article.title}
@@ -88,7 +84,9 @@ const ArticleCard: FC<ArticleCardProps> = ({
               />
             </div>
           </Link>
-
+          {/* <p className="mt-2 line-clamp-2 overflow-hidden text-ellipsis text-wrap text-text-primary">
+            {article.abstract}
+          </p> */}
           {compactType === 'full' && (
             <RenderParsedHTML
               rawContent={article.abstract}
@@ -116,34 +114,26 @@ const ArticleCard: FC<ArticleCardProps> = ({
               </Link>
             </p>
           )}
-
-          {/* Simple mode on articles listing: Submitted By (left) and Ratings (right) on a single line.
-              Ratings nudged slightly inward from the right with mr-2 to meet the "shift inside" request. */}
-          {(compactType === 'full' || compactType === 'default') &&
-          isSimpleMode &&
-          isArticlesPage ? (
-            <div
+          {(compactType === 'full' || compactType === 'default') && (
+            <p
               className={cn(
-                'mt-1 flex w-full items-center justify-between text-text-secondary',
-                'text-[10px]'
+                'text-xs text-text-secondary',
+                isSimpleMode ? 'mb-0 mt-0 text-[10px]' : 'mt-1'
               )}
             >
-              <p className="m-0">Submitted By: {article.user.username}</p>
-              {/* mr-2 shifts the ratings a little bit inward from the right edge in simple mode only */}
-              <span className="m-0 mr-2">Ratings: {article.total_ratings}</span>
-            </div>
-          ) : (
-            (compactType === 'full' || compactType === 'default') && (
-              <p
-                className={cn(
-                  'text-xs text-text-secondary',
-                  isSimpleMode ? 'mb-0 mt-0 text-[10px]' : 'mt-1'
-                )}
-              >
-                Submitted By: {article.user.username}
-              </p>
-            )
+              Submitted By: {article.user.username}
+            </p>
           )}
+          {/* <div className="mt-2 flex flex-wrap">
+            {article.keywords.map((keyword, index) => (
+              <span
+                key={index}
+                className="mb-2 mr-2 rounded bg-common-minimal px-2.5 py-0.5 font-medium text-gray-800"
+              >
+                {keyword}
+              </span>
+            ))}
+          </div> */}
         </div>
         {compactType !== 'minimal' && article.article_image_url && (
           <div className="ml-4 flex-none">
@@ -158,34 +148,30 @@ const ArticleCard: FC<ArticleCardProps> = ({
           </div>
         )}
       </div>
-      {(compactType === 'full' || compactType === 'default') &&
-        !(isSimpleMode && isArticlesPage) && (
-          <div className={cn('flex flex-wrap items-center gap-4', isSimpleMode && 'mt-0 gap-0')}>
-            <div
-              className={cn(
-                'flex items-center',
-                isSimpleMode && 'gap-1 p-0',
-                !isSimpleMode && 'w-fit rounded-md border border-common-minimal py-1 pl-0 pr-1.5'
-              )}
-            >
-              {isSimpleMode ? (
-                <span
-                  className={cn(
-                    'm-0 p-0 text-xs text-text-secondary',
-                    isSimpleMode && 'text-[10px]'
-                  )}
-                >
-                  Ratings: {article.total_ratings}
-                </span>
-              ) : (
-                <>
-                  <Star className="h-3.5 text-functional-yellow" fill="currentColor" />
-                  <span className="text-xs text-text-secondary">{article.total_ratings}</span>
-                </>
-              )}
-            </div>
+      {(compactType === 'full' || compactType === 'default') && (
+        <div className={cn('flex flex-wrap items-center gap-4', isSimpleMode && 'mt-0 gap-0')}>
+          <div
+            className={cn(
+              'flex items-center',
+              isSimpleMode && 'gap-1 p-0',
+              !isSimpleMode && 'w-fit rounded-md border border-common-minimal py-1 pl-0 pr-1.5'
+            )}
+          >
+            {isSimpleMode ? (
+              <span
+                className={cn('m-0 p-0 text-xs text-text-secondary', isSimpleMode && 'text-[10px]')}
+              >
+                Ratings: {article.total_ratings}
+              </span>
+            ) : (
+              <>
+                <Star className="h-3.5 text-functional-yellow" fill="currentColor" />
+                <span className="text-xs text-text-secondary">{article.total_ratings}</span>
+              </>
+            )}
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 };
