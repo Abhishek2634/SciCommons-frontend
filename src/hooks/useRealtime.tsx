@@ -70,11 +70,6 @@ const STORAGE_KEYS = {
   LEADER: 'realtime_leader',
 };
 
-const bc =
-  typeof window !== 'undefined' && 'BroadcastChannel' in window
-    ? new BroadcastChannel('realtime')
-    : null;
-
 function isPollSuccess(r: PollResponse): r is PollSuccess {
   return (r as PollSuccess).events !== undefined;
 }
@@ -111,6 +106,11 @@ export function useRealtime() {
   const queueIdRef = useRef<string | null>(null);
   const lastEventIdRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const broadcastChannelRef = useRef<BroadcastChannel | null>(
+    typeof window !== 'undefined' && 'BroadcastChannel' in window
+      ? new BroadcastChannel('realtime')
+      : null
+  );
   const backoffRef = useRef<number>(1000);
   const retryCountRef = useRef<number>(0);
   const stoppedRef = useRef<boolean>(false);
@@ -160,7 +160,8 @@ export function useRealtime() {
 
   // Broadcast received from leader → propagate events and status
   useEffect(() => {
-    if (!bc) return;
+    const channel = broadcastChannelRef.current;
+    if (!channel) return;
     const onMessage = (ev: MessageEvent) => {
       const msg = ev.data;
       if (msg?.type === 'realtime:events') {
@@ -169,8 +170,8 @@ export function useRealtime() {
         setStatus(msg.payload as ConnectionStatus);
       }
     };
-    bc.addEventListener('message', onMessage);
-    return () => bc.removeEventListener('message', onMessage);
+    channel.addEventListener('message', onMessage);
+    return () => channel.removeEventListener('message', onMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -200,7 +201,27 @@ export function useRealtime() {
     const q = localStorage.getItem(STORAGE_KEYS.QUEUE_ID);
     const l = localStorage.getItem(STORAGE_KEYS.LAST_EVENT_ID);
     queueIdRef.current = q;
-    lastEventIdRef.current = l ? Number(l) : null;
+    const parsedLastEventId = l ? Number(l) : null;
+    lastEventIdRef.current =
+      parsedLastEventId !== null && Number.isFinite(parsedLastEventId) ? parsedLastEventId : null;
+  }, []);
+
+  const clearQueueState = useCallback(() => {
+    queueIdRef.current = null;
+    lastEventIdRef.current = null;
+    try {
+      localStorage.removeItem(STORAGE_KEYS.QUEUE_ID);
+      localStorage.removeItem(STORAGE_KEYS.LAST_EVENT_ID);
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      broadcastChannelRef.current?.close();
+      broadcastChannelRef.current = null;
+    };
   }, []);
 
   // Prepare notification sound
@@ -476,7 +497,7 @@ export function useRealtime() {
       });
 
       // Broadcast to other tabs
-      bc?.postMessage({ type: 'realtime:events', payload: events });
+      broadcastChannelRef.current?.postMessage({ type: 'realtime:events', payload: events });
 
       for (const event of events) {
         const { article_id: articleId, community_id: communityId } = event.data;
@@ -710,6 +731,7 @@ export function useRealtime() {
   const registerQueue = useCallback(
     async (force?: boolean) => {
       if (!isAuthenticated || !accessToken) {
+        clearQueueState();
         setStatus('disabled');
         return;
       }
@@ -722,11 +744,14 @@ export function useRealtime() {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       saveQueueState(data.queue_id, data.last_event_id);
-      bc?.postMessage({ type: 'realtime:status', payload: 'connected' satisfies ConnectionStatus });
+      broadcastChannelRef.current?.postMessage({
+        type: 'realtime:status',
+        payload: 'connected' satisfies ConnectionStatus,
+      });
       setStatus('connected');
       console.log('[Realtime] Queue registered:', data.queue_id);
     },
-    [accessToken, isAuthenticated, loadQueueState, saveQueueState]
+    [accessToken, clearQueueState, isAuthenticated, loadQueueState, saveQueueState]
   );
 
   // Startup/shutdown
@@ -751,10 +776,11 @@ export function useRealtime() {
     if (isAuthenticated && accessToken) {
       void registerQueue(true);
     } else {
+      clearQueueState();
       setStatus('disabled');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, accessToken]);
+  }, [isAuthenticated, accessToken, clearQueueState]);
 
   // If leadership changes, start/stop polling accordingly
   useEffect(() => {
@@ -766,7 +792,7 @@ export function useRealtime() {
 
   // Keep status in other tabs updated
   useEffect(() => {
-    bc?.postMessage({ type: 'realtime:status', payload: status });
+    broadcastChannelRef.current?.postMessage({ type: 'realtime:status', payload: status });
   }, [status]);
 
   // Periodically attempt to become leader if none is active
