@@ -1,5 +1,15 @@
 import { isProtectedPathname, middleware } from '@/middleware';
 
+jest.mock('next/server', () => ({
+  NextResponse: {
+    next: () => ({ status: 200, headers: new Headers() }),
+    redirect: (url: URL) => ({
+      status: 307,
+      headers: new Headers({ location: url.toString() }),
+    }),
+  },
+}));
+
 describe('middleware route protection', () => {
   it('marks protected routes correctly', () => {
     expect(isProtectedPathname('/submitarticle')).toBe(true);
