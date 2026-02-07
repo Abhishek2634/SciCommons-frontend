@@ -7,8 +7,28 @@ const AXIOS_INSTANCE: AxiosInstance = Axios.create({
   withCredentials: true,
 });
 
+const getCookieValue = (name: string): string | null => {
+  if (typeof document === 'undefined') return null;
+  const cookies = document.cookie.split(';');
+  for (const part of cookies) {
+    const [key, ...rest] = part.trim().split('=');
+    if (key === name) {
+      return decodeURIComponent(rest.join('='));
+    }
+  }
+  return null;
+};
+
 AXIOS_INSTANCE.interceptors.request.use((config) => {
   const authHeader = config.headers?.Authorization || config.headers?.authorization;
+  const cookieToken = getCookieValue('auth_token');
+
+  if (cookieToken) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${cookieToken}`;
+    return config;
+  }
+
   if (typeof authHeader === 'string') {
     const normalized = authHeader.trim().toLowerCase();
     if (

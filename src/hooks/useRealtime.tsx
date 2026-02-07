@@ -68,7 +68,6 @@ const MAX_RETRIES = 10;
 const STORAGE_KEYS = {
   QUEUE_ID: 'realtime_queue_id',
   LAST_EVENT_ID: 'realtime_last_event_id',
-  LEADER: 'realtime_leader',
 };
 
 const getQueueStorage = (): Storage | null => {
@@ -91,6 +90,7 @@ function matchesQueryKey(queryKey: readonly unknown[], pattern: string | RegExp)
 
 export function useRealtime() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const userId = useAuthStore((s) => s.user?.id);
   const authHeaders = useAuthHeaders();
   const queryClient = useQueryClient();
 
@@ -111,6 +111,7 @@ export function useRealtime() {
 
   const queueIdRef = useRef<string | null>(null);
   const lastEventIdRef = useRef<number | null>(null);
+  const tabIdRef = useRef<string>((Math.random() + 1).toString(36).slice(2));
   const abortRef = useRef<AbortController | null>(null);
   const broadcastChannelRef = useRef<BroadcastChannel | null>(
     typeof window !== 'undefined' && 'BroadcastChannel' in window
@@ -122,20 +123,21 @@ export function useRealtime() {
   const stoppedRef = useRef<boolean>(false);
   const isPollingRef = useRef<boolean>(false);
   const loopStartedRef = useRef<boolean>(false);
+  const leaderStorageKey = `realtime_leader_${userId ?? 'anon'}`;
 
-  const writeLeaderHeartbeat = useCallback((tabId: string) => {
-    const payload = { tabId, ts: Date.now() };
+  const writeLeaderHeartbeat = useCallback(() => {
+    const payload = { tabId: tabIdRef.current, ts: Date.now() };
     try {
-      localStorage.setItem(STORAGE_KEYS.LEADER, JSON.stringify(payload));
+      localStorage.setItem(leaderStorageKey, JSON.stringify(payload));
     } catch {
       // ignore storage errors
     }
-  }, []);
+  }, [leaderStorageKey]);
 
   const tryBecomeLeader = useCallback(() => {
-    const myId = (Math.random() + 1).toString(36).slice(2);
+    const myId = tabIdRef.current;
     const now = Date.now();
-    const raw = localStorage.getItem(STORAGE_KEYS.LEADER);
+    const raw = localStorage.getItem(leaderStorageKey);
     let current: { tabId: string; ts: number } | null = null;
 
     try {
@@ -145,16 +147,13 @@ export function useRealtime() {
     }
 
     if (!current || now - current.ts > LEADER_TTL_MS * 2) {
-      writeLeaderHeartbeat(myId);
+      writeLeaderHeartbeat();
       setIsLeader(true);
-      leaderHeartbeatRef.current = window.setInterval(
-        () => writeLeaderHeartbeat(myId),
-        LEADER_TTL_MS
-      );
+      leaderHeartbeatRef.current = window.setInterval(() => writeLeaderHeartbeat(), LEADER_TTL_MS);
     } else {
       setIsLeader(false);
     }
-  }, [writeLeaderHeartbeat]);
+  }, [leaderStorageKey, writeLeaderHeartbeat]);
 
   const releaseLeadership = useCallback(() => {
     setIsLeader(false);
@@ -162,7 +161,18 @@ export function useRealtime() {
       clearInterval(leaderHeartbeatRef.current);
       leaderHeartbeatRef.current = null;
     }
-  }, []);
+    try {
+      const raw = localStorage.getItem(leaderStorageKey);
+      if (raw) {
+        const current = JSON.parse(raw) as { tabId?: string };
+        if (current?.tabId === tabIdRef.current) {
+          localStorage.removeItem(leaderStorageKey);
+        }
+      }
+    } catch {
+      // ignore parse/storage errors
+    }
+  }, [leaderStorageKey]);
 
   // Broadcast received from leader → propagate events and status
   useEffect(() => {
@@ -184,13 +194,13 @@ export function useRealtime() {
   // Storage listener to detect leader loss
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.LEADER) {
+      if (e.key === leaderStorageKey) {
         tryBecomeLeader();
       }
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, [tryBecomeLeader]);
+  }, [leaderStorageKey, tryBecomeLeader]);
 
   const saveQueueState = useCallback((queueId: string, lastEventId: number) => {
     queueIdRef.current = queueId;
@@ -794,10 +804,15 @@ export function useRealtime() {
       void registerQueue(true);
     } else {
       clearQueueState();
+      try {
+        localStorage.removeItem(leaderStorageKey);
+      } catch {
+        // ignore storage errors
+      }
       setStatus('disabled');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, clearQueueState]);
+  }, [isAuthenticated, clearQueueState, leaderStorageKey]);
 
   // If leadership changes, start/stop polling accordingly
   useEffect(() => {

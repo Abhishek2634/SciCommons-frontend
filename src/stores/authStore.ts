@@ -25,6 +25,7 @@ interface AuthState {
 
 const AUTH_COOKIE_NAME = 'auth_token';
 const TOKEN_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 1 day
+const SERVER_SESSION_FALLBACK_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 const getExpiresAtFromToken = (token: string): number | null => {
   const parts = token.split('.');
@@ -35,6 +36,21 @@ const getExpiresAtFromToken = (token: string): number | null => {
     return payload.exp * 1000;
   } catch {
     return null;
+  }
+};
+
+const probeServerSession = async (): Promise<boolean> => {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (!backendUrl) return false;
+  try {
+    const response = await fetch(`${backendUrl}/api/users/me`, {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+    });
+    return response.ok;
+  } catch {
+    return false;
   }
 };
 
@@ -69,7 +85,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const cookieToken = Cookies.get(AUTH_COOKIE_NAME);
     const cookieExpiresAt = Cookies.get('expiresAt');
 
-    if (!cookieToken || !cookieExpiresAt) {
+    if (!cookieToken) {
       set({
         isAuthenticated: false,
         accessToken: null,
@@ -79,17 +95,28 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       return;
     }
 
-    const expiresAt = Number.parseInt(cookieExpiresAt, 10);
+    let expiresAt = cookieExpiresAt ? Number.parseInt(cookieExpiresAt, 10) : NaN;
+    if (!Number.isFinite(expiresAt)) {
+      const tokenExpiry = getExpiresAtFromToken(cookieToken);
+      expiresAt = tokenExpiry ?? NaN;
+    }
+
     if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
-      Cookies.remove(AUTH_COOKIE_NAME);
-      Cookies.remove('expiresAt');
-      set({
-        isAuthenticated: false,
-        accessToken: null,
-        expiresAt: null,
-        user: null,
-      });
-      return;
+      const hasValidServerSession = await probeServerSession();
+      if (!hasValidServerSession) {
+        Cookies.remove(AUTH_COOKIE_NAME);
+        Cookies.remove('expiresAt');
+        set({
+          isAuthenticated: false,
+          accessToken: null,
+          expiresAt: null,
+          user: null,
+        });
+        return;
+      }
+
+      expiresAt = Date.now() + SERVER_SESSION_FALLBACK_TTL_MS;
+      Cookies.set('expiresAt', expiresAt.toString(), { secure: true, sameSite: 'strict' });
     }
 
     set({
