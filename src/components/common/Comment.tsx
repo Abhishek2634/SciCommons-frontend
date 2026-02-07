@@ -68,6 +68,7 @@ const Comment: React.FC<CommentProps> = ({
   author,
   created_at,
   content,
+  upvotes,
   replies,
   depth,
   maxDepth,
@@ -85,23 +86,23 @@ const Comment: React.FC<CommentProps> = ({
   dayjs.extend(relativeTime);
   const accessToken = useAuthStore((state) => state.accessToken);
 
-  // Todo: Too many requests
   const { data, refetch } = useUsersCommonApiGetReactionCount(contentType, Number(id), {
     request: { headers: { Authorization: `Bearer ${accessToken}` } },
     query: {
-      enabled: !!accessToken && !!id,
+      // Lazy-load to avoid N+1 reaction count calls for long comment threads.
+      enabled: false,
       staleTime: TEN_MINUTES_IN_MS,
       refetchOnWindowFocus: false,
-      refetchOnMount: true,
-      refetchOnReconnect: true,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
     },
   });
 
   const { mutate } = useUsersCommonApiPostReaction({
     request: { headers: { Authorization: `Bearer ${accessToken}` } },
     mutation: {
-      onSuccess: () => {
-        refetch();
+      onSuccess: async () => {
+        await refetch();
       },
       onError: (error) => {
         console.error(error);
@@ -247,7 +248,7 @@ const Comment: React.FC<CommentProps> = ({
               ) : (
                 <ThumbsUp size={16} onClick={() => handleReaction('upvote')} />
               )}
-              <span className="text-xs">{data?.data.likes}</span>
+              <span className="text-xs">{data?.data.likes ?? upvotes ?? 0}</span>
             </button>
             <button className="flex items-center space-x-1">
               {data?.data.user_reaction === -1 ? (
