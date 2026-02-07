@@ -11,6 +11,11 @@ jest.mock('next/server', () => ({
 }));
 
 describe('middleware route protection', () => {
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_BACKEND_URL = '';
+    jest.clearAllMocks();
+  });
+
   it('marks protected routes correctly', () => {
     expect(isProtectedPathname('/submitarticle')).toBe(true);
     expect(isProtectedPathname('/community/abc/dashboard')).toBe(true);
@@ -19,7 +24,7 @@ describe('middleware route protection', () => {
     expect(isProtectedPathname('/auth/login')).toBe(false);
   });
 
-  it('redirects protected routes without auth cookie', () => {
+  it('redirects protected routes without auth cookie', async () => {
     const request = {
       url: 'https://www.scicommons.org/submitarticle',
       nextUrl: {
@@ -31,14 +36,14 @@ describe('middleware route protection', () => {
       },
     } as any;
 
-    const response = middleware(request);
+    const response = await middleware(request);
     expect(response.status).toBe(307);
     expect(response.headers.get('location')).toBe(
       'https://www.scicommons.org/auth/login?redirect=%2Fsubmitarticle'
     );
   });
 
-  it('allows protected routes with auth cookie', () => {
+  it('allows protected routes with auth cookie', async () => {
     const cookieGet = jest.fn((key: string) => {
       if (key === 'auth_token') return { value: 'token' };
       if (key === 'expiresAt') return { value: String(Date.now() + 60_000) };
@@ -56,11 +61,11 @@ describe('middleware route protection', () => {
       },
     } as any;
 
-    const response = middleware(request);
+    const response = await middleware(request);
     expect(response.status).toBe(200);
   });
 
-  it('redirects when auth cookie exists but expiry is invalid', () => {
+  it('redirects when auth cookie exists but expiry is invalid', async () => {
     const cookieGet = jest.fn((key: string) => {
       if (key === 'auth_token') return { value: 'token' };
       if (key === 'expiresAt') return { value: '0' };
@@ -78,7 +83,35 @@ describe('middleware route protection', () => {
       },
     } as any;
 
-    const response = middleware(request);
+    const response = await middleware(request);
     expect(response.status).toBe(307);
+  });
+
+  it('redirects when backend session validation fails', async () => {
+    process.env.NEXT_PUBLIC_BACKEND_URL = 'https://api.example.com';
+    const originalFetch = (global as any).fetch;
+    (global as any).fetch = jest.fn().mockResolvedValue({ ok: false } as Response);
+
+    const cookieGet = jest.fn((key: string) => {
+      if (key === 'auth_token') return { value: 'token' };
+      if (key === 'expiresAt') return { value: String(Date.now() + 60_000) };
+      return undefined;
+    });
+
+    const request = {
+      headers: { get: () => 'auth_token=token; expiresAt=123' },
+      url: 'https://www.scicommons.org/community/a/dashboard',
+      nextUrl: {
+        pathname: '/community/a/dashboard',
+        search: '',
+      },
+      cookies: {
+        get: cookieGet,
+      },
+    } as any;
+
+    const response = await middleware(request);
+    expect(response.status).toBe(307);
+    (global as any).fetch = originalFetch;
   });
 });

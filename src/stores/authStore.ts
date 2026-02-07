@@ -26,13 +26,25 @@ interface AuthState {
 const AUTH_COOKIE_NAME = 'auth_token';
 const TOKEN_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 1 day
 
+const getExpiresAtFromToken = (token: string): number | null => {
+  const parts = token.split('.');
+  if (parts.length < 2) return null;
+  try {
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (!payload?.exp || typeof payload.exp !== 'number') return null;
+    return payload.exp * 1000;
+  } catch {
+    return null;
+  }
+};
+
 export const useAuthStore = create<AuthState>()((set, get) => ({
   isAuthenticated: false,
   accessToken: null,
   expiresAt: null,
   user: null,
   setAccessToken: (token: string, user: AuthenticatedUserType) => {
-    const expiresAt = Date.now() + TOKEN_EXPIRATION_TIME;
+    const expiresAt = getExpiresAtFromToken(token) ?? Date.now() + TOKEN_EXPIRATION_TIME;
     Cookies.set(AUTH_COOKIE_NAME, token, { secure: true, sameSite: 'strict' });
     Cookies.set('expiresAt', expiresAt.toString(), { secure: true, sameSite: 'strict' });
     set(() => ({

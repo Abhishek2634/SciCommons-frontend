@@ -71,6 +71,11 @@ const STORAGE_KEYS = {
   LEADER: 'realtime_leader',
 };
 
+const getQueueStorage = (): Storage | null => {
+  if (typeof window === 'undefined') return null;
+  return window.sessionStorage;
+};
+
 function isPollSuccess(r: PollResponse): r is PollSuccess {
   return (r as PollSuccess).events !== undefined;
 }
@@ -191,16 +196,18 @@ export function useRealtime() {
     queueIdRef.current = queueId;
     lastEventIdRef.current = lastEventId;
     try {
-      localStorage.setItem(STORAGE_KEYS.QUEUE_ID, queueId);
-      localStorage.setItem(STORAGE_KEYS.LAST_EVENT_ID, String(lastEventId));
+      const queueStorage = getQueueStorage();
+      queueStorage?.setItem(STORAGE_KEYS.QUEUE_ID, queueId);
+      queueStorage?.setItem(STORAGE_KEYS.LAST_EVENT_ID, String(lastEventId));
     } catch {
       // ignore storage errors
     }
   }, []);
 
   const loadQueueState = useCallback(() => {
-    const q = localStorage.getItem(STORAGE_KEYS.QUEUE_ID);
-    const l = localStorage.getItem(STORAGE_KEYS.LAST_EVENT_ID);
+    const queueStorage = getQueueStorage();
+    const q = queueStorage?.getItem(STORAGE_KEYS.QUEUE_ID) ?? null;
+    const l = queueStorage?.getItem(STORAGE_KEYS.LAST_EVENT_ID) ?? null;
     queueIdRef.current = q;
     const parsedLastEventId = l ? Number(l) : null;
     lastEventIdRef.current =
@@ -211,8 +218,9 @@ export function useRealtime() {
     queueIdRef.current = null;
     lastEventIdRef.current = null;
     try {
-      localStorage.removeItem(STORAGE_KEYS.QUEUE_ID);
-      localStorage.removeItem(STORAGE_KEYS.LAST_EVENT_ID);
+      const queueStorage = getQueueStorage();
+      queueStorage?.removeItem(STORAGE_KEYS.QUEUE_ID);
+      queueStorage?.removeItem(STORAGE_KEYS.LAST_EVENT_ID);
     } catch {
       // ignore storage errors
     }

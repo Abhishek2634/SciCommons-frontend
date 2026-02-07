@@ -36,8 +36,8 @@ describe('useRealtime', () => {
 
   beforeEach(() => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    localStorage.setItem('realtime_queue_id', 'stale-queue');
-    localStorage.setItem('realtime_last_event_id', '123');
+    sessionStorage.setItem('realtime_queue_id', 'stale-queue');
+    sessionStorage.setItem('realtime_last_event_id', '123');
     mockUseAuthStore.mockImplementation((selector: any) =>
       selector({
         accessToken: null,
@@ -54,7 +54,7 @@ describe('useRealtime', () => {
   it('clears persisted queue state when user is unauthenticated', () => {
     renderHook(() => useRealtime());
 
-    expect(localStorage.getItem('realtime_queue_id')).toBeNull();
-    expect(localStorage.getItem('realtime_last_event_id')).toBeNull();
+    expect(sessionStorage.getItem('realtime_queue_id')).toBeNull();
+    expect(sessionStorage.getItem('realtime_last_event_id')).toBeNull();
   });
 });

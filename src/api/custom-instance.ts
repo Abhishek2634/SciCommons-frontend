@@ -7,6 +7,22 @@ const AXIOS_INSTANCE: AxiosInstance = Axios.create({
   withCredentials: true,
 });
 
+AXIOS_INSTANCE.interceptors.request.use((config) => {
+  const authHeader = config.headers?.Authorization || config.headers?.authorization;
+  if (typeof authHeader === 'string') {
+    const normalized = authHeader.trim().toLowerCase();
+    if (
+      normalized === 'bearer null' ||
+      normalized === 'bearer undefined' ||
+      normalized === 'bearer'
+    ) {
+      delete config.headers.Authorization;
+      delete config.headers.authorization;
+    }
+  }
+  return config;
+});
+
 AXIOS_INSTANCE.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {

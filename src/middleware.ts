@@ -17,7 +17,27 @@ export function isProtectedPathname(pathname: string): boolean {
   return PROTECTED_ROUTE_PATTERNS.some((pattern) => pattern.test(pathname));
 }
 
-export function middleware(request: NextRequest) {
+async function hasServerValidatedSession(request: NextRequest): Promise<boolean> {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL;
+  if (!backendUrl) {
+    return true;
+  }
+
+  try {
+    const response = await fetch(`${backendUrl}/api/users/me`, {
+      method: 'GET',
+      headers: {
+        cookie: request.headers.get('cookie') || '',
+      },
+      cache: 'no-store',
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   if (!isProtectedPathname(pathname)) {
     return NextResponse.next();
@@ -28,7 +48,7 @@ export function middleware(request: NextRequest) {
   const expiresAt = expiresAtRaw ? Number.parseInt(expiresAtRaw, 10) : NaN;
   const hasValidExpiry = Number.isFinite(expiresAt) && Date.now() < expiresAt;
 
-  if (accessToken && hasValidExpiry) {
+  if (accessToken && hasValidExpiry && (await hasServerValidatedSession(request))) {
     return NextResponse.next();
   }
 
