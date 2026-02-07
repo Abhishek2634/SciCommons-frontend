@@ -12,6 +12,7 @@ import {
 } from '../api/real-time/real-time';
 import { useAuthStore } from '../stores/authStore';
 import { useRealtimeContextStore } from '../stores/realtimeStore';
+import { useAuthHeaders } from './useAuthHeaders';
 
 type RealtimeEventType =
   | 'new_discussion'
@@ -84,8 +85,8 @@ function matchesQueryKey(queryKey: readonly unknown[], pattern: string | RegExp)
 }
 
 export function useRealtime() {
-  const accessToken = useAuthStore((s) => s.accessToken);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authHeaders = useAuthHeaders();
   const queryClient = useQueryClient();
 
   // Get all context state
@@ -707,17 +708,14 @@ export function useRealtime() {
   }, [fetchPoll, handleEvents, isLeader, queryClient]);
 
   const sendHeartbeat = useCallback(async () => {
-    if (!queueIdRef.current || !accessToken) return;
+    if (!queueIdRef.current || !isAuthenticated) return;
     try {
-      await myappRealtimeApiHeartbeat(
-        { queue_id: queueIdRef.current },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+      await myappRealtimeApiHeartbeat({ queue_id: queueIdRef.current }, authHeaders);
     } catch (e) {
       console.warn('[Realtime] Heartbeat failed, re-registering queue');
       await registerQueue(true);
     }
-  }, [accessToken]);
+  }, [authHeaders, isAuthenticated]);
 
   const heartbeatLoop = useCallback(() => {
     const id = window.setInterval(() => {
@@ -730,7 +728,7 @@ export function useRealtime() {
 
   const registerQueue = useCallback(
     async (force?: boolean) => {
-      if (!isAuthenticated || !accessToken) {
+      if (!isAuthenticated) {
         clearQueueState();
         setStatus('disabled');
         return;
@@ -740,9 +738,7 @@ export function useRealtime() {
         return;
       }
       setStatus('connecting');
-      const { data } = await myappRealtimeApiRegisterQueue({
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const { data } = await myappRealtimeApiRegisterQueue(authHeaders);
       saveQueueState(data.queue_id, data.last_event_id);
       broadcastChannelRef.current?.postMessage({
         type: 'realtime:status',
@@ -751,7 +747,7 @@ export function useRealtime() {
       setStatus('connected');
       console.log('[Realtime] Queue registered:', data.queue_id);
     },
-    [accessToken, clearQueueState, isAuthenticated, loadQueueState, saveQueueState]
+    [authHeaders, clearQueueState, isAuthenticated, loadQueueState, saveQueueState]
   );
 
   // Startup/shutdown
@@ -773,14 +769,14 @@ export function useRealtime() {
 
   // Re-attempt registration when auth state changes
   useEffect(() => {
-    if (isAuthenticated && accessToken) {
+    if (isAuthenticated) {
       void registerQueue(true);
     } else {
       clearQueueState();
       setStatus('disabled');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, accessToken, clearQueueState]);
+  }, [isAuthenticated, clearQueueState]);
 
   // If leadership changes, start/stop polling accordingly
   useEffect(() => {
