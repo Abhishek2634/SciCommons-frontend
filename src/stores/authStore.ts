@@ -1,6 +1,8 @@
 import Cookies from 'js-cookie';
 import { create } from 'zustand';
 
+import { clearRegisteredQueryCache } from '@/api/queryClientRegistry';
+
 export interface AuthenticatedUserType {
   email: string;
   first_name: string;
@@ -43,6 +45,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   logout: () => {
     Cookies.remove(AUTH_COOKIE_NAME);
     Cookies.remove('expiresAt');
+    clearRegisteredQueryCache();
     set(() => ({
       isAuthenticated: false,
       accessToken: null,

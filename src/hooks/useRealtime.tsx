@@ -614,10 +614,23 @@ export function useRealtime() {
     isPollingRef.current = true;
 
     try {
+      if (!isAuthenticated) {
+        setStatus('disabled');
+        return;
+      }
+
       if (!REALTIME_URL) {
         setStatus('disabled');
         await new Promise((r) => setTimeout(r, 10_000));
         return;
+      }
+
+      if (!queueIdRef.current) {
+        await registerQueue(true);
+        if (!queueIdRef.current) {
+          setStatus('reconnecting');
+          return;
+        }
       }
 
       setStatus((s) => (s === 'idle' ? 'connecting' : s));
@@ -705,7 +718,7 @@ export function useRealtime() {
         loopStartedRef.current = false;
       }
     }
-  }, [fetchPoll, handleEvents, isLeader, queryClient]);
+  }, [fetchPoll, handleEvents, isAuthenticated, isLeader, queryClient]);
 
   const sendHeartbeat = useCallback(async () => {
     if (!queueIdRef.current || !isAuthenticated) return;

@@ -7,23 +7,25 @@ import { Check, CheckCheck, SquareArrowOutUpRight } from 'lucide-react';
 import { useUsersApiGetNotifications, useUsersApiMarkNotificationAsRead } from '@/api/users/users';
 import { BlockSkeleton, Skeleton } from '@/components/common/Skeleton';
 import { Button, ButtonIcon, ButtonTitle } from '@/components/ui/button';
+import { useAuthHeaders } from '@/hooks/useAuthHeaders';
 import { useAuthStore } from '@/stores/authStore';
 
 const NotificationPage: React.FC = () => {
-  const accessToken = useAuthStore((state) => state.accessToken);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authHeaders = useAuthHeaders();
 
   const { data, isPending, refetch } = useUsersApiGetNotifications(
     {},
     {
-      request: { headers: { Authorization: `Bearer ${accessToken}` } },
+      request: authHeaders,
       query: {
-        enabled: !!accessToken,
+        enabled: isAuthenticated,
       },
     }
   );
 
   const { mutate, isSuccess } = useUsersApiMarkNotificationAsRead({
-    request: { headers: { Authorization: `Bearer ${accessToken}` } },
+    request: authHeaders,
   });
 
   useEffect(() => {

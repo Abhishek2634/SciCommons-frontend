@@ -39,6 +39,12 @@ describe('middleware route protection', () => {
   });
 
   it('allows protected routes with auth cookie', () => {
+    const cookieGet = jest.fn((key: string) => {
+      if (key === 'auth_token') return { value: 'token' };
+      if (key === 'expiresAt') return { value: String(Date.now() + 60_000) };
+      return undefined;
+    });
+
     const request = {
       url: 'https://www.scicommons.org/community/a/dashboard',
       nextUrl: {
@@ -46,11 +52,33 @@ describe('middleware route protection', () => {
         search: '',
       },
       cookies: {
-        get: jest.fn().mockReturnValue({ value: 'token' }),
+        get: cookieGet,
       },
     } as any;
 
     const response = middleware(request);
     expect(response.status).toBe(200);
+  });
+
+  it('redirects when auth cookie exists but expiry is invalid', () => {
+    const cookieGet = jest.fn((key: string) => {
+      if (key === 'auth_token') return { value: 'token' };
+      if (key === 'expiresAt') return { value: '0' };
+      return undefined;
+    });
+
+    const request = {
+      url: 'https://www.scicommons.org/community/a/dashboard',
+      nextUrl: {
+        pathname: '/community/a/dashboard',
+        search: '',
+      },
+      cookies: {
+        get: cookieGet,
+      },
+    } as any;
+
+    const response = middleware(request);
+    expect(response.status).toBe(307);
   });
 });

@@ -24,7 +24,11 @@ export function middleware(request: NextRequest) {
   }
 
   const accessToken = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  if (accessToken) {
+  const expiresAtRaw = request.cookies.get('expiresAt')?.value;
+  const expiresAt = expiresAtRaw ? Number.parseInt(expiresAtRaw, 10) : NaN;
+  const hasValidExpiry = Number.isFinite(expiresAt) && Date.now() < expiresAt;
+
+  if (accessToken && hasValidExpiry) {
     return NextResponse.next();
   }
 
