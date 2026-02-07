@@ -38,7 +38,7 @@ const RenderParsedHTML = ({
       const katexOptions: KatexOptions = {
         displayMode: true,
         output: 'mathml' as const,
-        trust: true,
+        trust: false,
         strict: false,
         throwOnError: false,
         macros: {

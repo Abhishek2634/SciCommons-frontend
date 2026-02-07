@@ -48,9 +48,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ReactQueryClientProvider>
-      <html lang="en">
-        <body className={cn(inter.className, 'relative bg-common-background')}>
+    <html lang="en">
+      <body className={cn(inter.className, 'relative bg-common-background')}>
+        <ReactQueryClientProvider>
           <NextTopLoader showSpinner={false} color="#64e466" shadow={false} />
           <SessionExpirationDialog />
           <PathTracker />
@@ -68,8 +68,8 @@ export default function RootLayout({
             closeButton
             duration={3000}
           />
-        </body>
-      </html>
-    </ReactQueryClientProvider>
+        </ReactQueryClientProvider>
+      </body>
+    </html>
   );
 }
