@@ -16,9 +16,14 @@ const withPWA = withPWAInit({
 
 const nextConfig = withPWA({
   images: {
+    // Keep Next.js image optimization enabled; `unoptimized: true` caused images not to render in this app.
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'gsoc2024.s3.amazonaws.com',
+      },
+      {
+        protocol: 'http',
         hostname: 'gsoc2024.s3.amazonaws.com',
       },
       {
@@ -26,9 +31,18 @@ const nextConfig = withPWA({
         hostname: 'picsum.photos',
       },
       {
+        protocol: 'http',
+        hostname: 'picsum.photos',
+      },
+      {
         protocol: 'https',
         hostname: 'cdn.scicommons.org',
       },
+      {
+        protocol: 'http',
+        hostname: 'cdn.scicommons.org',
+      },
+      // Do not allow loopback hosts here; Next image optimizer would create an SSRF path.
     ],
   },
   output: 'standalone'
