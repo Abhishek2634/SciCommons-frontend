@@ -109,28 +109,43 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
                 {/* Articles List - Shown when expanded */}
                 {isExpanded && (
                   <div className="border-t border-common-minimal">
-                    {subscription.articles.map((article: any) => (
-                      <button
-                        key={article.article_id}
-                        onClick={() =>
-                          onArticleSelect({
-                            id: article.article_id,
-                            title: article.article_title,
-                            slug: article.article_slug,
-                            abstract: article.article_abstract || '',
-                            communityId: subscription.community_id,
-                          })
-                        }
-                        className={cn(
-                          'w-full border-b border-common-minimal p-3 text-left transition-colors last:border-b-0 hover:bg-common-minimal',
-                          selectedArticle?.id === article.article_id && 'bg-functional-green/10'
-                        )}
-                      >
-                        <p className="line-clamp-2 text-xs font-medium text-text-secondary">
-                          {article.article_title}
-                        </p>
-                      </button>
-                    ))}
+                    {subscription.articles.map((article, index) => {
+                      const articleId =
+                        typeof article.article_id === 'number' ? article.article_id : null;
+                      const articleTitle =
+                        typeof article.article_title === 'string' ? article.article_title : null;
+                      const articleSlug =
+                        typeof article.article_slug === 'string' ? article.article_slug : null;
+                      const articleAbstract =
+                        typeof article.article_abstract === 'string' ? article.article_abstract : '';
+
+                      if (articleId === null || articleTitle === null || articleSlug === null) {
+                        return null;
+                      }
+
+                      return (
+                        <button
+                          key={articleId ?? index}
+                          onClick={() =>
+                            onArticleSelect({
+                              id: articleId,
+                              title: articleTitle,
+                              slug: articleSlug,
+                              abstract: articleAbstract,
+                              communityId: subscription.community_id,
+                            })
+                          }
+                          className={cn(
+                            'w-full border-b border-common-minimal p-3 text-left transition-colors last:border-b-0 hover:bg-common-minimal',
+                            selectedArticle?.id === articleId && 'bg-functional-green/10'
+                          )}
+                        >
+                          <p className="line-clamp-2 text-xs font-medium text-text-secondary">
+                            {articleTitle}
+                          </p>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -8,13 +8,14 @@ const mockGetReactionCount = jest.fn();
 const mockPostReaction = jest.fn();
 
 jest.mock('next/image', () => {
-  const MockImage = ({ alt, ...props }: any) => <img alt={alt} {...props} />;
+  const MockImage = ({ alt }: { alt?: string }) => <span aria-label={alt ?? 'image'} />;
   MockImage.displayName = 'MockImage';
   return MockImage;
 });
 
 jest.mock('@/stores/authStore', () => ({
-  useAuthStore: (selector: any) => selector({ accessToken: 'token-1' }),
+  useAuthStore: (selector: (state: { accessToken: string }) => unknown) =>
+    selector({ accessToken: 'token-1' }),
 }));
 
 jest.mock('@/components/common/RenderParsedHTML', () => {
@@ -40,8 +41,8 @@ jest.mock('@/components/ui/ratings', () => ({
 }));
 
 jest.mock('@/api/users-common-api/users-common-api', () => ({
-  useUsersCommonApiGetReactionCount: (...args: any[]) => mockGetReactionCount(...args),
-  useUsersCommonApiPostReaction: (...args: any[]) => mockPostReaction(...args),
+  useUsersCommonApiGetReactionCount: (...args: unknown[]) => mockGetReactionCount(...args),
+  useUsersCommonApiPostReaction: (...args: unknown[]) => mockPostReaction(...args),
 }));
 
 describe('Comment reaction query behavior', () => {

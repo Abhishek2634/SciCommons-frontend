@@ -55,7 +55,7 @@ const CreateCommunity: React.FC = () => {
       },
     },
     mutation: {
-      onSuccess: async (data) => {
+      onSuccess: async (_data) => {
         toast.success('Community created successfully! Redirecting to community page...');
         // Invalidate queries so the communities page is always fresh
         await queryClient.invalidateQueries({ queryKey: ['communities'] });

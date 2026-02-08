@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import DOMPurify from 'dompurify';
 import katex, { KatexOptions } from 'katex';
@@ -31,7 +31,7 @@ const RenderParsedHTML = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
 
-  const processLatex = (content: string): string => {
+  const processLatex = useCallback((content: string): string => {
     try {
       let processedContent = content.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, '');
 
@@ -59,7 +59,7 @@ const RenderParsedHTML = ({
       // This regex matches \begin{envname}...\end{envname} environments
       processedContent = processedContent.replace(
         /\\begin\{(equation\*?|align\*?|gather\*?|split|multline\*?|alignat\*?|flalign\*?|eqnarray\*?)\}([\s\S]*?)\\end\{\1\}/g,
-        (match, envName, expr) => {
+        (match, _envName, _expr) => {
           try {
             return katex.renderToString(match, {
               ...katexOptions,
@@ -107,9 +107,9 @@ const RenderParsedHTML = ({
       console.error('LaTeX processing failed completely:', error);
       return content;
     }
-  };
+  }, []);
 
-  const processContent = (content: string): string => {
+  const processContent = useCallback((content: string): string => {
     try {
       let processedContent = content.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, '');
 
@@ -150,7 +150,7 @@ const RenderParsedHTML = ({
       console.error('Content processing failed completely:', error);
       return content;
     }
-  };
+  }, [processLatex, supportMarkdown, supportLatex]);
 
   const html = useMemo(() => {
     try {
@@ -165,7 +165,7 @@ const RenderParsedHTML = ({
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
     }
-  }, [rawContent, supportMarkdown, supportLatex]);
+  }, [rawContent, processContent]);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

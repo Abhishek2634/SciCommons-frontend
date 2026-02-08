@@ -37,7 +37,7 @@ type RealtimeEvent = {
         username: string;
       };
       topic?: string;
-      [key: string]: any;
+      [key: string]: unknown;
     };
     comment?: {
       id?: number;
@@ -45,7 +45,7 @@ type RealtimeEvent = {
         username: string;
       };
       content?: string;
-      [key: string]: any;
+      [key: string]: unknown;
     };
   };
   community_ids: number[];
@@ -69,6 +69,36 @@ const STORAGE_KEYS = {
   QUEUE_ID: 'realtime_queue_id',
   LAST_EVENT_ID: 'realtime_last_event_id',
 };
+
+type DiscussionCacheItem = {
+  id?: number;
+  comments_count?: number;
+  replies?: CommentCacheItem[];
+  [key: string]: unknown;
+};
+
+type DiscussionsCacheData = {
+  data?: {
+    items?: DiscussionCacheItem[];
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+};
+
+type CommentCacheItem = {
+  id?: number;
+  replies?: CommentCacheItem[];
+  [key: string]: unknown;
+};
+
+type CommentsCacheData = {
+  data?: CommentCacheItem[];
+  [key: string]: unknown;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
 
 const getQueueStorage = (): Storage | null => {
   if (typeof window === 'undefined') return null;
@@ -135,7 +165,6 @@ export function useRealtime() {
   }, [leaderStorageKey]);
 
   const tryBecomeLeader = useCallback(() => {
-    const myId = tabIdRef.current;
     const now = Date.now();
     const raw = localStorage.getItem(leaderStorageKey);
     let current: { tabId: string; ts: number } | null = null;
@@ -291,25 +320,26 @@ export function useRealtime() {
             );
           },
         },
-        (oldData: any) => {
-          if (!oldData?.data?.items) return oldData;
+        (oldData: unknown) => {
+          const cached = oldData as DiscussionsCacheData;
+          if (!Array.isArray(cached?.data?.items)) return oldData;
 
           const discussion = event.data.discussion;
           if (!discussion?.id) return oldData;
 
-          const items = oldData.data.items;
+          const items = cached.data.items;
 
           switch (event.type) {
             case 'new_discussion': {
               // Check if discussion already exists to prevent duplicates
-              const exists = items.some((item: any) => item.id === discussion.id);
+              const exists = items.some((item) => item.id === discussion.id);
               if (exists) return oldData;
 
               console.log(`[Realtime] Adding new discussion ${discussion.id} to cache`);
               return {
-                ...oldData,
+                ...cached,
                 data: {
-                  ...oldData.data,
+                  ...cached.data,
                   items: [{ ...discussion, comments_count: 0, replies: [] }, ...items],
                 },
               };
@@ -318,10 +348,10 @@ export function useRealtime() {
             case 'updated_discussion': {
               console.log(`[Realtime] Updating discussion ${discussion.id} in cache`);
               return {
-                ...oldData,
+                ...cached,
                 data: {
-                  ...oldData.data,
-                  items: items.map((item: any) =>
+                  ...cached.data,
+                  items: items.map((item) =>
                     item.id === discussion.id ? { ...item, ...discussion } : item
                   ),
                 },
@@ -331,10 +361,10 @@ export function useRealtime() {
             case 'deleted_discussion': {
               console.log(`[Realtime] Removing discussion ${discussion.id} from cache`);
               return {
-                ...oldData,
+                ...cached,
                 data: {
-                  ...oldData.data,
-                  items: items.filter((item: any) => item.id !== discussion.id),
+                  ...cached.data,
+                  items: items.filter((item) => item.id !== discussion.id),
                 },
               };
             }
@@ -363,32 +393,33 @@ export function useRealtime() {
             return matchesQueryKey(key, `/api/articles/discussions/${discussionId}/comments/`);
           },
         },
-        (oldData: any) => {
-          if (!Array.isArray(oldData?.data)) return oldData;
+        (oldData: unknown) => {
+          const cached = oldData as CommentsCacheData;
+          if (!Array.isArray(cached?.data)) return oldData;
 
           const comment = event.data.comment;
           if (!comment?.id) return oldData;
 
           const parentId = event.data.parent_id;
 
-          const updateCommentsArray = (comments: any[]): any[] => {
+          const updateCommentsArray = (comments: CommentCacheItem[]): CommentCacheItem[] => {
             if (!Array.isArray(comments)) return [];
 
             switch (event.type) {
               case 'new_comment': {
                 if (!parentId) {
                   // Top-level comment
-                  const exists = comments.some((c: any) => c.id === comment.id);
+                  const exists = comments.some((c) => c.id === comment.id);
                   if (exists) return comments;
 
                   console.log(`[Realtime] Adding new top-level comment ${comment.id} to cache`);
                   return [...comments, { ...comment, replies: [] }];
                 } else {
                   // Reply to existing comment
-                  return comments.map((c: any) => {
+                  return comments.map((c) => {
                     if (c.id === parentId) {
                       const replies = Array.isArray(c.replies) ? c.replies : [];
-                      const exists = replies.some((r: any) => r.id === comment.id);
+                      const exists = replies.some((r) => r.id === comment.id);
                       if (exists) return c;
 
                       console.log(
@@ -405,7 +436,7 @@ export function useRealtime() {
               }
 
               case 'updated_comment': {
-                return comments.map((c: any) => {
+                return comments.map((c) => {
                   if (c.id === comment.id) {
                     console.log(`[Realtime] Updating comment ${comment.id} in cache`);
                     return { ...c, ...comment };
@@ -417,8 +448,8 @@ export function useRealtime() {
               }
 
               case 'deleted_comment': {
-                const filtered = comments.filter((c: any) => c.id !== comment.id);
-                return filtered.map((c: any) =>
+                const filtered = comments.filter((c) => c.id !== comment.id);
+                return filtered.map((c) =>
                   Array.isArray(c.replies) ? { ...c, replies: updateCommentsArray(c.replies) } : c
                 );
               }
@@ -428,7 +459,7 @@ export function useRealtime() {
             }
           };
 
-          return { ...oldData, data: updateCommentsArray(oldData.data) };
+          return { ...cached, data: updateCommentsArray(cached.data) };
         }
       );
 
@@ -447,14 +478,15 @@ export function useRealtime() {
               );
             },
           },
-          (oldData: any) => {
-            if (!oldData?.data?.items) return oldData;
+          (oldData: unknown) => {
+            const cached = oldData as DiscussionsCacheData;
+            if (!Array.isArray(cached?.data?.items)) return oldData;
 
             return {
-              ...oldData,
+              ...cached,
               data: {
-                ...oldData.data,
-                items: oldData.data.items.map((item: any) =>
+                ...cached.data,
+                items: cached.data.items.map((item) =>
                   item.id === discussionId
                     ? { ...item, comments_count: (item.comments_count || 0) + 1 }
                     : item
@@ -623,6 +655,30 @@ export function useRealtime() {
     ]
   );
 
+  const registerQueue = useCallback(
+    async (force?: boolean) => {
+      if (!isAuthenticated) {
+        clearQueueState();
+        setStatus('disabled');
+        return;
+      }
+      loadQueueState();
+      if (!force && queueIdRef.current && lastEventIdRef.current !== null) {
+        return;
+      }
+      setStatus('connecting');
+      const { data } = await myappRealtimeApiRegisterQueue(authHeaders);
+      saveQueueState(data.queue_id, data.last_event_id);
+      broadcastChannelRef.current?.postMessage({
+        type: 'realtime:status',
+        payload: 'connected' satisfies ConnectionStatus,
+      });
+      setStatus('connected');
+      console.log('[Realtime] Queue registered:', data.queue_id);
+    },
+    [authHeaders, clearQueueState, isAuthenticated, loadQueueState, saveQueueState]
+  );
+
   const pollLoop = useCallback(async () => {
     if (!isLeader || stoppedRef.current) {
       loopStartedRef.current = false;
@@ -689,10 +745,14 @@ export function useRealtime() {
         });
         toast.info('Syncing latest discussions…');
       }
-    } catch (err: any) {
-      if (err?.name === 'AbortError') {
+    } catch (err: unknown) {
+      const errRecord = isRecord(err) ? err : null;
+      const errName = typeof errRecord?.name === 'string' ? errRecord.name : '';
+      const errMessage = typeof errRecord?.message === 'string' ? errRecord.message : '';
+
+      if (errName === 'AbortError') {
         // ignore aborts
-      } else if (err?.message === 'queue_not_found') {
+      } else if (errMessage === 'queue_not_found') {
         setStatus('reconnecting');
         try {
           await registerQueue(true);
@@ -736,7 +796,7 @@ export function useRealtime() {
         loopStartedRef.current = false;
       }
     }
-  }, [fetchPoll, handleEvents, isAuthenticated, isLeader, queryClient]);
+  }, [fetchPoll, handleEvents, isAuthenticated, isLeader, queryClient, registerQueue, saveQueueState]);
 
   const sendHeartbeat = useCallback(async () => {
     if (!queueIdRef.current || !isAuthenticated) return;
@@ -746,7 +806,7 @@ export function useRealtime() {
       console.warn('[Realtime] Heartbeat failed, re-registering queue');
       await registerQueue(true);
     }
-  }, [authHeaders, isAuthenticated]);
+  }, [authHeaders, isAuthenticated, registerQueue]);
 
   const heartbeatLoop = useCallback(() => {
     const id = window.setInterval(() => {
@@ -756,30 +816,6 @@ export function useRealtime() {
     }, HEARTBEAT_INTERVAL_MS);
     return () => clearInterval(id);
   }, [sendHeartbeat, isLeader]);
-
-  const registerQueue = useCallback(
-    async (force?: boolean) => {
-      if (!isAuthenticated) {
-        clearQueueState();
-        setStatus('disabled');
-        return;
-      }
-      loadQueueState();
-      if (!force && queueIdRef.current && lastEventIdRef.current !== null) {
-        return;
-      }
-      setStatus('connecting');
-      const { data } = await myappRealtimeApiRegisterQueue(authHeaders);
-      saveQueueState(data.queue_id, data.last_event_id);
-      broadcastChannelRef.current?.postMessage({
-        type: 'realtime:status',
-        payload: 'connected' satisfies ConnectionStatus,
-      });
-      setStatus('connected');
-      console.log('[Realtime] Queue registered:', data.queue_id);
-    },
-    [authHeaders, clearQueueState, isAuthenticated, loadQueueState, saveQueueState]
-  );
 
   // Startup/shutdown
   useEffect(() => {

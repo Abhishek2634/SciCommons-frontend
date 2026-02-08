@@ -32,7 +32,9 @@ interface SubmitArticleFormProps {
   setActiveTab: React.Dispatch<React.SetStateAction<'upload' | 'search'>>;
   onSearch: (query: string) => void;
   showPrivateCheckOption?: boolean;
-  articleData: any;
+  articleData: {
+    pdfLink?: string;
+  } | null;
 }
 
 const SubmitArticleForm: React.FC<SubmitArticleFormProps> = ({

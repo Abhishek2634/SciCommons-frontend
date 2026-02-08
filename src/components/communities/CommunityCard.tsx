@@ -28,7 +28,7 @@ const CommunityCard: FC<CommunityCardProps> = ({ community }) => {
     request: axiosConfig,
   });
 
-  const handleJoin = () => {
+  const _handleJoin = () => {
     mutate({ communityId: community.id });
   };
 

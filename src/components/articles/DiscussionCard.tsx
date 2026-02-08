@@ -17,7 +17,10 @@ interface DiscussionCardProps {
   handleDiscussionClick: (id: number) => void;
 }
 
-const DiscussionCard: React.FC<DiscussionCardProps> = ({ discussion, handleDiscussionClick }) => {
+const DiscussionCard: React.FC<DiscussionCardProps> = ({
+  discussion,
+  handleDiscussionClick: _handleDiscussionClick,
+}) => {
   dayjs.extend(relativeTime);
 
   // const accessToken = useAuthStore((state) => state.accessToken);

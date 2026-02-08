@@ -53,6 +53,11 @@ async function hasServerValidatedSession(request: NextRequest): Promise<boolean>
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  // Never run auth middleware for static/public assets.
+  if (/\.[^/]+$/.test(pathname)) {
+    return NextResponse.next();
+  }
+
   if (!isProtectedPathname(pathname)) {
     return NextResponse.next();
   }
@@ -73,5 +78,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|api).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|api|.*\\..*).*)'],
 };

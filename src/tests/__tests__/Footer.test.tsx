@@ -14,7 +14,7 @@ jest.mock('next/link', () => {
 });
 
 jest.mock('next/image', () => {
-  const MockImage = ({ alt, ...props }: any) => <img alt={alt} {...props} />;
+  const MockImage = ({ alt }: { alt?: string }) => <span aria-label={alt ?? 'image'} />;
   MockImage.displayName = 'MockImage';
   return MockImage;
 });

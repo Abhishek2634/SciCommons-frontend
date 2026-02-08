@@ -87,7 +87,7 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({ article }) => {
       toast.error('Update failed');
       setIsPseudonymous(article.is_pseudonymous || false);
     }
-  }, [isMutationSuccess, mutationData, isMutationError]);
+  }, [isMutationSuccess, mutationData, isMutationError, article.is_pseudonymous]);
 
   const debouncedIsPseudonymous = useDebounceFunction(handleMakePseudonymous, 500);
 

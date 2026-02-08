@@ -11,9 +11,23 @@ jest.mock('next/server', () => ({
 }));
 
 describe('middleware route protection', () => {
+  type MockRequest = {
+    url: string;
+    nextUrl: { pathname: string; search: string };
+    cookies: { get: (key: string) => { value: string } | undefined };
+    headers?: { get: (key: string) => string | null };
+  };
+
+  let originalFetch: typeof globalThis.fetch;
+
   beforeEach(() => {
     process.env.NEXT_PUBLIC_BACKEND_URL = '';
     jest.clearAllMocks();
+    originalFetch = globalThis.fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
   });
 
   it('marks protected routes correctly', () => {
@@ -25,7 +39,7 @@ describe('middleware route protection', () => {
   });
 
   it('redirects protected routes without auth cookie', async () => {
-    const request = {
+    const request: MockRequest = {
       url: 'https://www.scicommons.org/submitarticle',
       nextUrl: {
         pathname: '/submitarticle',
@@ -34,9 +48,9 @@ describe('middleware route protection', () => {
       cookies: {
         get: jest.fn().mockReturnValue(undefined),
       },
-    } as any;
+    };
 
-    const response = await middleware(request);
+    const response = await middleware(request as never);
     expect(response.status).toBe(307);
     expect(response.headers.get('location')).toBe(
       'https://www.scicommons.org/auth/login?redirect=%2Fsubmitarticle'
@@ -50,7 +64,7 @@ describe('middleware route protection', () => {
       return undefined;
     });
 
-    const request = {
+    const request: MockRequest = {
       url: 'https://www.scicommons.org/community/a/dashboard',
       nextUrl: {
         pathname: '/community/a/dashboard',
@@ -59,9 +73,9 @@ describe('middleware route protection', () => {
       cookies: {
         get: cookieGet,
       },
-    } as any;
+    };
 
-    const response = await middleware(request);
+    const response = await middleware(request as never);
     expect(response.status).toBe(200);
   });
 
@@ -72,7 +86,7 @@ describe('middleware route protection', () => {
       return undefined;
     });
 
-    const request = {
+    const request: MockRequest = {
       url: 'https://www.scicommons.org/community/a/dashboard',
       nextUrl: {
         pathname: '/community/a/dashboard',
@@ -81,16 +95,15 @@ describe('middleware route protection', () => {
       cookies: {
         get: cookieGet,
       },
-    } as any;
+    };
 
-    const response = await middleware(request);
+    const response = await middleware(request as never);
     expect(response.status).toBe(307);
   });
 
   it('redirects when backend session validation fails', async () => {
     process.env.NEXT_PUBLIC_BACKEND_URL = 'https://api.example.com';
-    const originalFetch = (global as any).fetch;
-    (global as any).fetch = jest.fn().mockResolvedValue({ ok: false } as Response);
+    globalThis.fetch = jest.fn().mockResolvedValue({ ok: false } as Response) as typeof fetch;
 
     const cookieGet = jest.fn((key: string) => {
       if (key === 'auth_token') return { value: 'token' };
@@ -98,7 +111,7 @@ describe('middleware route protection', () => {
       return undefined;
     });
 
-    const request = {
+    const request: MockRequest = {
       headers: { get: () => 'auth_token=token; expiresAt=123' },
       url: 'https://www.scicommons.org/community/a/dashboard',
       nextUrl: {
@@ -108,10 +121,9 @@ describe('middleware route protection', () => {
       cookies: {
         get: cookieGet,
       },
-    } as any;
+    };
 
-    const response = await middleware(request);
+    const response = await middleware(request as never);
     expect(response.status).toBe(307);
-    (global as any).fetch = originalFetch;
   });
 });

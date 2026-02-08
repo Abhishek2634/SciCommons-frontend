@@ -57,7 +57,7 @@ function SearchableList<T>({
   totalItems,
   totalPages,
   currentPage,
-  itemsPerPage = 10,
+  itemsPerPage: _itemsPerPage = 10,
   searchPlaceholder = 'Search...',
   loadingType = LoadingType.PAGINATION,
   loadMoreText = 'Load More',

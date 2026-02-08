@@ -12,7 +12,8 @@ jest.mock('@tanstack/react-query', () => ({
 }));
 
 jest.mock('@/stores/authStore', () => ({
-  useAuthStore: (selector: any) => mockUseAuthStore(selector),
+  useAuthStore: (selector: (state: { accessToken: string | null; isAuthenticated: boolean }) => unknown) =>
+    mockUseAuthStore(selector),
 }));
 
 jest.mock('@/stores/realtimeStore', () => ({
@@ -38,7 +39,7 @@ describe('useRealtime', () => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     sessionStorage.setItem('realtime_queue_id', 'stale-queue');
     sessionStorage.setItem('realtime_last_event_id', '123');
-    mockUseAuthStore.mockImplementation((selector: any) =>
+    mockUseAuthStore.mockImplementation((selector: (state: { accessToken: string | null; isAuthenticated: boolean }) => unknown) =>
       selector({
         accessToken: null,
         isAuthenticated: false,

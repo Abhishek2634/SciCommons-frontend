@@ -48,7 +48,6 @@ const TabContent: React.FC<TabContentProps> = ({
   setSearch,
   page,
   setPage,
-  accessToken,
   isActive,
   viewType,
   setViewType,
@@ -119,7 +118,7 @@ const TabContent: React.FC<TabContentProps> = ({
     if (!isDesktop && viewType === 'preview') {
       setViewType('grid');
     }
-  }, [isDesktop, viewType]);
+  }, [isDesktop, viewType, setViewType]);
 
   useEffect(() => {
     if (error) {
@@ -324,7 +323,7 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
     if (!isDesktop && viewType === 'preview') {
       setViewType('grid');
     }
-  }, [isDesktop, viewType]);
+  }, [isDesktop, viewType, setViewType]);
 
   useEffect(() => {
     if (error) {
