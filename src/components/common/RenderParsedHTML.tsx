@@ -5,7 +5,7 @@ import katex, { KatexOptions } from 'katex';
 import { ChevronsDown } from 'lucide-react';
 import { Renderer, marked } from 'marked';
 
-import { markdownStyles } from '@/constants/common.constants';
+import { ENABLE_SHOW_MORE, markdownStyles } from '@/constants/common.constants';
 import { cn } from '@/lib/utils';
 
 // Type to ensure at least one of supportMarkdown or supportLatex is true
@@ -182,6 +182,10 @@ const RenderParsedHTML = ({
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!ENABLE_SHOW_MORE) {
+      setIsOverflowing(false);
+      return;
+    }
     if (contentRef.current) {
       setIsOverflowing(contentRef.current.scrollHeight > 100);
     }
@@ -192,7 +196,7 @@ const RenderParsedHTML = ({
       <div
         className={cn(
           'overflow-hidden transition-all duration-300 ease-in-out',
-          isShrinked && !isExpanded && isOverflowing && 'h-fit max-h-[100px]'
+          ENABLE_SHOW_MORE && isShrinked && !isExpanded && isOverflowing && 'h-fit max-h-[100px]'
         )}
       >
         <div
@@ -202,7 +206,7 @@ const RenderParsedHTML = ({
         />
       </div>
 
-      {isShrinked && isOverflowing && (
+      {ENABLE_SHOW_MORE && isShrinked && isOverflowing && (
         <>
           <div
             className={cn(

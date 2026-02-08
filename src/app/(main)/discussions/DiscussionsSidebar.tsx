@@ -6,7 +6,7 @@ import { Bell, ChevronDown, ChevronRight } from 'lucide-react';
 
 import { useArticlesDiscussionApiGetUserSubscriptions } from '@/api/discussions/discussions';
 import { BlockSkeleton, Skeleton, TextSkeleton } from '@/components/common/Skeleton';
-import { FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
+import { ENABLE_SHOW_MORE, FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -28,7 +28,9 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
   selectedArticle,
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
-  const [expandedCommunities, setExpandedCommunities] = useState<Set<number>>(new Set());
+  const [expandedCommunities, setExpandedCommunities] = useState<Set<number>>(
+    ENABLE_SHOW_MORE ? new Set() : new Set()
+  );
 
   // Fetch user subscriptions
   const { data: subscriptionsData, isPending: subscriptionsLoading } =
@@ -83,7 +85,8 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
       {!subscriptionsLoading && subscriptions.length > 0 && (
         <div className="space-y-3">
           {subscriptions.map((subscription) => {
-            const isExpanded = expandedCommunities.has(subscription.community_id);
+            const isExpanded =
+              !ENABLE_SHOW_MORE || expandedCommunities.has(subscription.community_id);
             return (
               <div
                 key={subscription.community_id}
@@ -91,7 +94,7 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
               >
                 {/* Community Header - Clickable */}
                 <button
-                  onClick={() => toggleCommunity(subscription.community_id)}
+                  onClick={() => ENABLE_SHOW_MORE && toggleCommunity(subscription.community_id)}
                   className="flex w-full items-center justify-between rounded-lg p-3 text-left transition-colors hover:bg-common-minimal"
                 >
                   <div className="flex items-center gap-2">
@@ -99,11 +102,12 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
                       {subscription.community_name}
                     </span>
                   </div>
-                  {isExpanded ? (
-                    <ChevronDown size={16} className="flex-shrink-0 text-text-tertiary" />
-                  ) : (
-                    <ChevronRight size={16} className="flex-shrink-0 text-text-tertiary" />
-                  )}
+                  {ENABLE_SHOW_MORE &&
+                    (isExpanded ? (
+                      <ChevronDown size={16} className="flex-shrink-0 text-text-tertiary" />
+                    ) : (
+                      <ChevronRight size={16} className="flex-shrink-0 text-text-tertiary" />
+                    ))}
                 </button>
 
                 {/* Articles List - Shown when expanded */}

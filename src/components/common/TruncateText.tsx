@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import DOMPurify from 'dompurify';
 
+import { ENABLE_SHOW_MORE } from '@/constants/common.constants';
 import { cn } from '@/lib/utils';
 
 const TruncateText = ({
@@ -22,6 +23,11 @@ const TruncateText = ({
   const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!ENABLE_SHOW_MORE) {
+      setIsTruncated(false);
+      return;
+    }
+
     const checkTruncation = () => {
       if (textRef.current) {
         const lineHeight = parseInt(window.getComputedStyle(textRef.current).lineHeight);
@@ -45,16 +51,16 @@ const TruncateText = ({
       <span
         ref={textRef}
         className={cn('text-text-primary', textClassName, {
-          'overflow-hidden': !isExpanded && isTruncated,
+          'overflow-hidden': !isExpanded && isTruncated && ENABLE_SHOW_MORE,
         })}
         style={{
           display: '-webkit-box',
-          WebkitLineClamp: !isExpanded && isTruncated ? maxLines : 'unset',
+          WebkitLineClamp: !isExpanded && isTruncated && ENABLE_SHOW_MORE ? maxLines : 'unset',
           WebkitBoxOrient: 'vertical',
         }}
         {...contentProps}
       />
-      {isTruncated && !hideButton && (
+      {ENABLE_SHOW_MORE && isTruncated && !hideButton && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="mt-1 text-functional-blue res-text-xs hover:underline"
