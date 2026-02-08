@@ -47,7 +47,7 @@ const EditCommunityDetails: React.FC<EditCommunityDetailsProps> = ({
 
   const accessToken = useAuthStore((state) => state.accessToken);
   const [selectedType, setSelectedType] = useState<OptionType>(data?.data.type as OptionType);
-  const [isEditEnabled, setIsEditEnabled] = useState(false);
+  const [isEditEnabled, setIsEditEnabled] = useState(true);
   const [selectedPublicCommunitiesSettings, setSelectedPublicCommunitiesSettings] = useState(
     data?.data.community_settings as string
   );
@@ -214,12 +214,14 @@ const EditCommunityDetails: React.FC<EditCommunityDetailsProps> = ({
             textArea={true}
             placeholder="Briefly describe your community"
             register={register}
+            control={control}
             requiredMessage="Description is required"
             minLengthValue={10}
             minLengthMessage="Description must be at least 10 characters"
             info="Your community's name should be unique and descriptive."
             errors={errors}
             readOnly={!isEditEnabled}
+            supportMarkdown={true}
           />
           {/* Tags */}
           {/* <Controller

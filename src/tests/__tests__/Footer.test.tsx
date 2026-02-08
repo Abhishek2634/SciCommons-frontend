@@ -26,7 +26,7 @@ describe('Footer', () => {
 
   it('displays all navigation links', () => {
     render(<Footer />);
-    const links = ['Home', 'Articles', 'Communities', 'Posts', 'About', 'Login', 'Register'];
+    const links = ['Home', 'Articles', 'Communities', 'About', 'Login', 'Register', 'Docs'];
     links.forEach((link) => {
       expect(screen.getByText(link)).toBeInTheDocument();
     });

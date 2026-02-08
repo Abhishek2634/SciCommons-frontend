@@ -14,6 +14,7 @@ import FormInput from '@/components/common/FormInput';
 import MultiLabelSelector from '@/components/common/MultiLabelSelector';
 import { useSubmitOnCtrlEnter } from '@/hooks/useSubmitOnCtrlEnter';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/authStore';
 import { SubmitArticleFormValues } from '@/types';
 
 import PdfIcon from '../ui/Icons/PdfIcon';
@@ -52,7 +53,7 @@ const SubmitArticleForm: React.FC<SubmitArticleFormProps> = ({
 }) => {
   const formRef = React.useRef<HTMLFormElement>(null);
   useSubmitOnCtrlEnter(formRef, isPending);
-
+  const { user } = useAuthStore();
   return (
     <form ref={formRef} onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       {/* Select the tab to upload a file or search for an article */}
@@ -80,15 +81,19 @@ const SubmitArticleForm: React.FC<SubmitArticleFormProps> = ({
           </button>
         </div>
         <div className="mt-4 transition-all duration-300">
-          {activeTab === 'upload' && (
+          {/* Keep FileUpload mounted but hidden when search tab is active */}
+          <div className={cn({ hidden: activeTab !== 'upload' })}>
             <Controller
               name="pdfFiles"
               control={control}
               // rules={{ required: 'PDF files are required' }}
               render={({}) => <FileUpload name={'pdfFiles'} control={control} />}
             />
-          )}
-          {activeTab === 'search' && <SearchComponent onSearch={onSearch} />}
+          </div>
+          {/* Keep SearchComponent mounted but hidden when upload tab is active */}
+          <div className={cn({ hidden: activeTab !== 'search' })}>
+            <SearchComponent onSearch={onSearch} />
+          </div>
         </div>
       </div>
       <div>
@@ -128,6 +133,7 @@ const SubmitArticleForm: React.FC<SubmitArticleFormProps> = ({
               onChange={onChange}
               fieldState={fieldState}
               disabled={activeTab === 'search'}
+              options={[{ value: user?.username || '', label: user?.username || '' }]}
             />
           )}
         />

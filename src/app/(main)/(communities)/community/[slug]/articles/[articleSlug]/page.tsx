@@ -12,6 +12,7 @@ import DisplayArticle, { DisplayArticleSkeleton } from '@/components/articles/Di
 import ReviewCard, { ReviewCardSkeleton } from '@/components/articles/ReviewCard';
 import ReviewForm from '@/components/articles/ReviewForm';
 import EmptyState from '@/components/common/EmptyState';
+import CommunityBreadcrumb from '@/components/communities/CommunityBreadcrumb';
 import TabNavigation from '@/components/ui/tab-navigation';
 import { FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
 import { showErrorToast } from '@/lib/toastHelpers';
@@ -68,6 +69,8 @@ const CommunityArticleDisplayPage: React.FC = () => {
     }
   }, [reviewsError]);
 
+  const hasUserReviewed = reviewsData?.data.items.some((review) => review.is_author) || false;
+
   const tabs = data
     ? [
         {
@@ -82,23 +85,26 @@ const CommunityArticleDisplayPage: React.FC = () => {
                   communityId={data?.data.community_article?.community.id}
                 />
               )} */}
-              <div className="flex items-center justify-between rounded-md bg-functional-green/5 px-4 py-2">
-                <span className="text-sm font-semibold text-text-secondary">
-                  Have your reviews?
-                </span>
-                <span
-                  className="cursor-pointer text-xs text-functional-green hover:underline"
-                  onClick={() => setSubmitReview(!submitReview)}
-                >
-                  {submitReview ? 'Cancel' : 'Add review'}
-                </span>
-              </div>
-              {submitReview && (
+              {!hasUserReviewed && (
+                <div className="flex items-center justify-between rounded-md bg-functional-green/5 px-4 py-2">
+                  <span className="text-sm font-semibold text-text-secondary">
+                    Have your reviews? (You can add a review only once.)
+                  </span>
+                  <span
+                    className="cursor-pointer text-xs text-functional-green hover:underline"
+                    onClick={() => setSubmitReview(!submitReview)}
+                  >
+                    {submitReview ? 'Cancel' : 'Add review'}
+                  </span>
+                </div>
+              )}
+              {submitReview && !hasUserReviewed && (
                 <ReviewForm
                   articleId={Number(data.data.id)}
                   refetch={reviewsRefetch}
                   is_submitter={data.data.is_submitter}
                   communityId={data?.data.community_article?.community.id}
+                  onSubmitSuccess={() => setSubmitReview(false)}
                 />
               )}
               {reviewsIsPending && [...Array(5)].map((_, i) => <ReviewCardSkeleton key={i} />)}
@@ -122,6 +128,7 @@ const CommunityArticleDisplayPage: React.FC = () => {
               communityId={data?.data.community_article?.community.id}
               communityArticleId={data?.data.community_article?.id}
               showSubscribeButton={true}
+              isAdmin={data?.data.community_article?.is_admin || false}
             />
           ),
         },
@@ -140,14 +147,20 @@ const CommunityArticleDisplayPage: React.FC = () => {
 
   return (
     <div className="w-full p-4 py-4 md:px-6">
+      <CommunityBreadcrumb
+        communityName={data?.data.community_article?.community.name}
+        communitySlug={params?.slug}
+        articleTitle={data?.data.title}
+        isLoading={isPending}
+      />
       {isPending ? (
         <DisplayArticleSkeleton />
       ) : (
         data && (
           <div className="flex flex-col">
             <DisplayArticle article={data.data} />
-            <div className="-z-10 rounded-md bg-functional-blue/10 px-3 py-1 sm:-mt-6 sm:rounded-xl sm:px-4 sm:py-2 sm:pt-7">
-              <span className="text-xs text-functional-blueContrast">
+            <div className="mt-3 inline-block rounded-md bg-functional-blue/10 px-2 py-0.5 sm:mt-5 sm:rounded-xl sm:px-3 sm:py-1">
+              <span className="text-xs leading-snug text-functional-blueContrast">
                 {data.data.community_article?.is_pseudonymous
                   ? 'Community admin has enabled pseudonymous reviews & discussions. Your name won’t be shown.'
                   : 'Community admin has disabled pseudonymous reviews & discussions. Your name will be visible.'}

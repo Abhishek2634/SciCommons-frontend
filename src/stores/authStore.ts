@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { clearRegisteredQueryCache } from '@/api/queryClientRegistry';
+import { useUnreadNotificationsStore } from './unreadNotificationsStore';
 
 export interface AuthenticatedUserType {
   email: string;
@@ -153,6 +154,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         clearCookies();
         clearRegisteredQueryCache();
+        useUnreadNotificationsStore.getState().clearAll();
         set(() => ({
           isAuthenticated: false,
           isAuthInitialized: true,

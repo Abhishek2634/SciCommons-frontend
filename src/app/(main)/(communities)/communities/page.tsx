@@ -5,21 +5,27 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Users } from 'lucide-react';
 
 import { useCommunitiesApiListCommunities } from '@/api/communities/communities';
-import { CommunityOut } from '@/api/schemas';
+import { CommunityListOut } from '@/api/schemas';
 import { useUsersApiListMyCommunities } from '@/api/users/users';
 import SearchableList, { LoadingType } from '@/components/common/SearchableList';
 import CommunityCard, { CommunityCardSkeleton } from '@/components/communities/CommunityCard';
 import TabComponent from '@/components/communities/TabComponent';
 import { FIVE_MINUTES_IN_MS } from '@/constants/common.constants';
+import { useFilteredList } from '@/hooks/useFilteredList';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { useAuthStore } from '@/stores/authStore';
 
 interface CommunitiesResponse {
   data: {
-    items: CommunityOut[];
+    items: CommunityListOut[];
     num_pages: number;
     total: number;
   };
+}
+
+enum CommunityFilters {
+  ALL = 'all',
+  BOOKMARKED = 'bookmarked',
 }
 
 enum Tabs {
@@ -34,6 +40,7 @@ interface TabContentProps {
   setPage: (page: number) => void;
   accessToken?: string;
   isActive: boolean;
+  headerTabs?: React.ReactNode;
 }
 
 const CommunitiesTabContent: React.FC<TabContentProps> = ({
@@ -41,26 +48,39 @@ const CommunitiesTabContent: React.FC<TabContentProps> = ({
   setSearch,
   page,
   setPage,
+  accessToken,
   isActive,
+  headerTabs,
 }) => {
-  const [communities, setCommunities] = useState<CommunityOut[]>([]);
+  const { displayedItems, setItems, appendItems, setFilter, activeFilter, reset } =
+    useFilteredList<CommunityListOut>({
+      filters: {
+        [CommunityFilters.ALL]: () => true,
+        [CommunityFilters.BOOKMARKED]: (community) => community.is_bookmarked === true,
+      },
+      defaultFilter: CommunityFilters.ALL,
+    });
+
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const loadingType = LoadingType.PAGINATION;
 
+  const requestConfig = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {};
+
   const { data, isPending, error } = useCommunitiesApiListCommunities<CommunitiesResponse>(
     {
       page,
-      per_page: 10,
+      per_page: 50,
       search,
     },
     {
       query: {
         staleTime: FIVE_MINUTES_IN_MS,
         refetchOnWindowFocus: true,
-        queryKey: ['communities', page, search],
+        queryKey: ['communities', page, search, accessToken ? 'authenticated' : 'public'],
         enabled: isActive,
       },
+      request: requestConfig,
     }
   );
 
@@ -70,22 +90,22 @@ const CommunitiesTabContent: React.FC<TabContentProps> = ({
     }
     if (data) {
       if (page === 1 || loadingType === LoadingType.PAGINATION) {
-        setCommunities(data.data.items);
+        setItems(data.data.items);
       } else {
-        setCommunities((prevCommunities) => [...prevCommunities, ...data.data.items]);
+        appendItems(data.data.items);
       }
       setTotalItems(data.data.total);
       setTotalPages(data.data.num_pages);
     }
-  }, [data, error, page, loadingType]);
+  }, [data, error, page, loadingType, setItems, appendItems]);
 
   const handleSearch = useCallback(
     (term: string) => {
       setSearch(term);
       setPage(1);
-      setCommunities([]);
+      reset();
     },
-    [setSearch, setPage]
+    [setSearch, setPage, reset]
   );
 
   const handleLoadMore = useCallback(
@@ -96,7 +116,7 @@ const CommunitiesTabContent: React.FC<TabContentProps> = ({
   );
 
   const renderCommunity = useCallback(
-    (community: CommunityOut) => <CommunityCard community={community} />,
+    (community: CommunityListOut) => <CommunityCard community={community} />,
     []
   );
 
@@ -106,13 +126,13 @@ const CommunitiesTabContent: React.FC<TabContentProps> = ({
     <div
       className={`transition-opacity duration-200 ${isActive ? 'opacity-100' : 'hidden opacity-0'}`}
     >
-      <SearchableList<CommunityOut>
+      <SearchableList<CommunityListOut>
         onSearch={handleSearch}
         onLoadMore={handleLoadMore}
         renderItem={renderCommunity}
         renderSkeleton={renderSkeleton}
         isLoading={isPending}
-        items={communities}
+        items={displayedItems}
         totalItems={totalItems}
         totalPages={totalPages}
         currentPage={page}
@@ -122,7 +142,16 @@ const CommunitiesTabContent: React.FC<TabContentProps> = ({
         emptyStateSubcontent="Try using different keywords"
         emptyStateLogo={<Users size={64} />}
         title={Tabs.COMMUNITIES}
-        listContainerClassName="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+        headerTabs={headerTabs}
+        listContainerClassName="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3"
+        filters={[
+          { label: 'All', value: CommunityFilters.ALL },
+          { label: 'Bookmarked', value: CommunityFilters.BOOKMARKED },
+        ]}
+        activeFilter={activeFilter}
+        onSelectFilter={(filter) => {
+          setFilter(filter);
+        }}
       />
     </div>
   );
@@ -135,8 +164,17 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
   setPage,
   accessToken,
   isActive,
+  headerTabs,
 }) => {
-  const [communities, setCommunities] = useState<CommunityOut[]>([]);
+  const { displayedItems, setItems, appendItems, setFilter, activeFilter, reset } =
+    useFilteredList<CommunityListOut>({
+      filters: {
+        [CommunityFilters.ALL]: () => true,
+        [CommunityFilters.BOOKMARKED]: (community) => community.is_bookmarked === true,
+      },
+      defaultFilter: CommunityFilters.ALL,
+    });
+
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const loadingType = LoadingType.PAGINATION;
@@ -144,7 +182,7 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
   const { data, isPending, error } = useUsersApiListMyCommunities<CommunitiesResponse>(
     {
       page,
-      per_page: 10,
+      per_page: 50,
       search,
     },
     {
@@ -166,22 +204,22 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
     }
     if (data) {
       if (page === 1 || loadingType === LoadingType.PAGINATION) {
-        setCommunities(data.data.items);
+        setItems(data.data.items);
       } else {
-        setCommunities((prevCommunities) => [...prevCommunities, ...data.data.items]);
+        appendItems(data.data.items);
       }
       setTotalItems(data.data.total);
       setTotalPages(data.data.num_pages);
     }
-  }, [data, error, page, loadingType]);
+  }, [data, error, page, loadingType, setItems, appendItems]);
 
   const handleSearch = useCallback(
     (term: string) => {
       setSearch(term);
       setPage(1);
-      setCommunities([]);
+      reset();
     },
-    [setSearch, setPage]
+    [setSearch, setPage, reset]
   );
 
   const handleLoadMore = useCallback(
@@ -192,7 +230,7 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
   );
 
   const renderCommunity = useCallback(
-    (community: CommunityOut) => <CommunityCard community={community} />,
+    (community: CommunityListOut) => <CommunityCard community={community} />,
     []
   );
 
@@ -202,13 +240,13 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
     <div
       className={`transition-opacity duration-200 ${isActive ? 'opacity-100' : 'hidden opacity-0'}`}
     >
-      <SearchableList<CommunityOut>
+      <SearchableList<CommunityListOut>
         onSearch={handleSearch}
         onLoadMore={handleLoadMore}
         renderItem={renderCommunity}
         renderSkeleton={renderSkeleton}
         isLoading={isPending}
-        items={communities}
+        items={displayedItems}
         totalItems={totalItems}
         totalPages={totalPages}
         currentPage={page}
@@ -218,10 +256,30 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
         emptyStateSubcontent="Try using different keywords"
         emptyStateLogo={<Users size={64} />}
         title={Tabs.MY_COMMUNITIES}
-        listContainerClassName="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+        headerTabs={headerTabs}
+        listContainerClassName="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3"
+        filters={[
+          { label: 'All', value: CommunityFilters.ALL },
+          { label: 'Bookmarked', value: CommunityFilters.BOOKMARKED },
+        ]}
+        activeFilter={activeFilter}
+        onSelectFilter={(filter) => {
+          setFilter(filter);
+        }}
       />
     </div>
   );
+};
+
+interface CommunitiesTabsProps {
+  activeTab: Tabs;
+  onTabChange: React.Dispatch<React.SetStateAction<Tabs>>;
+}
+
+const CommunitiesTabs: React.FC<CommunitiesTabsProps> = ({ activeTab, onTabChange }) => {
+  const user = useAuthStore((state) => state.user);
+  const tabsList = user ? [Tabs.COMMUNITIES, Tabs.MY_COMMUNITIES] : [Tabs.COMMUNITIES];
+  return <TabComponent tabs={tabsList} activeTab={activeTab} setActiveTab={onTabChange} />;
 };
 
 const Communities: React.FC = () => {
@@ -236,15 +294,6 @@ const Communities: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="pb-4">
-        {user && (
-          <TabComponent
-            tabs={[Tabs.COMMUNITIES, Tabs.MY_COMMUNITIES]}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-          />
-        )}
-      </div>
       <div className="relative">
         <CommunitiesTabContent
           search={communitiesSearch}
@@ -252,16 +301,21 @@ const Communities: React.FC = () => {
           page={communitiesPage}
           setPage={setCommunitiesPage}
           isActive={activeTab === Tabs.COMMUNITIES}
+          headerTabs={<CommunitiesTabs activeTab={activeTab} onTabChange={setActiveTab} />}
+          accessToken={accessToken ?? undefined}
         />
         {user && accessToken && (
-          <MyCommunitiesTabContent
-            search={myCommunitiesSearch}
-            setSearch={setMyCommunitiesSearch}
-            page={myCommunitiesPage}
-            setPage={setMyCommunitiesPage}
-            accessToken={accessToken}
-            isActive={activeTab === Tabs.MY_COMMUNITIES}
-          />
+          <>
+            <MyCommunitiesTabContent
+              search={myCommunitiesSearch}
+              setSearch={setMyCommunitiesSearch}
+              page={myCommunitiesPage}
+              setPage={setMyCommunitiesPage}
+              accessToken={accessToken}
+              isActive={activeTab === Tabs.MY_COMMUNITIES}
+              headerTabs={<CommunitiesTabs activeTab={activeTab} onTabChange={setActiveTab} />}
+            />
+          </>
         )}
       </div>
     </div>

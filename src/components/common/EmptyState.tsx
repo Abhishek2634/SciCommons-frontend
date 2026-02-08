@@ -1,5 +1,6 @@
 import Image from 'next/image';
 
+import DOMPurify from 'dompurify';
 import { AlertCircle } from 'lucide-react';
 
 const EmptyState = ({
@@ -26,7 +27,10 @@ const EmptyState = ({
       </div>
       <p className="text-center text-xl font-semibold text-text-tertiary">{content}</p>
       {subcontent && (
-        <div className="mt-2 text-center text-sm text-text-tertiary">{subcontent}</div>
+        <div
+          className="mt-2 text-center text-sm text-text-tertiary"
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(subcontent) }}
+        />
       )}
     </div>
   );

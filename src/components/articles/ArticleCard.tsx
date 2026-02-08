@@ -1,25 +1,32 @@
-import { FC, useState } from 'react';
+import { FC, memo, useEffect, useState } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { Bookmark, Eye, Star } from 'lucide-react';
+import { TextAlignLeftIcon } from '@radix-ui/react-icons';
+import { Bookmark, Star } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { ArticlesListOut } from '@/api/schemas';
-import {
-  useUsersCommonApiGetBookmarkStatus,
-  useUsersCommonApiToggleBookmark,
-} from '@/api/users-common-api/users-common-api';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ArticlesListOut, BookmarkContentTypeEnum } from '@/api/schemas';
+import { useUsersCommonApiToggleBookmark } from '@/api/users-common-api/users-common-api';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
+import { useArticlesViewStore } from '@/stores/articlesViewStore';
 import { useAuthStore } from '@/stores/authStore';
 
 import RenderParsedHTML from '../common/RenderParsedHTML';
-import { BlockSkeleton, Skeleton, TextSkeleton } from '../common/Skeleton';
-import TruncateText from '../common/TruncateText';
+import { Skeleton, TextSkeleton } from '../common/Skeleton';
+import { Button } from '../ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+
+interface ActionType {
+  type: 'button';
+  label: string;
+  tooltipText?: string;
+  variant: 'default' | 'danger' | 'blue' | 'gray' | 'transparent' | 'outline' | 'inverted';
+  isLoading?: boolean;
+  onClick: () => void;
+}
 
 interface ArticleCardProps {
   article: ArticlesListOut;
@@ -32,190 +39,98 @@ interface ArticleCardProps {
    */
   compactType?: 'minimal' | 'default' | 'full';
   handleArticlePreview?: (article: ArticlesListOut) => void;
+  actions?: ActionType[];
 }
 
-const ArticleCard: FC<ArticleCardProps> = ({
-  article,
-  forCommunity,
-  className,
-  compactType = 'full',
-  handleArticlePreview,
-}) => {
-  const encodedCommunityName = encodeURIComponent(article.community_article?.community.name || '');
-  const [isHovered, setIsHovered] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
+const ArticleCard: FC<ArticleCardProps> = memo(
+  ({ article, forCommunity, className, compactType = 'full', handleArticlePreview, actions }) => {
+    const viewType = useArticlesViewStore((state) => state.viewType);
+    const accessToken = useAuthStore((state) => state.accessToken);
+    const encodedCommunityName = encodeURIComponent(article.community_article?.community.name || '');
 
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const requestConfig = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {};
+    const [isBookmarked, setIsBookmarked] = useState(article.is_bookmarked ?? false);
 
-  // Bookmark status
-  const { data: bookmarkStatus, refetch: refetchBookmark } = useUsersCommonApiGetBookmarkStatus(
-    'articles.article',
-    article.id,
-    {
-      request: requestConfig,
-      query: { enabled: !!accessToken },
-    }
-  );
+    // Sync bookmark state when article data changes (e.g., after auth state changes)
+    useEffect(() => {
+      if (article.is_bookmarked !== undefined && article.is_bookmarked !== null) {
+        setIsBookmarked(article.is_bookmarked);
+      }
+    }, [article.is_bookmarked]);
 
-  // Bookmark toggle
-  const { mutate: toggleBookmark } = useUsersCommonApiToggleBookmark({
-    request: requestConfig,
-    mutation: {
-      onSuccess: (data) => {
-        toast.success(data.data.message);
-        refetchBookmark();
+    const { mutate: toggleBookmark, isPending } = useUsersCommonApiToggleBookmark({
+      request: { headers: { Authorization: `Bearer ${accessToken}` } },
+      mutation: {
+        onMutate: () => {
+          // Optimistically update the UI
+          setIsBookmarked((prev) => !prev);
+        },
+        onSuccess: (response) => {
+          // Sync with server response
+          setIsBookmarked(response.data.is_bookmarked);
+        },
+        onError: (error) => {
+          // Revert optimistic update on error
+          setIsBookmarked((prev) => !prev);
+          showErrorToast(error);
+        },
       },
-      onError: (error) => {
-        showErrorToast(error);
-      },
-    },
-  });
-
-  const handleBookmarkClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!accessToken) {
-      toast.error('Please login to bookmark articles');
-      return;
-    }
-    toggleBookmark({
-      data: { content_type: 'articles.article', object_id: article.id },
     });
-  };
 
-  return (
-    <>
+    const handleBookmarkToggle = () => {
+      if (!accessToken) {
+        toast.error('Please login to bookmark articles');
+        return;
+      }
+
+      toggleBookmark({
+        data: {
+          content_type: BookmarkContentTypeEnum.articlesarticle,
+          object_id: article.id,
+        },
+      });
+    };
+
+    return (
       <div
         className={cn(
-          'group relative flex flex-col gap-2 rounded-xl border border-common-contrast bg-common-cardBackground p-4 res-text-xs hover:shadow-md hover:shadow-common-minimal',
+          'group flex flex-row items-center gap-2 rounded-lg p-2.5 hover:bg-common-cardBackground',
           className,
           {
-            'border-none bg-transparent p-0 hover:shadow-none': compactType === 'minimal',
+            'border-none bg-transparent p-2 hover:shadow-none': compactType === 'minimal',
           }
         )}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
         onClick={() => {
           if (compactType === 'default') {
             handleArticlePreview?.(article);
           }
         }}
       >
-        {/* Bookmark and Preview Icons */}
-        {compactType !== 'minimal' && (
-          <div className="absolute right-2 top-2 z-10 flex flex-col items-center gap-2">
-            {/* Bookmark Icon - always visible, on top */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={handleBookmarkClick}
-                    className={cn(
-                      'rounded-md bg-common-background/80 p-1.5 backdrop-blur-sm transition',
-                      bookmarkStatus?.data.is_bookmarked
-                        ? 'text-functional-blue hover:text-functional-blue/80'
-                        : 'text-text-secondary hover:bg-common-background hover:text-functional-blue'
-                    )}
-                    aria-label={
-                      bookmarkStatus?.data.is_bookmarked ? 'Remove bookmark' : 'Bookmark article'
-                    }
-                  >
-                    <Bookmark
-                      className={cn(
-                        'h-4 w-4',
-                        bookmarkStatus?.data.is_bookmarked && 'fill-current'
-                      )}
-                    />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="res-text-xs">
-                    {bookmarkStatus?.data.is_bookmarked ? 'Remove Bookmark' : 'Bookmark'}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {/* Preview Icon - shows on hover, below bookmark */}
-            {isHovered && (
-              <Popover open={previewOpen} onOpenChange={setPreviewOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    onMouseEnter={() => setPreviewOpen(true)}
-                    onMouseLeave={() => setPreviewOpen(false)}
-                    className="rounded-md bg-common-background/80 p-1.5 text-text-secondary backdrop-blur-sm transition hover:bg-common-background hover:text-functional-blue"
-                    aria-label="Preview article"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  side="left"
-                  align="start"
-                  className="max-h-[500px] w-96 overflow-y-auto"
-                  onMouseEnter={() => setPreviewOpen(true)}
-                  onMouseLeave={() => setPreviewOpen(false)}
-                >
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="mb-2 font-semibold text-text-primary res-text-base">
-                        {article.title}
-                      </h3>
-                    </div>
-                    <div>
-                      <h4 className="mb-1 font-semibold text-text-secondary res-text-xs">
-                        Abstract
-                      </h4>
-                      <RenderParsedHTML
-                        rawContent={article.abstract}
-                        supportLatex={true}
-                        supportMarkdown={false}
-                        contentClassName="text-text-primary res-text-xs"
-                        containerClassName="mb-0"
-                      />
-                    </div>
-                    <div>
-                      <h4 className="mb-1 font-semibold text-text-secondary res-text-xs">
-                        Authors
-                      </h4>
-                      <TruncateText
-                        text={article.authors.map((author) => author.label).join(', ')}
-                        maxLines={2}
-                        textClassName="text-text-primary res-text-xs"
-                      />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3 text-functional-yellow" fill="currentColor" />
-                      <span className="text-xs text-text-secondary">
-                        {article.total_ratings} ratings
-                      </span>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
+        {compactType === 'default' && (
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex w-12 items-center justify-center rounded-md border border-common-minimal py-1 pl-0 pr-1.5">
+              <Star className="h-3 text-functional-yellow" fill="currentColor" />
+              <span className="text-xs text-text-secondary">{article.total_ratings}</span>
+            </div>
           </div>
         )}
-        <div className="flex">
-          <div className="min-w-0 flex-grow gap-4 pr-4">
+        <div className="flex w-full">
+          <div className="w-full min-w-0 flex-grow gap-4">
             <Link
               href={
                 forCommunity
                   ? `/community/${encodedCommunityName}/articles/${article.slug}`
                   : `/article/${article.slug}`
               }
+              className="flex w-full flex-row items-center justify-between gap-2"
             >
-              {/* <h2 className="line-clamp-2 text-wrap font-semibold text-text-primary res-text-lg hover:underline">
-              {article.title}
-            </h2> */}
               <RenderParsedHTML
                 rawContent={article.title}
                 supportLatex={true}
                 supportMarkdown={false}
                 contentClassName={cn(
-                  'line-clamp-2 text-wrap font-semibold text-text-primary res-text-lg hover:underline',
+                  `text-wrap font-semibold text-text-primary text-sm sm:text-sm md:text-sm lg:text-sm hover:underline`,
                   {
-                    'line-clamp-1 sm:text-base text-base':
+                    'line-clamp-2 text-xs sm:text-xs md:text-xs lg:text-xs':
                       compactType === 'minimal' || compactType === 'default',
                     'underline underline-text-tertiary hover:text-functional-green':
                       compactType === 'minimal',
@@ -223,52 +138,137 @@ const ArticleCard: FC<ArticleCardProps> = ({
                 )}
                 containerClassName="mb-0"
               />
+              <div className="flex h-full flex-col items-center justify-between gap-1">
+                <Button
+                  variant="transparent"
+                  size="xs"
+                  className="p-0"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.nativeEvent.stopImmediatePropagation();
+                    handleBookmarkToggle();
+                  }}
+                  disabled={isPending}
+                  withTooltip
+                  tooltipData={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+                >
+                  <Bookmark
+                    className={cn('size-3.5 transition-colors', {
+                      'fill-functional-yellow text-functional-yellow': isBookmarked,
+                      'text-text-tertiary hover:text-text-secondary': !isBookmarked,
+                    })}
+                  />
+                </Button>
+                {(compactType !== 'full' || forCommunity) && viewType !== 'preview' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="hidden cursor-pointer opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:block"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.nativeEvent.stopImmediatePropagation();
+                        }}
+                      >
+                        <TextAlignLeftIcon className="h-4 w-4 text-text-secondary" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="right"
+                      sideOffset={8}
+                      className="z-[1000] max-h-96 max-w-sm rounded-lg border-common-contrast bg-common-cardBackground p-3 shadow-lg"
+                    >
+                      <div className="max-h-[calc(24rem-1.5rem)] space-y-2 overflow-y-auto">
+                        <RenderParsedHTML
+                          rawContent={article.title}
+                          supportLatex={true}
+                          supportMarkdown={false}
+                          contentClassName="text-sm font-semibold text-text-primary"
+                          containerClassName="mb-0"
+                        />
+                        {article.abstract && (
+                          <RenderParsedHTML
+                            rawContent={article.abstract}
+                            supportLatex={true}
+                            supportMarkdown={false}
+                            contentClassName="text-xs text-text-secondary line-clamp-4"
+                            containerClassName="mb-0"
+                          />
+                        )}
+                        <p className="text-xs text-text-secondary">
+                          Submitted By:{' '}
+                          <span className="text-text-tertiary">{article.user.username}</span>
+                        </p>
+                        <p className="text-wrap text-xs text-text-secondary">
+                          Authors:{' '}
+                          <span className="text-text-tertiary">
+                            {article.authors.map((author) => author.label).join(', ')}
+                          </span>
+                        </p>
+                        <div className="flex w-fit items-center rounded-md border border-common-minimal py-1 pl-0 pr-1.5">
+                          <Star className="h-3 text-functional-yellow" fill="currentColor" />
+                          <span className="text-xs text-text-secondary">
+                            {article.total_ratings}
+                          </span>
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
             </Link>
-            {/* <p className="mt-2 line-clamp-2 overflow-hidden text-ellipsis text-wrap text-text-primary">
-            {article.abstract}
-          </p> */}
             {compactType === 'full' && (
               <RenderParsedHTML
                 rawContent={article.abstract}
                 supportLatex={true}
                 supportMarkdown={false}
-                contentClassName="mt-2 line-clamp-2 text-wrap text-xs text-text-primary"
+                contentClassName={cn('mt-2 text-wrap text-xs text-text-primary line-clamp-2')}
                 containerClassName="mb-0"
               />
             )}
             {compactType === 'full' && (
-              <p className="mt-2 line-clamp-2 text-wrap text-xs text-text-secondary">
+              <p
+                className={cn(
+                  'mt-2 text-wrap text-xs text-text-secondary',
+                  forCommunity ? 'line-clamp-1' : 'line-clamp-2'
+                )}
+              >
                 Authors: {article.authors.map((author) => author.label).join(', ')}
               </p>
             )}
-            {compactType === 'full' && article.community_article?.community.name && (
-              <p className="mt-1 flex flex-wrap items-center text-xs text-text-secondary">
-                <span className="whitespace-nowrap">Published Community/Journal:</span>
-                <Link
-                  href={`/community/${encodedCommunityName}`}
-                  className="ml-1 text-functional-blue hover:underline"
-                >
-                  <span className="whitespace-nowrap">
-                    {article.community_article?.community.name}
-                  </span>
-                </Link>
-              </p>
+
+            {compactType === 'full' && (
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <p className="text-xxs text-text-secondary">
+                  Submitted By: {article.user.username}
+                </p>
+                {actions && actions.length > 0 && (
+                  <div className="ml-auto flex items-center gap-2">
+                    {actions.map((action) => (
+                      <Button
+                        variant={action.variant}
+                        className="px-2 py-1"
+                        size="xs"
+                        loading={action.isLoading}
+                        withTooltip
+                        tooltipData={action.tooltipText}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.nativeEvent.stopImmediatePropagation();
+                          action.onClick();
+                        }}
+                        key={action.label}
+                      >
+                        {action.label}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
-            {(compactType === 'full' || compactType === 'default') && (
-              <p className="mt-1 text-xs text-text-secondary">
-                Submitted By: {article.user.username}
-              </p>
-            )}
-            {/* <div className="mt-2 flex flex-wrap">
-            {article.keywords.map((keyword, index) => (
-              <span
-                key={index}
-                className="mb-2 mr-2 rounded bg-common-minimal px-2.5 py-0.5 font-medium text-gray-800"
-              >
-                {keyword}
-              </span>
-            ))}
-          </div> */}
           </div>
           {compactType !== 'minimal' && article.article_image_url && (
             <div className="ml-4 flex-none">
@@ -283,56 +283,23 @@ const ArticleCard: FC<ArticleCardProps> = ({
             </div>
           )}
         </div>
-        {compactType === 'default' && (
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center rounded-md border border-common-minimal py-1 pl-0 pr-1.5">
-              <Star className="h-3.5 text-functional-yellow" fill="currentColor" />
-              <span className="text-xs text-text-secondary">{article.total_ratings}</span>
-            </div>
-            {/* <Button variant="outline" className='px-2 py-1' onClick={(e) => {
-            e.preventDefault();
-            handleArticlePreview?.(article);
-          }}>
-            <ButtonTitle className='sm:text-xs text-text-tertiary'>
-              Preview
-            </ButtonTitle>
-          </Button> */}
-            {/* <ArticlePreviewDrawer article={article} /> */}
-            {/* <div className="flex items-center">
-          <MessageSquare className="h-3.5 text-text-secondary" />
-          <span className="text-xs text-text-secondary">{article.total_comments} comments</span>
-        </div>
-        <div className="flex items-center">
-          <User className="h-3.5 text-text-secondary" />
-          <span className="text-xs text-text-secondary">
-            {article.total_discussions} discussions
-          </span>
-        </div> */}
-          </div>
-        )}
       </div>
-    </>
-  );
-};
+    );
+  }
+);
+
+ArticleCard.displayName = 'ArticleCard';
 
 export default ArticleCard;
 
-export const ArticleCardSkeleton: React.FC = () => {
+export const ArticleCardSkeleton: FC = () => {
   return (
-    <Skeleton className="flex flex-row items-start gap-4 overflow-hidden rounded-xl border border-common-contrast bg-common-cardBackground p-4">
-      <div className="w-full space-y-2">
-        <TextSkeleton className="h-6 w-3/4" />
-        <TextSkeleton />
-        <TextSkeleton />
-        <TextSkeleton className="w-56" />
-        <TextSkeleton className="w-3/4" />
-        <div className="flex gap-4">
-          {[...Array(3)].map((_, index) => (
-            <TextSkeleton key={index} className="h-6 w-16" />
-          ))}
-        </div>
+    <Skeleton className="flex flex-row items-start gap-2 overflow-hidden rounded-xl border-4 border-common-background bg-common-cardBackground p-3">
+      <TextSkeleton className="h-6 w-11" />
+      <div className="w-full space-y-1">
+        <TextSkeleton className="h-6" />
+        <TextSkeleton className="h-2 w-1/4" />
       </div>
-      <BlockSkeleton className="hidden aspect-square size-20 sm:size-24 md:size-32 lg:block lg:size-40" />
     </Skeleton>
   );
 };

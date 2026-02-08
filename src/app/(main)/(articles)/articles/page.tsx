@@ -14,9 +14,11 @@ import SearchableList, { LoadingType } from '@/components/common/SearchableList'
 import TabComponent from '@/components/communities/TabComponent';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { FIVE_MINUTES_IN_MS, SCREEN_WIDTH_SM } from '@/constants/common.constants';
+import { useFilteredList } from '@/hooks/useFilteredList';
 import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
+import { useArticlesViewStore } from '@/stores/articlesViewStore';
 import { useAuthStore } from '@/stores/authStore';
 
 interface ArticlesResponse {
@@ -25,6 +27,11 @@ interface ArticlesResponse {
     num_pages: number;
     total: number;
   };
+}
+
+enum ArticleFilters {
+  ALL = 'all',
+  BOOKMARKED = 'bookmarked',
 }
 
 enum Tabs {
@@ -41,6 +48,9 @@ interface TabContentProps {
   isActive: boolean;
   viewType: 'grid' | 'list' | 'preview';
   setViewType: (viewType: 'grid' | 'list' | 'preview') => void;
+  gridCount: number;
+  setGridCount: (gridCount: number) => void;
+  headerTabs?: React.ReactNode;
 }
 
 const TabContent: React.FC<TabContentProps> = ({
@@ -51,8 +61,19 @@ const TabContent: React.FC<TabContentProps> = ({
   isActive,
   viewType,
   setViewType,
+  gridCount,
+  setGridCount,
+  headerTabs,
 }) => {
-  const [articles, setArticles] = useState<ArticlesListOut[]>([]);
+  const { displayedItems, setItems, appendItems, setFilter, activeFilter, reset } =
+    useFilteredList<ArticlesListOut>({
+      filters: {
+        [ArticleFilters.ALL]: () => true,
+        [ArticleFilters.BOOKMARKED]: (article) => article.is_bookmarked === true,
+      },
+      defaultFilter: ArticleFilters.ALL,
+    });
+
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const loadingType = LoadingType.INFINITE_SCROLL;
@@ -62,7 +83,7 @@ const TabContent: React.FC<TabContentProps> = ({
   const isDesktop = useMediaQuery(`(min-width: ${SCREEN_WIDTH_SM}px)`);
 
   useKeyboardNavigation({
-    items: articles,
+    items: displayedItems,
     selectedItem: selectedPreviewArticle,
     setSelectedItem: setSelectedPreviewArticle,
     isEnabled: viewType === 'preview' && isActive,
@@ -74,7 +95,7 @@ const TabContent: React.FC<TabContentProps> = ({
         ? (root.querySelector(`[data-article-id="${String(item.id)}"]`) as HTMLElement | null)
         : null;
     },
-    hasMore: articles.length < totalItems,
+    hasMore: displayedItems.length < totalItems,
     requestMore: () => {
       if (page < totalPages) setPage(page + 1);
     },
@@ -98,6 +119,8 @@ const TabContent: React.FC<TabContentProps> = ({
         : undefined,
   });
 
+  const requestConfig = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {};
+
   const { data, isPending, error } = useArticlesApiGetArticles<ArticlesResponse>(
     {
       page,
@@ -108,9 +131,10 @@ const TabContent: React.FC<TabContentProps> = ({
       query: {
         staleTime: FIVE_MINUTES_IN_MS,
         refetchOnWindowFocus: true,
-        queryKey: ['articles', page, search],
+        queryKey: ['articles', page, search, accessToken ? 'authenticated' : 'public'],
         enabled: isActive,
       },
+      request: requestConfig,
     }
   );
 
@@ -126,23 +150,23 @@ const TabContent: React.FC<TabContentProps> = ({
     }
     if (data) {
       if (page === 1) {
-        setArticles(data.data.items);
+        setItems(data.data.items);
       } else {
-        setArticles((prevArticles) => [...prevArticles, ...data.data.items]);
+        appendItems(data.data.items);
       }
       setTotalItems(data.data.total);
       setTotalPages(data.data.num_pages);
     }
-  }, [data, error, page, loadingType]);
+  }, [data, error, page, loadingType, setItems, appendItems]);
 
   const handleSearch = useCallback(
     (term: string) => {
       setSearch(term);
       setPage(1);
-      setArticles([]);
+      reset();
       setSelectedPreviewArticle(null);
     },
-    [setSearch, setPage, setSelectedPreviewArticle]
+    [setSearch, setPage, reset, setSelectedPreviewArticle]
   );
 
   const handleLoadMore = useCallback(
@@ -190,8 +214,8 @@ const TabContent: React.FC<TabContentProps> = ({
       >
         <ResizablePanel
           className={cn(
-            'h-[calc(100vh-130px)] overflow-y-auto',
-            viewType === 'preview' ? 'pr-2' : 'p-4 md:p-4'
+            'h-[calc(100vh-80px)] overflow-y-auto',
+            viewType === 'preview' ? 'pr-2 pt-4' : 'p-4 md:p-4'
           )}
           style={{ overflow: 'auto' }}
           defaultSize={60}
@@ -204,7 +228,7 @@ const TabContent: React.FC<TabContentProps> = ({
             renderItem={renderArticle}
             renderSkeleton={renderSkeleton}
             isLoading={isPending}
-            items={articles}
+            items={displayedItems}
             totalItems={totalItems}
             totalPages={totalPages}
             currentPage={page}
@@ -214,15 +238,29 @@ const TabContent: React.FC<TabContentProps> = ({
             emptyStateSubcontent="Try searching for something else"
             emptyStateLogo={<FileX2 size={64} />}
             title={Tabs.ARTICLES}
+            headerTabs={headerTabs}
             listContainerClassName={cn(
-              'grid grid-cols-1 gap-3',
+              'grid grid-cols-1',
               viewType === 'preview'
                 ? 'h-full md:grid-cols-1 lg:grid-cols-1'
-                : 'md:grid-cols-2 lg:grid-cols-3'
+                : {
+                    'md:grid-cols-1 lg:grid-cols-1': gridCount === 1,
+                    'md:grid-cols-2 lg:grid-cols-2': gridCount === 2,
+                    'md:grid-cols-2 lg:grid-cols-3': gridCount === 3,
+                  }
             )}
             showViewTypeIcons={true}
             setViewType={setViewType}
+            setGridCount={setGridCount}
             viewType={viewType}
+            filters={[
+              { label: 'All', value: ArticleFilters.ALL },
+              { label: 'Bookmarked', value: ArticleFilters.BOOKMARKED },
+            ]}
+            activeFilter={activeFilter}
+            onSelectFilter={(filter) => {
+              setFilter(filter);
+            }}
           />
         </ResizablePanel>
         {viewType === 'preview' && (
@@ -236,7 +274,7 @@ const TabContent: React.FC<TabContentProps> = ({
             >
               <ArticlePreviewSection
                 article={selectedPreviewArticle}
-                className="h-[calc(100vh-130px)]"
+                className="mt-2 h-[calc(100vh-80px)]"
               />
             </ResizablePanel>
           </>
@@ -255,8 +293,19 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
   isActive,
   viewType,
   setViewType,
+  gridCount,
+  setGridCount,
+  headerTabs,
 }) => {
-  const [articles, setArticles] = useState<ArticlesListOut[]>([]);
+  const { displayedItems, setItems, appendItems, setFilter, activeFilter, reset } =
+    useFilteredList<ArticlesListOut>({
+      filters: {
+        [ArticleFilters.ALL]: () => true,
+        [ArticleFilters.BOOKMARKED]: (article) => article.is_bookmarked === true,
+      },
+      defaultFilter: ArticleFilters.ALL,
+    });
+
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const loadingType = LoadingType.INFINITE_SCROLL;
@@ -266,7 +315,7 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
   const isDesktop = useMediaQuery(`(min-width: ${SCREEN_WIDTH_SM}px)`);
 
   useKeyboardNavigation({
-    items: articles,
+    items: displayedItems,
     selectedItem: selectedPreviewArticle,
     setSelectedItem: setSelectedPreviewArticle,
     isEnabled: viewType === 'preview' && isActive,
@@ -278,7 +327,7 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
         ? (root.querySelector(`[data-article-id="${String(item.id)}"]`) as HTMLElement | null)
         : null;
     },
-    hasMore: articles.length < totalItems,
+    hasMore: displayedItems.length < totalItems,
     requestMore: () => {
       if (page < totalPages) setPage(page + 1);
     },
@@ -331,23 +380,23 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
     }
     if (data) {
       if (page === 1) {
-        setArticles(data.data.items);
+        setItems(data.data.items);
       } else {
-        setArticles((prevArticles) => [...prevArticles, ...data.data.items]);
+        appendItems(data.data.items);
       }
       setTotalItems(data.data.total);
       setTotalPages(data.data.num_pages);
     }
-  }, [data, error, page, loadingType]);
+  }, [data, error, page, loadingType, setItems, appendItems]);
 
   const handleSearch = useCallback(
     (term: string) => {
       setSearch(term);
       setPage(1);
-      setArticles([]);
+      reset();
       setSelectedPreviewArticle(null);
     },
-    [setSearch, setPage, setSelectedPreviewArticle]
+    [setSearch, setPage, reset, setSelectedPreviewArticle]
   );
 
   const handleLoadMore = useCallback(
@@ -395,8 +444,8 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
       >
         <ResizablePanel
           className={cn(
-            'h-[calc(100vh-130px)] overflow-y-auto',
-            viewType === 'preview' ? 'pr-2' : 'p-4 md:p-4'
+            'h-[calc(100vh-80px)] overflow-y-auto',
+            viewType === 'preview' ? 'pr-2 pt-4' : 'p-4 md:p-4'
           )}
           style={{ overflow: 'auto' }}
           defaultSize={60}
@@ -409,7 +458,7 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
             renderItem={renderArticle}
             renderSkeleton={renderSkeleton}
             isLoading={isPending}
-            items={articles}
+            items={displayedItems}
             totalItems={totalItems}
             totalPages={totalPages}
             currentPage={page}
@@ -419,15 +468,29 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
             emptyStateSubcontent="Try searching for something else"
             emptyStateLogo={<FileX2 size={64} />}
             title={Tabs.MY_ARTICLES}
+            headerTabs={headerTabs}
             listContainerClassName={cn(
-              'grid grid-cols-1 gap-3',
+              'grid grid-cols-1',
               viewType === 'preview'
                 ? 'h-full md:grid-cols-1 lg:grid-cols-1'
-                : 'md:grid-cols-2 lg:grid-cols-3'
+                : {
+                    'md:grid-cols-1 lg:grid-cols-1': gridCount === 1,
+                    'md:grid-cols-2 lg:grid-cols-2': gridCount === 2,
+                    'md:grid-cols-2 lg:grid-cols-3': gridCount === 3,
+                  }
             )}
             showViewTypeIcons={true}
             setViewType={setViewType}
+            setGridCount={setGridCount}
             viewType={viewType}
+            filters={[
+              { label: 'All', value: ArticleFilters.ALL },
+              { label: 'Bookmarked', value: ArticleFilters.BOOKMARKED },
+            ]}
+            activeFilter={activeFilter}
+            onSelectFilter={(filter) => {
+              setFilter(filter);
+            }}
           />
         </ResizablePanel>
         {viewType === 'preview' && (
@@ -441,12 +504,27 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
             >
               <ArticlePreviewSection
                 article={selectedPreviewArticle}
-                className="h-[calc(100vh-130px)]"
+                className="mt-2 h-[calc(100vh-80px)]"
               />
             </ResizablePanel>
           </>
         )}
       </ResizablePanelGroup>
+    </div>
+  );
+};
+
+interface ArticlesTabsProps {
+  activeTab: Tabs;
+  onTabChange: React.Dispatch<React.SetStateAction<Tabs>>;
+}
+
+const ArticlesTabs: React.FC<ArticlesTabsProps> = ({ activeTab, onTabChange }) => {
+  const user = useAuthStore((state) => state.user);
+  const tabsList = user ? [Tabs.ARTICLES, Tabs.MY_ARTICLES] : [Tabs.ARTICLES];
+  return (
+    <div className="md:px-2">
+      <TabComponent tabs={tabsList} activeTab={activeTab} setActiveTab={onTabChange} />
     </div>
   );
 };
@@ -457,35 +535,16 @@ const Articles: React.FC = () => {
   const [myArticlesPage, setMyArticlesPage] = useState<number>(1);
   const [articlesSearch, setArticlesSearch] = useState<string>('');
   const [myArticlesSearch, setMyArticlesSearch] = useState<string>('');
-  const [viewType, setViewType] = useState<'grid' | 'list' | 'preview'>('grid');
-
-  const handleViewTypeChange = useCallback((newViewType: 'grid' | 'list' | 'preview') => {
-    setViewType(newViewType);
-    window.localStorage.setItem('articles-layout-type', newViewType);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const saved = window.localStorage.getItem('articles-layout-type');
-    if (saved === 'grid' || saved === 'list' || saved === 'preview') {
-      setViewType(saved);
-    }
-  }, []);
+  const viewType = useArticlesViewStore((state) => state.viewType);
+  const setViewType = useArticlesViewStore((state) => state.setViewType);
+  const gridCount = useArticlesViewStore((state) => state.gridCount);
+  const setGridCount = useArticlesViewStore((state) => state.setGridCount);
 
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
 
   return (
-    <div className="p-2 py-8 pt-4 md:pb-0 md:pt-4">
-      <div className="pb-4">
-        {user && (
-          <TabComponent
-            tabs={[Tabs.ARTICLES, Tabs.MY_ARTICLES]}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-          />
-        )}
-      </div>
+    <div className="container mx-auto">
       <div className="relative">
         <TabContent
           search={articlesSearch}
@@ -494,7 +553,11 @@ const Articles: React.FC = () => {
           setPage={setArticlesPage}
           isActive={activeTab === Tabs.ARTICLES}
           viewType={viewType}
-          setViewType={handleViewTypeChange}
+          setViewType={setViewType}
+          gridCount={gridCount}
+          setGridCount={setGridCount}
+          headerTabs={<ArticlesTabs activeTab={activeTab} onTabChange={setActiveTab} />}
+          accessToken={accessToken ?? undefined}
         />
         {user && accessToken && (
           <MyArticlesTabContent
@@ -505,7 +568,10 @@ const Articles: React.FC = () => {
             accessToken={accessToken}
             isActive={activeTab === Tabs.MY_ARTICLES}
             viewType={viewType}
-            setViewType={handleViewTypeChange}
+            setViewType={setViewType}
+            gridCount={gridCount}
+            setGridCount={setGridCount}
+            headerTabs={<ArticlesTabs activeTab={activeTab} onTabChange={setActiveTab} />}
           />
         )}
       </div>

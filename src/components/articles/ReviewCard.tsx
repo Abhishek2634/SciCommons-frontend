@@ -141,8 +141,8 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
           refetch={refetch}
         />
       ) : (
-        <div className="mb-4 rounded-xl border-common-contrast res-text-sm sm:border sm:bg-common-cardBackground sm:p-4">
-          <div className="mb-2 flex justify-between">
+        <div className="mb-4 border-b border-common-minimal pb-4 text-xs">
+          <div className="mb-1 flex justify-between">
             <div className="flex items-start gap-2">
               <Image
                 src={
@@ -150,7 +150,7 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
                     ? review.user.profile_pic_url?.startsWith('http')
                       ? review.user.profile_pic_url
                       : `data:image/png;base64,${review.user.profile_pic_url}`
-                    : `/images/assets/user-icon.png`
+                    : `/images/assets/user-icon.webp`
                 }
                 alt={review.user.username}
                 width={32}
@@ -158,16 +158,16 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
                 className="shrink-0 rounded-full object-cover"
                 quality={75}
                 sizes="32px"
-                loading="lazy"
+                unoptimized={!review.user.profile_pic_url}
               />
               <div className="flex flex-col">
-                <span className="flex items-center gap-2 font-bold text-text-secondary">
+                <span className="flex items-center gap-2 text-sm font-bold text-text-secondary">
                   {review.user.username}
                   {review.is_author && (
                     <>
-                      <span className="text-xs font-normal text-text-tertiary">(You)</span>
+                      <span className="text-[10px] font-normal text-text-tertiary">(You)</span>
                       <Pencil
-                        size={14}
+                        size={12}
                         onClick={() => setEdit(!edit)}
                         className="cursor-pointer hover:text-functional-green"
                       />
@@ -179,7 +179,7 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      size={14}
+                      size={12}
                       fill="currentColor"
                       className={`${
                         i < currentVersion.rating ? 'text-functional-yellow' : 'text-text-tertiary'
@@ -189,13 +189,13 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
                 </div>
               </div>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-text-tertiary">
+            <div className="flex flex-wrap items-center justify-end gap-2 text-[10px] text-text-tertiary">
               <div className="">
                 <select
                   id="version-select"
                   value={selectedVersion}
                   onChange={(e) => setSelectedVersion(parseInt(e.target.value))}
-                  className="rounded border border-common-minimal bg-common-background p-1"
+                  className="rounded border border-common-minimal bg-common-background p-1 text-[10px]"
                 >
                   <option value={review.versions.length}>Latest</option>
                   {review.versions
@@ -210,15 +210,15 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
               ({dayjs(currentVersion.created_at).fromNow()})
             </div>
           </div>
-          <h3 className="mb-2 mt-4 font-semibold res-text-base">
+          <h3 className="mt-2 text-sm font-semibold">
             <TruncateText
               text={currentVersion.subject}
               maxLines={2}
-              textClassName="text-text-primary"
+              textClassName="text-text-primary text-base"
             />
           </h3>
 
-          <div className="mb-4">
+          <div>
             {/* <TruncateText
               text={currentVersion.content}
               maxLines={4}
@@ -230,6 +230,9 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
               isShrinked={true}
               supportMarkdown={true}
               supportLatex={true}
+              containerClassName="mb-0"
+              contentClassName="text-xs sm:text-sm"
+              gradientClassName="sm:from-common-background"
             />
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -275,21 +278,21 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
             <div className="ml-auto flex items-center space-x-2 text-text-secondary">
               <button
                 onClick={() => setDisplayComments((prev) => !prev)}
-                className="flex items-center gap-2 text-xs hover:underline focus:outline-none"
+                className="flex items-center gap-2 text-[10px] hover:underline focus:outline-none"
               >
                 {typeof review?.comments_ratings === 'number' && review.comments_ratings > 0 && (
                   <div className="flex items-center gap-1 text-functional-yellow">
-                    <StarIcon className="h-3.5 w-3.5 shrink-0" fill="currentColor" />
+                    <StarIcon className="h-3 w-3 shrink-0" fill="currentColor" />
                     <span>{review.comments_ratings}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-1">
-                  <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                  <MessageCircle className="h-3 w-3 shrink-0" />
                   {review.comments_count} comments
                   {displayComments ? (
-                    <ChevronUp className="h-3.5 w-3.5 shrink-0 text-text-tertiary" />
+                    <ChevronUp className="h-3 w-3 shrink-0 text-text-tertiary" />
                   ) : (
-                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-text-tertiary" />
+                    <ChevronDown className="h-3 w-3 shrink-0 text-text-tertiary" />
                   )}
                 </div>
               </button>
@@ -308,7 +311,7 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
             </div>
           </div>
           {displayComments && (
-            <div className="mt-4 w-full">
+            <div className="w-full">
               <ReviewComments
                 reviewId={Number(review.id)}
                 displayComments={displayComments}

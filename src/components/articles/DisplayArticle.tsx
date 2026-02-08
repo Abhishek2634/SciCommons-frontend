@@ -3,21 +3,24 @@ import React, { Suspense, lazy, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { Link2, Settings } from 'lucide-react';
+import { Bookmark, Link2, PanelLeft, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMediaQuery } from 'usehooks-ts';
 
 import { useCommunitiesArticlesApiToggleArticlePseudonymous } from '@/api/community-articles/community-articles';
-import { ArticleOut } from '@/api/schemas';
+import { ArticleOut, BookmarkContentTypeEnum } from '@/api/schemas';
+import { useUsersCommonApiToggleBookmark } from '@/api/users-common-api/users-common-api';
 import TruncateText from '@/components/common/TruncateText';
 import { SCREEN_WIDTH_SM } from '@/constants/common.constants';
 import { useDebounceFunction } from '@/hooks/useDebounceThrottle';
+import { showErrorToast } from '@/lib/toastHelpers';
+import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 
 import RenderParsedHTML from '../common/RenderParsedHTML';
 import { BlockSkeleton, Skeleton, TextSkeleton } from '../common/Skeleton';
 import PdfIcon from '../ui/Icons/PdfIcon';
-import { Button } from '../ui/button';
+import { Button, ButtonTitle } from '../ui/button';
 import { Switch } from '../ui/switch';
 import ArticleStats from './ArticleStats';
 
@@ -49,18 +52,32 @@ const SheetTrigger = lazy(() =>
 
 interface DisplayArticleProps {
   article: ArticleOut;
+  showPdfViewerButton?: boolean;
+  handleOpenPdfViewer?: () => void;
 }
 
-const DisplayArticle: React.FC<DisplayArticleProps> = ({ article }) => {
+const DisplayArticle: React.FC<DisplayArticleProps> = ({
+  article,
+  showPdfViewerButton = false,
+  handleOpenPdfViewer = () => {},
+}) => {
   const hasImage = !!article.article_image_url;
   const accessToken = useAuthStore((state) => state.accessToken);
   const [isPseudonymous, setIsPseudonymous] = useState(true);
   const isDesktop = useMediaQuery(`(min-width: ${SCREEN_WIDTH_SM}px)`);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(article.is_bookmarked ?? false);
 
   useEffect(() => {
     setIsPseudonymous(article.is_pseudonymous || false);
   }, [article.is_pseudonymous]);
+
+  // Sync bookmark state when article data changes (e.g., after auth state changes)
+  useEffect(() => {
+    if (article.is_bookmarked !== undefined && article.is_bookmarked !== null) {
+      setIsBookmarked(article.is_bookmarked);
+    }
+  }, [article.is_bookmarked]);
 
   const {
     mutate,
@@ -91,10 +108,46 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({ article }) => {
 
   const debouncedIsPseudonymous = useDebounceFunction(handleMakePseudonymous, 500);
 
+  const { mutate: toggleBookmark, isPending: isBookmarkPending } = useUsersCommonApiToggleBookmark({
+    request: { headers: { Authorization: `Bearer ${accessToken}` } },
+    mutation: {
+      onMutate: () => {
+        // Optimistically update the UI
+        setIsBookmarked((prev) => !prev);
+      },
+      onSuccess: (response) => {
+        // Sync with server response
+        setIsBookmarked(response.data.is_bookmarked);
+      },
+      onError: (error) => {
+        // Revert optimistic update on error
+        setIsBookmarked((prev) => !prev);
+        showErrorToast(error);
+      },
+    },
+  });
+
+  const handleBookmarkToggle = () => {
+    if (!accessToken) {
+      toast.error('Please login to bookmark articles');
+      return;
+    }
+
+    if (!article.id) {
+      toast.error('Article ID is missing');
+      return;
+    }
+
+    toggleBookmark({
+      data: {
+        content_type: BookmarkContentTypeEnum.articlesarticle,
+        object_id: article.id,
+      },
+    });
+  };
+
   return (
-    <div
-      className={`flex flex-col items-start rounded-xl border-common-contrast res-text-xs sm:border sm:bg-common-cardBackground sm:p-4 ${hasImage ? 'sm:flex-row' : ''}`}
-    >
+    <div className={`flex flex-col items-start res-text-xs ${hasImage ? 'sm:flex-row' : ''}`}>
       {hasImage && (
         <div className="mb-4 w-full sm:mb-0 sm:mr-4 sm:w-1/3">
           <div className="relative h-0 w-full pb-[75%]">
@@ -121,7 +174,7 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({ article }) => {
           containerClassName="mb-4 sm:mb-4"
         />
         <div className="mb-4">
-          <h3 className="mb-1 font-semibold text-text-secondary res-text-xs">Abstract</h3>
+          <h3 className="mb-1 text-xs font-semibold text-text-secondary">Abstract</h3>
           {/* <div className="text-base text-text-primary">
             <TruncateText text={article.abstract} maxLines={2} />
           </div> */}
@@ -130,10 +183,11 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({ article }) => {
             isShrinked={true}
             supportMarkdown={false}
             supportLatex={true}
+            gradientClassName="sm:from-common-background"
           />
         </div>
         <div className="mb-4">
-          <h3 className="mb-1 font-semibold text-text-secondary res-text-xs">Authors</h3>
+          <h3 className="mb-1 text-xs font-semibold text-text-secondary">Authors</h3>
           <div className="text-text-primary">
             <TruncateText
               text={article.authors.map((author) => author.label).join(', ')}
@@ -147,33 +201,48 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({ article }) => {
         </div> */}
         {(article?.article_link || article.article_pdf_urls.length > 0) && (
           <div>
-            <h3 className="mb-2 font-semibold text-text-secondary res-text-xs">Article Links</h3>
-            {article?.article_link && (
-              <div className="mb-1 flex items-center gap-2">
-                <Link2 size={16} className="text-text-tertiary" />
-                <a
-                  href={article.article_link || '#'}
-                  className="text-functional-blue res-text-xs hover:underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {article?.article_link?.split('/').pop() || article.article_link}
-                </a>
-              </div>
-            )}
-            {article.article_pdf_urls.map((link, index) => (
-              <div key={index} className="mb-1 flex items-center gap-2">
-                <PdfIcon className="size-4 shrink-0" />
-                <a
-                  href={link}
-                  className="text-functional-blue res-text-xs hover:underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {link.split('/').pop() || link}
-                </a>
-              </div>
-            ))}
+            <h3 className="mb-2 text-xs font-semibold text-text-secondary">Article Links</h3>
+            <div className="flex flex-wrap items-center gap-4">
+              {article?.article_link && (
+                <div className="flex items-center gap-2">
+                  <Link2 size={16} className="text-text-tertiary" />
+                  <a
+                    href={article.article_link || '#'}
+                    className="max-w-[300px] truncate text-xs text-functional-blue hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {article?.article_link?.split('/').pop() || article.article_link}
+                  </a>
+                </div>
+              )}
+              {article.article_pdf_urls.map((link, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <PdfIcon className="size-4 shrink-0" />
+                  <a
+                    href={link}
+                    className="max-w-[300px] truncate text-xs text-functional-blue hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {link.split('/').pop() || link}
+                  </a>
+                </div>
+              ))}
+              {showPdfViewerButton && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => handleOpenPdfViewer()}
+                    variant="outline"
+                    className="gap-2 rounded-full p-2 hover:border-functional-blueLight/30 hover:text-functional-blueLight"
+                    size="xs"
+                  >
+                    <PanelLeft size={12} />
+                    <ButtonTitle>View PDF with Annotations</ButtonTitle>
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -184,10 +253,33 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({ article }) => {
         <div className="mb-2 flex w-full items-center justify-end gap-2 sm:absolute sm:bottom-0 sm:right-0 sm:mb-0 sm:w-fit">
           {article.is_submitter && (
             <Link href={`/article/${article.slug}/settings`}>
-              <div className="rounded-lg border border-common-contrast bg-white px-4 py-2 text-black res-text-xs dark:bg-black dark:text-white">
+              <div className="rounded-md border border-common-contrast bg-white px-3 py-1.5 text-xs text-black dark:bg-black dark:text-white">
                 Edit Article
               </div>
             </Link>
+          )}
+          {!article.community_article && (
+            <Button
+              variant="outline"
+              size="xs"
+              className="aspect-square p-1.5"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.nativeEvent.stopImmediatePropagation();
+                handleBookmarkToggle();
+              }}
+              disabled={isBookmarkPending}
+              withTooltip
+              tooltipData={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+            >
+              <Bookmark
+                className={cn('size-4 transition-colors', {
+                  'fill-functional-yellow text-functional-yellow': isBookmarked,
+                  'text-text-tertiary hover:text-text-secondary': !isBookmarked,
+                })}
+              />
+            </Button>
           )}
           {article.community_article && article.community_article?.is_admin && (
             <Suspense

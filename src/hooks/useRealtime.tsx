@@ -12,7 +12,8 @@ import {
 } from '../api/real-time/real-time';
 import { useAuthStore } from '../stores/authStore';
 import { useRealtimeContextStore } from '../stores/realtimeStore';
-import { useAuthHeaders } from './useAuthHeaders';
+import { useUnreadNotificationsStore } from '../stores/unreadNotificationsStore';
+import { isSoundOnDiscussionNotificationEnabled } from './useUserSettings';
 
 type RealtimeEventType =
   | 'new_discussion'
@@ -37,7 +38,7 @@ type RealtimeEvent = {
         username: string;
       };
       topic?: string;
-      [key: string]: unknown;
+      [key: string]: any;
     };
     comment?: {
       id?: number;
@@ -45,7 +46,7 @@ type RealtimeEvent = {
         username: string;
       };
       content?: string;
-      [key: string]: unknown;
+      [key: string]: any;
     };
   };
   community_ids: number[];
@@ -63,47 +64,23 @@ const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_URL;
 const HEARTBEAT_INTERVAL_MS = 60_000;
 const POLL_ABORT_MS = 65_000;
 const LEADER_TTL_MS = 10_000;
-const MAX_RETRIES = 10;
+const MAX_RETRIES = 3;
+// TODO(bsureshkrishna): Re-validate multi-tab leader election, retry/backoff, and unread/notification sync after merge.
 
 const STORAGE_KEYS = {
   QUEUE_ID: 'realtime_queue_id',
   LAST_EVENT_ID: 'realtime_last_event_id',
+  LEADER: 'realtime_leader',
 };
 
-type DiscussionCacheItem = {
-  id?: number;
-  comments_count?: number;
-  replies?: CommentCacheItem[];
-  [key: string]: unknown;
-};
+// Generate a unique tab ID to prevent processing our own broadcasts
+const TAB_ID =
+  typeof window !== 'undefined' ? `${Date.now()}-${Math.random().toString(36).slice(2)}` : '';
 
-type DiscussionsCacheData = {
-  data?: {
-    items?: DiscussionCacheItem[];
-    [key: string]: unknown;
-  };
-  [key: string]: unknown;
-};
-
-type CommentCacheItem = {
-  id?: number;
-  replies?: CommentCacheItem[];
-  [key: string]: unknown;
-};
-
-type CommentsCacheData = {
-  data?: CommentCacheItem[];
-  [key: string]: unknown;
-};
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-const getQueueStorage = (): Storage | null => {
-  if (typeof window === 'undefined') return null;
-  return window.sessionStorage;
-};
+const bc =
+  typeof window !== 'undefined' && 'BroadcastChannel' in window
+    ? new BroadcastChannel('realtime')
+    : null;
 
 function isPollSuccess(r: PollResponse): r is PollSuccess {
   return (r as PollSuccess).events !== undefined;
@@ -119,9 +96,8 @@ function matchesQueryKey(queryKey: readonly unknown[], pattern: string | RegExp)
 }
 
 export function useRealtime() {
+  const accessToken = useAuthStore((s) => s.accessToken);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const userId = useAuthStore((s) => s.user?.id);
-  const authHeaders = useAuthHeaders();
   const queryClient = useQueryClient();
 
   // Get all context state
@@ -141,32 +117,29 @@ export function useRealtime() {
 
   const queueIdRef = useRef<string | null>(null);
   const lastEventIdRef = useRef<number | null>(null);
-  const tabIdRef = useRef<string>((Math.random() + 1).toString(36).slice(2));
   const abortRef = useRef<AbortController | null>(null);
-  const broadcastChannelRef = useRef<BroadcastChannel | null>(
-    typeof window !== 'undefined' && 'BroadcastChannel' in window
-      ? new BroadcastChannel('realtime')
-      : null
-  );
   const backoffRef = useRef<number>(1000);
   const retryCountRef = useRef<number>(0);
   const stoppedRef = useRef<boolean>(false);
   const isPollingRef = useRef<boolean>(false);
   const loopStartedRef = useRef<boolean>(false);
-  const leaderStorageKey = `realtime_leader_${userId ?? 'anon'}`;
+  const registerQueueRef = useRef<((force?: boolean) => Promise<boolean>) | null>(null);
+  // Track processed event IDs to prevent duplicate processing
+  const processedEventIdsRef = useRef<Set<number>>(new Set());
 
-  const writeLeaderHeartbeat = useCallback(() => {
-    const payload = { tabId: tabIdRef.current, ts: Date.now() };
+  const writeLeaderHeartbeat = useCallback((tabId: string) => {
+    const payload = { tabId, ts: Date.now() };
     try {
-      localStorage.setItem(leaderStorageKey, JSON.stringify(payload));
+      localStorage.setItem(STORAGE_KEYS.LEADER, JSON.stringify(payload));
     } catch {
       // ignore storage errors
     }
-  }, [leaderStorageKey]);
+  }, []);
 
   const tryBecomeLeader = useCallback(() => {
+    const myId = (Math.random() + 1).toString(36).slice(2);
     const now = Date.now();
-    const raw = localStorage.getItem(leaderStorageKey);
+    const raw = localStorage.getItem(STORAGE_KEYS.LEADER);
     let current: { tabId: string; ts: number } | null = null;
 
     try {
@@ -176,13 +149,16 @@ export function useRealtime() {
     }
 
     if (!current || now - current.ts > LEADER_TTL_MS * 2) {
-      writeLeaderHeartbeat();
+      writeLeaderHeartbeat(myId);
       setIsLeader(true);
-      leaderHeartbeatRef.current = window.setInterval(() => writeLeaderHeartbeat(), LEADER_TTL_MS);
+      leaderHeartbeatRef.current = window.setInterval(
+        () => writeLeaderHeartbeat(myId),
+        LEADER_TTL_MS
+      );
     } else {
       setIsLeader(false);
     }
-  }, [leaderStorageKey, writeLeaderHeartbeat]);
+  }, [writeLeaderHeartbeat]);
 
   const releaseLeadership = useCallback(() => {
     setIsLeader(false);
@@ -190,86 +166,35 @@ export function useRealtime() {
       clearInterval(leaderHeartbeatRef.current);
       leaderHeartbeatRef.current = null;
     }
-    try {
-      const raw = localStorage.getItem(leaderStorageKey);
-      if (raw) {
-        const current = JSON.parse(raw) as { tabId?: string };
-        if (current?.tabId === tabIdRef.current) {
-          localStorage.removeItem(leaderStorageKey);
-        }
-      }
-    } catch {
-      // ignore parse/storage errors
-    }
-  }, [leaderStorageKey]);
-
-  // Broadcast received from leader → propagate events and status
-  useEffect(() => {
-    const channel = broadcastChannelRef.current;
-    if (!channel) return;
-    const onMessage = (ev: MessageEvent) => {
-      const msg = ev.data;
-      if (msg?.type === 'realtime:events') {
-        handleEvents(msg.payload as RealtimeEvent[]);
-      } else if (msg?.type === 'realtime:status') {
-        setStatus(msg.payload as ConnectionStatus);
-      }
-    };
-    channel.addEventListener('message', onMessage);
-    return () => channel.removeEventListener('message', onMessage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Storage listener to detect leader loss
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === leaderStorageKey) {
+      if (e.key === STORAGE_KEYS.LEADER) {
         tryBecomeLeader();
       }
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, [leaderStorageKey, tryBecomeLeader]);
+  }, [tryBecomeLeader]);
 
   const saveQueueState = useCallback((queueId: string, lastEventId: number) => {
     queueIdRef.current = queueId;
     lastEventIdRef.current = lastEventId;
     try {
-      const queueStorage = getQueueStorage();
-      queueStorage?.setItem(STORAGE_KEYS.QUEUE_ID, queueId);
-      queueStorage?.setItem(STORAGE_KEYS.LAST_EVENT_ID, String(lastEventId));
+      localStorage.setItem(STORAGE_KEYS.QUEUE_ID, queueId);
+      localStorage.setItem(STORAGE_KEYS.LAST_EVENT_ID, String(lastEventId));
     } catch {
       // ignore storage errors
     }
   }, []);
 
   const loadQueueState = useCallback(() => {
-    const queueStorage = getQueueStorage();
-    const q = queueStorage?.getItem(STORAGE_KEYS.QUEUE_ID) ?? null;
-    const l = queueStorage?.getItem(STORAGE_KEYS.LAST_EVENT_ID) ?? null;
+    const q = localStorage.getItem(STORAGE_KEYS.QUEUE_ID);
+    const l = localStorage.getItem(STORAGE_KEYS.LAST_EVENT_ID);
     queueIdRef.current = q;
-    const parsedLastEventId = l ? Number(l) : null;
-    lastEventIdRef.current =
-      parsedLastEventId !== null && Number.isFinite(parsedLastEventId) ? parsedLastEventId : null;
-  }, []);
-
-  const clearQueueState = useCallback(() => {
-    queueIdRef.current = null;
-    lastEventIdRef.current = null;
-    try {
-      const queueStorage = getQueueStorage();
-      queueStorage?.removeItem(STORAGE_KEYS.QUEUE_ID);
-      queueStorage?.removeItem(STORAGE_KEYS.LAST_EVENT_ID);
-    } catch {
-      // ignore storage errors
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      broadcastChannelRef.current?.close();
-      broadcastChannelRef.current = null;
-    };
+    lastEventIdRef.current = l ? Number(l) : null;
   }, []);
 
   // Prepare notification sound
@@ -286,6 +211,11 @@ export function useRealtime() {
   }, []);
 
   const playNotification = useCallback(() => {
+    // Check if sound notifications are enabled in user settings
+    if (!isSoundOnDiscussionNotificationEnabled()) {
+      return;
+    }
+
     const audio = audioRef.current;
     if (!audio) return;
     try {
@@ -301,7 +231,7 @@ export function useRealtime() {
     (event: RealtimeEvent) => {
       const { article_id: articleId } = event.data;
 
-      console.log(`[Realtime] Updating discussions cache for article ${articleId}`, event);
+      // Silently update discussions cache
 
       // Update both query key formats that might be used
       queryClient.setQueriesData(
@@ -320,38 +250,35 @@ export function useRealtime() {
             );
           },
         },
-        (oldData: unknown) => {
-          const cached = oldData as DiscussionsCacheData;
-          if (!Array.isArray(cached?.data?.items)) return oldData;
+        (oldData: any) => {
+          if (!oldData?.data?.items) return oldData;
 
           const discussion = event.data.discussion;
           if (!discussion?.id) return oldData;
 
-          const items = cached.data.items;
+          const items = oldData.data.items;
 
           switch (event.type) {
             case 'new_discussion': {
               // Check if discussion already exists to prevent duplicates
-              const exists = items.some((item) => item.id === discussion.id);
+              const exists = items.some((item: any) => item.id === discussion.id);
               if (exists) return oldData;
 
-              console.log(`[Realtime] Adding new discussion ${discussion.id} to cache`);
               return {
-                ...cached,
+                ...oldData,
                 data: {
-                  ...cached.data,
+                  ...oldData.data,
                   items: [{ ...discussion, comments_count: 0, replies: [] }, ...items],
                 },
               };
             }
 
             case 'updated_discussion': {
-              console.log(`[Realtime] Updating discussion ${discussion.id} in cache`);
               return {
-                ...cached,
+                ...oldData,
                 data: {
-                  ...cached.data,
-                  items: items.map((item) =>
+                  ...oldData.data,
+                  items: items.map((item: any) =>
                     item.id === discussion.id ? { ...item, ...discussion } : item
                   ),
                 },
@@ -359,12 +286,11 @@ export function useRealtime() {
             }
 
             case 'deleted_discussion': {
-              console.log(`[Realtime] Removing discussion ${discussion.id} from cache`);
               return {
-                ...cached,
+                ...oldData,
                 data: {
-                  ...cached.data,
-                  items: items.filter((item) => item.id !== discussion.id),
+                  ...oldData.data,
+                  items: items.filter((item: any) => item.id !== discussion.id),
                 },
               };
             }
@@ -383,7 +309,7 @@ export function useRealtime() {
       const { discussion_id: discussionId } = event.data;
       if (!discussionId) return;
 
-      console.log(`[Realtime] Updating comments cache for discussion ${discussionId}`, event);
+      // Silently update comments cache
 
       // Update comment caches
       queryClient.setQueriesData(
@@ -393,38 +319,33 @@ export function useRealtime() {
             return matchesQueryKey(key, `/api/articles/discussions/${discussionId}/comments/`);
           },
         },
-        (oldData: unknown) => {
-          const cached = oldData as CommentsCacheData;
-          if (!Array.isArray(cached?.data)) return oldData;
+        (oldData: any) => {
+          if (!Array.isArray(oldData?.data)) return oldData;
 
           const comment = event.data.comment;
           if (!comment?.id) return oldData;
 
           const parentId = event.data.parent_id;
 
-          const updateCommentsArray = (comments: CommentCacheItem[]): CommentCacheItem[] => {
+          const updateCommentsArray = (comments: any[]): any[] => {
             if (!Array.isArray(comments)) return [];
 
             switch (event.type) {
               case 'new_comment': {
                 if (!parentId) {
                   // Top-level comment
-                  const exists = comments.some((c) => c.id === comment.id);
+                  const exists = comments.some((c: any) => c.id === comment.id);
                   if (exists) return comments;
 
-                  console.log(`[Realtime] Adding new top-level comment ${comment.id} to cache`);
                   return [...comments, { ...comment, replies: [] }];
                 } else {
                   // Reply to existing comment
-                  return comments.map((c) => {
+                  return comments.map((c: any) => {
                     if (c.id === parentId) {
                       const replies = Array.isArray(c.replies) ? c.replies : [];
-                      const exists = replies.some((r) => r.id === comment.id);
+                      const exists = replies.some((r: any) => r.id === comment.id);
                       if (exists) return c;
 
-                      console.log(
-                        `[Realtime] Adding new reply ${comment.id} to comment ${parentId}`
-                      );
                       return { ...c, replies: [...replies, { ...comment, replies: [] }] };
                     } else if (Array.isArray(c.replies)) {
                       // Recursively check nested replies
@@ -436,9 +357,8 @@ export function useRealtime() {
               }
 
               case 'updated_comment': {
-                return comments.map((c) => {
+                return comments.map((c: any) => {
                   if (c.id === comment.id) {
-                    console.log(`[Realtime] Updating comment ${comment.id} in cache`);
                     return { ...c, ...comment };
                   } else if (Array.isArray(c.replies)) {
                     return { ...c, replies: updateCommentsArray(c.replies) };
@@ -448,8 +368,8 @@ export function useRealtime() {
               }
 
               case 'deleted_comment': {
-                const filtered = comments.filter((c) => c.id !== comment.id);
-                return filtered.map((c) =>
+                const filtered = comments.filter((c: any) => c.id !== comment.id);
+                return filtered.map((c: any) =>
                   Array.isArray(c.replies) ? { ...c, replies: updateCommentsArray(c.replies) } : c
                 );
               }
@@ -459,7 +379,7 @@ export function useRealtime() {
             }
           };
 
-          return { ...cached, data: updateCommentsArray(cached.data) };
+          return { ...oldData, data: updateCommentsArray(oldData.data) };
         }
       );
 
@@ -478,15 +398,14 @@ export function useRealtime() {
               );
             },
           },
-          (oldData: unknown) => {
-            const cached = oldData as DiscussionsCacheData;
-            if (!Array.isArray(cached?.data?.items)) return oldData;
+          (oldData: any) => {
+            if (!oldData?.data?.items) return oldData;
 
             return {
-              ...cached,
+              ...oldData,
               data: {
-                ...cached.data,
-                items: cached.data.items.map((item) =>
+                ...oldData.data,
+                items: oldData.data.items.map((item: any) =>
                   item.id === discussionId
                     ? { ...item, comments_count: (item.comments_count || 0) + 1 }
                     : item
@@ -521,10 +440,12 @@ export function useRealtime() {
         cache: 'no-store',
       });
       if (!res.ok) {
-        if (res.status === 404) {
-          throw new Error('queue_not_found');
-        }
-        throw new Error(`poll_http_${res.status}`);
+        // Create error with status code for proper handling
+        const error = new Error(
+          res.status === 404 ? 'queue_not_found' : `poll_http_${res.status}`
+        ) as Error & { status: number };
+        error.status = res.status;
+        throw error;
       }
       const data = (await res.json()) as PollResponse;
       return data;
@@ -535,22 +456,33 @@ export function useRealtime() {
   }, []);
 
   const handleEvents = useCallback(
-    (events: RealtimeEvent[]) => {
+    (events: RealtimeEvent[], fromBroadcast = false) => {
       if (!events?.length) return;
 
-      console.log(`[Realtime] Processing ${events.length} events`, {
-        activeArticleId,
-        activeCommunityId,
-        activeDiscussionId,
-        isViewingDiscussions,
-        isViewingComments,
-        isContextFresh: isContextFresh(),
+      // Filter out already processed events to prevent duplicates
+      const newEvents = events.filter((event) => {
+        if (processedEventIdsRef.current.has(event.event_id)) {
+          return false;
+        }
+        // Add to processed set
+        processedEventIdsRef.current.add(event.event_id);
+        return true;
       });
 
-      // Broadcast to other tabs
-      broadcastChannelRef.current?.postMessage({ type: 'realtime:events', payload: events });
+      // Clean up old event IDs (keep only last 1000 to prevent memory leak)
+      if (processedEventIdsRef.current.size > 1000) {
+        const idsArray = Array.from(processedEventIdsRef.current);
+        processedEventIdsRef.current = new Set(idsArray.slice(-500));
+      }
 
-      for (const event of events) {
+      if (!newEvents.length) return;
+
+      // Only broadcast to other tabs if this is NOT from a broadcast (leader tab only)
+      if (!fromBroadcast) {
+        bc?.postMessage({ type: 'realtime:events', payload: newEvents, senderId: TAB_ID });
+      }
+
+      for (const event of newEvents) {
         const { article_id: articleId, community_id: communityId } = event.data;
 
         // Check if this event is relevant to current context
@@ -559,10 +491,6 @@ export function useRealtime() {
           (activeCommunityId === communityId ||
             (Array.isArray(event.community_ids) &&
               event.community_ids.includes(activeCommunityId as number)));
-
-        console.log(
-          `[Realtime] Event ${event.type} for article ${articleId}, community ${communityId}, relevant: ${isRelevantToCurrentContext}`
-        );
 
         // Process discussion events
         if (['new_discussion', 'updated_discussion', 'deleted_discussion'].includes(event.type)) {
@@ -576,10 +504,19 @@ export function useRealtime() {
             });
           }
 
-          // Show notification
+          // Show notification and track unread
           if (event.type === 'new_discussion' && event.data.discussion) {
             const username = event.data.discussion.user?.username || 'Unknown user';
             const topic = event.data.discussion.topic || 'Untitled discussion';
+            const discussionId = event.data.discussion.id;
+
+            // Add to unread notifications store
+            if (discussionId !== undefined) {
+              useUnreadNotificationsStore.getState().addUnreadItem(communityId, articleId, {
+                id: discussionId,
+                type: 'discussion',
+              });
+            }
 
             toast.warning(
               <div className="flex items-start gap-3">
@@ -617,10 +554,21 @@ export function useRealtime() {
             }
           }
 
-          // Show notification
+          // Show notification and track unread
           if (event.type === 'new_comment' && event.data.comment) {
             const username = event.data.comment.author?.username || 'Unknown user';
             const content = event.data.comment.content || 'No content';
+            const commentId = event.data.comment.id;
+
+            // Add to unread notifications store
+            if (commentId !== undefined) {
+              useUnreadNotificationsStore.getState().addUnreadItem(communityId, articleId, {
+                id: commentId,
+                type: event.data.parent_id ? 'reply' : 'comment',
+                discussionId: event.data.discussion_id,
+                parentId: event.data.parent_id,
+              });
+            }
 
             toast.warning(
               <div className="flex items-start gap-3">
@@ -655,31 +603,40 @@ export function useRealtime() {
     ]
   );
 
-  const registerQueue = useCallback(
-    async (force?: boolean) => {
-      if (!isAuthenticated) {
-        clearQueueState();
-        setStatus('disabled');
+  // Store handleEvents in a ref to avoid stale closure in BroadcastChannel listener
+  const handleEventsRef = useRef(handleEvents);
+  useEffect(() => {
+    handleEventsRef.current = handleEvents;
+  }, [handleEvents]);
+
+  // Broadcast received from leader → propagate events and status
+  useEffect(() => {
+    if (!bc) return;
+    const onMessage = (ev: MessageEvent) => {
+      const msg = ev.data;
+      // Ignore messages from our own tab
+      if (msg?.senderId === TAB_ID) {
         return;
       }
-      loadQueueState();
-      if (!force && queueIdRef.current && lastEventIdRef.current !== null) {
-        return;
+      if (msg?.type === 'realtime:events') {
+        // Pass fromBroadcast=true to prevent re-broadcasting
+        handleEventsRef.current(msg.payload as RealtimeEvent[], true);
+      } else if (msg?.type === 'realtime:status') {
+        setStatus(msg.payload as ConnectionStatus);
       }
-      setStatus('connecting');
-      const { data } = await myappRealtimeApiRegisterQueue(authHeaders);
-      saveQueueState(data.queue_id, data.last_event_id);
-      broadcastChannelRef.current?.postMessage({
-        type: 'realtime:status',
-        payload: 'connected' satisfies ConnectionStatus,
-      });
-      setStatus('connected');
-      console.log('[Realtime] Queue registered:', data.queue_id);
-    },
-    [authHeaders, clearQueueState, isAuthenticated, loadQueueState, saveQueueState]
-  );
+    };
+    bc.addEventListener('message', onMessage);
+    return () => bc.removeEventListener('message', onMessage);
+  }, []);
 
   const pollLoop = useCallback(async () => {
+    // Check authentication first - don't poll if not logged in
+    if (!isAuthenticated || !accessToken) {
+      loopStartedRef.current = false;
+      setStatus('disabled');
+      return;
+    }
+
     if (!isLeader || stoppedRef.current) {
       loopStartedRef.current = false;
       return;
@@ -688,21 +645,29 @@ export function useRealtime() {
     isPollingRef.current = true;
 
     try {
-      if (!isAuthenticated) {
-        setStatus('disabled');
-        return;
-      }
-
       if (!REALTIME_URL) {
         setStatus('disabled');
-        await new Promise((r) => setTimeout(r, 10_000));
+        loopStartedRef.current = false;
+        isPollingRef.current = false;
         return;
       }
 
+      // Check if we have a queue_id before attempting to poll
       if (!queueIdRef.current) {
-        await registerQueue(true);
+        // Try to register first
+        if (registerQueueRef.current) {
+          const registered = await registerQueueRef.current(true);
+          if (!registered || stoppedRef.current) {
+            loopStartedRef.current = false;
+            isPollingRef.current = false;
+            return;
+          }
+        }
+        // If still no queue_id after registration, stop polling
         if (!queueIdRef.current) {
-          setStatus('reconnecting');
+          setStatus('disabled');
+          loopStartedRef.current = false;
+          isPollingRef.current = false;
           return;
         }
       }
@@ -723,10 +688,25 @@ export function useRealtime() {
       } else {
         // catchup required
         setStatus('reconnecting');
-        try {
-          await registerQueue(true);
+        let registered = false;
+        if (registerQueueRef.current) {
+          registered = await registerQueueRef.current(true);
+        }
+        // Check if registration succeeded and we're not stopped (auth failure)
+        if (registered && queueIdRef.current && !stoppedRef.current) {
           retryCountRef.current = 0;
-        } catch {
+          // Invalidate all discussion and comment caches
+          queryClient.invalidateQueries({
+            predicate: (query) =>
+              matchesQueryKey(query.queryKey, '/api/articles/') &&
+              (matchesQueryKey(query.queryKey, '/discussions') ||
+                matchesQueryKey(query.queryKey, '/comments')),
+          });
+          toast.info('Syncing latest discussions…');
+        } else if (stoppedRef.current) {
+          // Auth failure - stop completely
+          return;
+        } else {
           retryCountRef.current += 1;
           if (retryCountRef.current >= MAX_RETRIES) {
             stoppedRef.current = true;
@@ -736,59 +716,82 @@ export function useRealtime() {
           await new Promise((r) => setTimeout(r, backoffRef.current));
           backoffRef.current = Math.min(backoffRef.current * 2, 10_000);
         }
-        // Invalidate all discussion and comment caches
-        queryClient.invalidateQueries({
-          predicate: (query) =>
-            matchesQueryKey(query.queryKey, '/api/articles/') &&
-            (matchesQueryKey(query.queryKey, '/discussions') ||
-              matchesQueryKey(query.queryKey, '/comments')),
-        });
-        toast.info('Syncing latest discussions…');
       }
-    } catch (err: unknown) {
-      const errRecord = isRecord(err) ? err : null;
-      const errName = typeof errRecord?.name === 'string' ? errRecord.name : '';
-      const errMessage = typeof errRecord?.message === 'string' ? errRecord.message : '';
+    } catch (err: any) {
+      // Check for authentication errors first (401/403)
+      const httpStatus = err?.response?.status || err?.status;
+      if (httpStatus === 401 || httpStatus === 403) {
+        queueIdRef.current = null;
+        lastEventIdRef.current = null;
+        stoppedRef.current = true;
+        setStatus('disabled');
+        return;
+      }
 
-      if (errName === 'AbortError') {
+      if (err?.name === 'AbortError') {
         // ignore aborts
-      } else if (errMessage === 'queue_not_found') {
-        setStatus('reconnecting');
-        try {
-          await registerQueue(true);
-          retryCountRef.current = 0;
-        } catch {
-          retryCountRef.current += 1;
-          if (retryCountRef.current >= MAX_RETRIES) {
-            stoppedRef.current = true;
-            setStatus('disabled');
-            return;
-          }
-          await new Promise((r) => setTimeout(r, backoffRef.current));
-          backoffRef.current = Math.min(backoffRef.current * 2, 10_000);
+      } else if (err?.message === 'No queue_id') {
+        // No queue_id means we're not properly registered, likely not authenticated
+        if (!isAuthenticated || !accessToken) {
+          setStatus('disabled');
+          stoppedRef.current = true;
+          return;
         }
-        queryClient.invalidateQueries({
-          predicate: (query) =>
-            matchesQueryKey(query.queryKey, '/api/articles/') &&
-            (matchesQueryKey(query.queryKey, '/discussions') ||
-              matchesQueryKey(query.queryKey, '/comments')),
-        });
-        toast.info('Reconnected. Syncing latest discussions…');
-      } else {
-        console.error('[Realtime] Poll error:', err);
-        setStatus('error');
         retryCountRef.current += 1;
         if (retryCountRef.current >= MAX_RETRIES) {
           stoppedRef.current = true;
           setStatus('disabled');
+          return;
+        }
+        await new Promise((r) => setTimeout(r, backoffRef.current));
+        backoffRef.current = Math.min(backoffRef.current * 2, 10_000);
+      } else if (err?.message === 'queue_not_found') {
+        setStatus('reconnecting');
+        let registered = false;
+        if (registerQueueRef.current) {
+          registered = await registerQueueRef.current(true);
+        }
+        // Only show toast and invalidate if registration succeeded and not stopped
+        if (registered && queueIdRef.current && !stoppedRef.current) {
+          retryCountRef.current = 0;
+          queryClient.invalidateQueries({
+            predicate: (query) =>
+              matchesQueryKey(query.queryKey, '/api/articles/') &&
+              (matchesQueryKey(query.queryKey, '/discussions') ||
+                matchesQueryKey(query.queryKey, '/comments')),
+          });
+          toast.info('Reconnected. Syncing latest discussions…');
+        } else if (stoppedRef.current) {
+          // Auth failure - stop completely
+          return;
         } else {
+          retryCountRef.current += 1;
+          if (retryCountRef.current >= MAX_RETRIES) {
+            stoppedRef.current = true;
+            setStatus('disabled');
+            return;
+          }
+          await new Promise((r) => setTimeout(r, backoffRef.current));
+          backoffRef.current = Math.min(backoffRef.current * 2, 10_000);
+        }
+      } else {
+        // Generic error - retry silently up to MAX_RETRIES
+        retryCountRef.current += 1;
+        if (retryCountRef.current >= MAX_RETRIES) {
+          // Only log on final failure
+          console.warn('[Realtime] Max retries reached, disabling realtime');
+          stoppedRef.current = true;
+          setStatus('disabled');
+        } else {
+          setStatus('error');
           await new Promise((r) => setTimeout(r, backoffRef.current));
           backoffRef.current = Math.min(backoffRef.current * 2, 10_000);
         }
       }
     } finally {
       isPollingRef.current = false;
-      if (!stoppedRef.current && isLeader) {
+      // Only continue polling if authenticated and not stopped
+      if (!stoppedRef.current && isLeader && isAuthenticated && accessToken) {
         window.setTimeout(() => {
           void pollLoop();
         }, 0);
@@ -799,31 +802,95 @@ export function useRealtime() {
   }, [
     fetchPoll,
     handleEvents,
-    isAuthenticated,
     isLeader,
     queryClient,
-    registerQueue,
+    isAuthenticated,
+    accessToken,
     saveQueueState,
   ]);
 
   const sendHeartbeat = useCallback(async () => {
-    if (!queueIdRef.current || !isAuthenticated) return;
+    if (!queueIdRef.current || !accessToken || stoppedRef.current) return;
     try {
-      await myappRealtimeApiHeartbeat({ queue_id: queueIdRef.current }, authHeaders);
-    } catch (e) {
-      console.warn('[Realtime] Heartbeat failed, re-registering queue');
-      await registerQueue(true);
+      await myappRealtimeApiHeartbeat(
+        { queue_id: queueIdRef.current },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+    } catch (e: any) {
+      // Check for auth errors
+      const status = e?.response?.status || e?.status;
+      if (status === 401 || status === 403) {
+        stoppedRef.current = true;
+        setStatus('disabled');
+        return;
+      }
+      if (registerQueueRef.current && !stoppedRef.current) {
+        await registerQueueRef.current(true);
+      }
     }
-  }, [authHeaders, isAuthenticated, registerQueue]);
+  }, [accessToken]);
 
   const heartbeatLoop = useCallback(() => {
     const id = window.setInterval(() => {
-      if (isLeader) {
+      if (isLeader && !stoppedRef.current) {
         void sendHeartbeat();
       }
     }, HEARTBEAT_INTERVAL_MS);
     return () => clearInterval(id);
   }, [sendHeartbeat, isLeader]);
+
+  const registerQueue = useCallback(
+    async (force?: boolean): Promise<boolean> => {
+      if (!isAuthenticated || !accessToken) {
+        setStatus('disabled');
+        stoppedRef.current = true;
+        return false;
+      }
+      loadQueueState();
+      if (!force && queueIdRef.current && lastEventIdRef.current !== null) {
+        return true;
+      }
+      setStatus('connecting');
+      try {
+        const { data } = await myappRealtimeApiRegisterQueue({
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        saveQueueState(data.queue_id, data.last_event_id);
+        bc?.postMessage({
+          type: 'realtime:status',
+          payload: 'connected' satisfies ConnectionStatus,
+        });
+        setStatus('connected');
+        return true;
+      } catch (err: any) {
+        // Check for authentication errors (401)
+        const status = err?.response?.status || err?.status;
+        if (status === 401 || status === 403) {
+          // Auth failed - clear queue state and stop
+          queueIdRef.current = null;
+          lastEventIdRef.current = null;
+          try {
+            localStorage.removeItem(STORAGE_KEYS.QUEUE_ID);
+            localStorage.removeItem(STORAGE_KEYS.LAST_EVENT_ID);
+          } catch {
+            // ignore storage errors
+          }
+          stoppedRef.current = true;
+          setStatus('disabled');
+          return false;
+        }
+
+        setStatus('error');
+        return false;
+      }
+    },
+    [accessToken, isAuthenticated, loadQueueState, saveQueueState]
+  );
+
+  // Store registerQueue in ref for use in pollLoop and sendHeartbeat
+  useEffect(() => {
+    registerQueueRef.current = registerQueue;
+  }, [registerQueue]);
 
   // Startup/shutdown
   useEffect(() => {
@@ -844,41 +911,54 @@ export function useRealtime() {
 
   // Re-attempt registration when auth state changes
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && accessToken) {
+      // Reset stopped state when user logs back in
+      stoppedRef.current = false;
+      retryCountRef.current = 0;
+      backoffRef.current = 1000;
       void registerQueue(true);
     } else {
-      clearQueueState();
+      // User logged out - stop everything
+      stoppedRef.current = true;
+      queueIdRef.current = null;
+      lastEventIdRef.current = null;
       try {
-        localStorage.removeItem(leaderStorageKey);
+        localStorage.removeItem(STORAGE_KEYS.QUEUE_ID);
+        localStorage.removeItem(STORAGE_KEYS.LAST_EVENT_ID);
       } catch {
         // ignore storage errors
       }
       setStatus('disabled');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, clearQueueState, leaderStorageKey]);
+  }, [isAuthenticated, accessToken]);
 
   // If leadership changes, start/stop polling accordingly
   useEffect(() => {
     if (!isLeader || loopStartedRef.current) return;
+    // Don't start polling if not authenticated
+    if (!isAuthenticated || !accessToken) return;
     loopStartedRef.current = true;
     void pollLoop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLeader]);
+  }, [isLeader, isAuthenticated, accessToken]);
 
   // Keep status in other tabs updated
   useEffect(() => {
-    broadcastChannelRef.current?.postMessage({ type: 'realtime:status', payload: status });
+    bc?.postMessage({ type: 'realtime:status', payload: status });
   }, [status]);
 
   // Periodically attempt to become leader if none is active
   useEffect(() => {
     if (isLeader) return;
     const id = window.setInterval(() => {
-      tryBecomeLeader();
+      // Don't try to become leader if stopped or not authenticated
+      if (!stoppedRef.current && isAuthenticated && accessToken) {
+        tryBecomeLeader();
+      }
     }, LEADER_TTL_MS);
     return () => clearInterval(id);
-  }, [isLeader, tryBecomeLeader]);
+  }, [isLeader, tryBecomeLeader, isAuthenticated, accessToken]);
 
   // React-query aware status for consumers
   return useMemo(

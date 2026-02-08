@@ -1,20 +1,26 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-import { Check, FileText, UserCheck, UserPlus, Users } from 'lucide-react';
+import { Bookmark, Check, FileText, Settings, UserCheck, UserPlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 import '@/api/communities/communities';
-import { useCommunitiesApiJoinJoinCommunity } from '@/api/join-community/join-community';
-import { CommunityOut } from '@/api/schemas';
+import {
+  useCommunitiesApiJoinGetJoinRequests,
+  useCommunitiesApiJoinJoinCommunity,
+} from '@/api/join-community/join-community';
+import { BookmarkContentTypeEnum, CommunityOut } from '@/api/schemas';
+import { useUsersCommonApiToggleBookmark } from '@/api/users-common-api/users-common-api';
 import RenderParsedHTML from '@/components/common/RenderParsedHTML';
 import { BlockSkeleton, Skeleton, TextSkeleton } from '@/components/common/Skeleton';
 import { Button, ButtonIcon, ButtonTitle } from '@/components/ui/button';
+import { FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
 import { showErrorToast } from '@/lib/toastHelpers';
+import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 
 import ArticleSubmission from './ArticleSubmission';
@@ -28,6 +34,14 @@ const DisplayCommunity: React.FC<DisplayCommunityProps> = ({ community, refetch 
   const params = useParams<{ slug: string }>();
   const accessToken = useAuthStore((state) => state.accessToken);
   const axiosConfig = { headers: { Authorization: `Bearer ${accessToken}` } };
+  const [isBookmarked, setIsBookmarked] = useState(community.is_bookmarked ?? false);
+
+  // Sync bookmark state when community data changes (e.g., after auth state changes)
+  useEffect(() => {
+    if (community.is_bookmarked !== undefined && community.is_bookmarked !== null) {
+      setIsBookmarked(community.is_bookmarked);
+    }
+  }, [community.is_bookmarked]);
 
   const {
     mutate,
@@ -38,6 +52,18 @@ const DisplayCommunity: React.FC<DisplayCommunityProps> = ({ community, refetch 
   } = useCommunitiesApiJoinJoinCommunity({
     request: axiosConfig,
   });
+
+  // Fetch join requests to show pending count (only for admins)
+  const { data: joinRequestsData } = useCommunitiesApiJoinGetJoinRequests(params?.slug || '', {
+    query: {
+      enabled: !!accessToken && !!community.is_admin,
+      staleTime: FIFTEEN_MINUTES_IN_MS,
+    },
+    request: axiosConfig,
+  });
+
+  const pendingRequestsCount =
+    joinRequestsData?.data.filter((item) => item.status === 'pending').length || 0;
 
   const handleJoin = () => {
     mutate({ communityId: community.id });
@@ -53,9 +79,42 @@ const DisplayCommunity: React.FC<DisplayCommunityProps> = ({ community, refetch 
     }
   }, [isJoinSuccess, error, data, refetch]);
 
+  const { mutate: toggleBookmark, isPending: isBookmarkPending } = useUsersCommonApiToggleBookmark({
+    request: { headers: { Authorization: `Bearer ${accessToken}` } },
+    mutation: {
+      onMutate: () => {
+        // Optimistically update the UI
+        setIsBookmarked((prev) => !prev);
+      },
+      onSuccess: (response) => {
+        // Sync with server response
+        setIsBookmarked(response.data.is_bookmarked);
+      },
+      onError: (error) => {
+        // Revert optimistic update on error
+        setIsBookmarked((prev) => !prev);
+        showErrorToast(error);
+      },
+    },
+  });
+
+  const handleBookmarkToggle = () => {
+    if (!accessToken) {
+      toast.error('Please login to bookmark communities');
+      return;
+    }
+
+    toggleBookmark({
+      data: {
+        content_type: BookmarkContentTypeEnum.communitiescommunity,
+        object_id: community.id,
+      },
+    });
+  };
+
   return (
-    <div className="overflow-hidden pb-1">
-      <div className="relative p-4">
+    <div className="pb-1">
+      <div className="relative p-2">
         <div className="flex gap-4">
           {/* <div className="relative aspect-square size-10 shrink-0 overflow-hidden rounded-full">
             <Image
@@ -66,24 +125,27 @@ const DisplayCommunity: React.FC<DisplayCommunityProps> = ({ community, refetch 
             />
           </div> */}
           <div className="flex w-full flex-col gap-2">
-            <h2
-              className="w-[95%] text-wrap font-bold text-text-primary res-heading-xs"
-              style={{
-                wordBreak: 'break-word',
-              }}
-            >
-              {community.name}
-            </h2>
+            <div className="flex items-center justify-between gap-4">
+              <h2
+                className="text-wrap font-bold text-text-primary res-heading-xs"
+                style={{
+                  wordBreak: 'break-word',
+                }}
+              >
+                {community.name}
+              </h2>
+            </div>
             <div
               className="w-[95%] text-xs md:text-sm"
               style={{
                 wordBreak: 'break-word',
               }}
             >
+              {/* TODO: Revisit LaTeX support here if safety/perf issues appear. */}
               <RenderParsedHTML
                 rawContent={community.description || ''}
                 supportMarkdown={true}
-                supportLatex={false}
+                supportLatex={true}
                 containerClassName="mb-0"
                 contentClassName="text-text-secondary"
               />
@@ -97,6 +159,106 @@ const DisplayCommunity: React.FC<DisplayCommunityProps> = ({ community, refetch 
                 <FileText className="mr-1 h-4 w-4" />
                 <span className="text-xs">{community.num_published_articles} Articles</span>
               </div>
+              <div className="ml-auto flex items-center space-x-2">
+                {community.is_admin && (
+                  <>
+                    <ArticleSubmission communityName={community.name} />
+                    {pendingRequestsCount > 0 && (
+                      <Link href={`/community/${params?.slug}/requests`}>
+                        <Button
+                          size="xs"
+                          className="border border-common-minimal/70 bg-white hover:bg-white dark:bg-black dark:hover:bg-black"
+                          withTooltip
+                          tooltipData={`${pendingRequestsCount} pending requests`}
+                        >
+                          <ButtonTitle className="text-text-secondary">
+                            <span className="mr-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-medium text-white">
+                              {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
+                            </span>
+                            Requests
+                          </ButtonTitle>
+                        </Button>
+                      </Link>
+                    )}
+                    <Link href={`/community/${params?.slug}/settings`}>
+                      <Button
+                        size="xs"
+                        className="border border-common-minimal/70 bg-white hover:bg-white dark:bg-black dark:hover:bg-black"
+                      >
+                        <ButtonIcon>
+                          <Settings className="size-3 text-text-secondary sm:size-4" />
+                        </ButtonIcon>
+                      </Button>
+                    </Link>
+                  </>
+                )}
+                {!community.is_admin && community.is_member && (
+                  <>
+                    <ArticleSubmission communityName={community.name} />
+                    <Button
+                      className="cursor-default bg-transparent ring-1 ring-common-contrast hover:bg-transparent"
+                      size="xs"
+                    >
+                      <ButtonIcon>
+                        <UserCheck className="size-3 text-text-secondary sm:size-4" />
+                      </ButtonIcon>
+                      <ButtonTitle className="text-text-secondary">Joined</ButtonTitle>
+                    </Button>
+                  </>
+                )}
+                {!community.is_admin &&
+                  !community.is_member &&
+                  community.join_request_status === 'pending' && (
+                    <Button
+                      className="cursor-default bg-transparent ring-1 ring-common-contrast hover:bg-transparent"
+                      size="xs"
+                    >
+                      <ButtonIcon>
+                        <Check className="size-3 text-text-secondary sm:size-4" />
+                      </ButtonIcon>
+                      <ButtonTitle className="text-text-secondary">Requested</ButtonTitle>
+                    </Button>
+                  )}
+                {!community.is_admin &&
+                  !community.is_member &&
+                  community.join_request_status !== 'pending' && (
+                    <Button
+                      className="bg-transparent ring-1 ring-common-contrast hover:bg-common-minimal"
+                      onClick={() => handleJoin()}
+                      loading={isPending}
+                      showLoadingSpinner={true}
+                      size="xs"
+                    >
+                      <ButtonIcon>
+                        <UserPlus className="size-3 text-text-secondary sm:size-4" />
+                      </ButtonIcon>
+                      <ButtonTitle className="text-text-secondary">Join</ButtonTitle>
+                    </Button>
+                  )}
+                {!community.is_admin && (
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    className="aspect-square p-1.5"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.nativeEvent.stopImmediatePropagation();
+                      handleBookmarkToggle();
+                    }}
+                    disabled={isBookmarkPending}
+                    withTooltip
+                    tooltipData={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+                  >
+                    <Bookmark
+                      className={cn('size-4 transition-colors', {
+                        'fill-functional-yellow text-functional-yellow': isBookmarked,
+                        'text-text-tertiary hover:text-text-secondary': !isBookmarked,
+                      })}
+                    />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -108,56 +270,6 @@ const DisplayCommunity: React.FC<DisplayCommunityProps> = ({ community, refetch 
             <ButtonTitle className="text-functional-yellow">Notifications</ButtonTitle>
           </Button>
         </div> */}
-      </div>
-      <div className="flex items-center justify-between px-2">
-        <div className="ml-auto flex items-center justify-end space-x-4">
-          {community.is_admin && (
-            <>
-              <ArticleSubmission communityName={community.name} />
-              <Link href={`/community/${params?.slug}/settings`}>
-                <Button className="bg-black hover:bg-black">
-                  <ButtonTitle className="text-white">Settings</ButtonTitle>
-                </Button>
-              </Link>
-            </>
-          )}
-          {!community.is_admin && community.is_member && (
-            <>
-              <ArticleSubmission communityName={community.name} />
-              <Button className="cursor-default bg-transparent ring-1 ring-common-contrast hover:bg-transparent">
-                <ButtonIcon>
-                  <UserCheck className="size-4 text-text-secondary" />
-                </ButtonIcon>
-                <ButtonTitle className="text-text-secondary">Joined</ButtonTitle>
-              </Button>
-            </>
-          )}
-          {!community.is_admin &&
-            !community.is_member &&
-            community.join_request_status === 'pending' && (
-              <Button className="cursor-default bg-transparent ring-1 ring-common-contrast hover:bg-transparent">
-                <ButtonIcon>
-                  <Check className="size-4 text-text-secondary" />
-                </ButtonIcon>
-                <ButtonTitle className="text-text-secondary">Requested</ButtonTitle>
-              </Button>
-            )}
-          {!community.is_admin &&
-            !community.is_member &&
-            community.join_request_status !== 'pending' && (
-              <Button
-                className="bg-transparent ring-1 ring-common-contrast hover:bg-common-minimal"
-                onClick={() => handleJoin()}
-                loading={isPending}
-                showLoadingSpinner={true}
-              >
-                <ButtonIcon>
-                  <UserPlus className="size-4 text-text-secondary" />
-                </ButtonIcon>
-                <ButtonTitle className="text-text-secondary">Join</ButtonTitle>
-              </Button>
-            )}
-        </div>
       </div>
     </div>
   );
