@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { clearRegisteredQueryCache } from '@/api/queryClientRegistry';
+
 import { useUnreadNotificationsStore } from './unreadNotificationsStore';
 
 // NOTE(bsureshkrishna, 2026-02-07): Auth bootstrap was hardened vs baseline 5271498.

@@ -48,7 +48,9 @@ const ArticleCard: FC<ArticleCardProps> = memo(
   ({ article, forCommunity, className, compactType = 'full', handleArticlePreview, actions }) => {
     const viewType = useArticlesViewStore((state) => state.viewType);
     const accessToken = useAuthStore((state) => state.accessToken);
-    const encodedCommunityName = encodeURIComponent(article.community_article?.community.name || '');
+    const encodedCommunityName = encodeURIComponent(
+      article.community_article?.community.name || ''
+    );
 
     const [isBookmarked, setIsBookmarked] = useState(article.is_bookmarked ?? false);
 

@@ -11,12 +11,7 @@ import { useCommunitiesArticlesApiSubmitArticle } from '@/api/community-articles
 import { ArticlesListOut, UserCommunitySchema } from '@/api/schemas';
 import { useUsersApiGetMyCommunities } from '@/api/users/users';
 import { Button, ButtonTitle } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FIVE_MINUTES_IN_MS } from '@/constants/common.constants';
