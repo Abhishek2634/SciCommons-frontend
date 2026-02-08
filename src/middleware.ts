@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+// NOTE(bsureshkrishna, 2026-02-07): Added auth route-guarding after baseline 5271498.
+// Protected routes now require valid auth cookies and redirect to login with return path.
 const AUTH_COOKIE_NAME = 'auth_token';
 
 const PROTECTED_ROUTE_PATTERNS: ReadonlyArray<RegExp> = [

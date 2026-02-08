@@ -7,6 +7,8 @@ import { BookOpen, Github, GraduationCap, Link as LinkIcon, Linkedin, Mail } fro
 import { BlockSkeleton, Skeleton } from '@/components/common/Skeleton';
 import { getSafeExternalUrl } from '@/lib/safeUrl';
 
+// NOTE(bsureshkrishna, 2026-02-07): External profile links are now sanitized before render
+// (post-baseline 5271498) to prevent unsafe URL schemes.
 interface ProfileHeaderProps {
   name: string;
   image: string;

@@ -5,6 +5,8 @@ import type { UserConfigKey } from '@/api/schemas/userConfigKey';
 import type { UserSettingSchema } from '@/api/schemas/userSettingSchema';
 import type { UserSettingSchemaValue } from '@/api/schemas/userSettingSchemaValue';
 
+// NOTE(bsureshkrishna, 2026-02-07): Persisted settings store introduced after baseline 5271498
+// to back notification preferences and future per-user configuration.
 interface UserSettingsState {
   settings: UserSettingSchema[];
   setSettings: (settings: UserSettingSchema[]) => void;

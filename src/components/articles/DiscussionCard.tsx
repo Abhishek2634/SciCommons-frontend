@@ -26,6 +26,8 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import DiscussionComments from './DiscussionComments';
 
+// NOTE(bsureshkrishna, 2026-02-07): Discussion cards now integrate unread tracking,
+// mark-as-read-on-view, and admin resolve toggles compared to baseline 5271498.
 interface DiscussionCardProps {
   discussion: DiscussionOut;
   handleDiscussionClick: (id: number) => void;

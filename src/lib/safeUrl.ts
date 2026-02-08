@@ -1,3 +1,5 @@
+// NOTE(bsureshkrishna, 2026-02-07): Added URL sanitization to prevent unsafe schemes
+// (e.g., javascript:) when rendering external links introduced after baseline 5271498.
 export function getSafeExternalUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   try {

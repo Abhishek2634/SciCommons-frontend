@@ -65,6 +65,9 @@ const HEARTBEAT_INTERVAL_MS = 60_000;
 const POLL_ABORT_MS = 65_000;
 const LEADER_TTL_MS = 10_000;
 const MAX_RETRIES = 3;
+// NOTE(bsureshkrishna, 2026-02-07): Realtime pipeline was rebuilt after baseline 5271498.
+// Key changes: queue + last_event_id persistence, multi-tab leader election,
+// auth-aware polling/heartbeat, and integration with unread notifications + toasts.
 // TODO(bsureshkrishna): Re-validate multi-tab leader election, retry/backoff, and unread/notification sync after merge.
 
 const STORAGE_KEYS = {

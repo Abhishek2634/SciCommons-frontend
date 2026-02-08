@@ -18,6 +18,8 @@ import { Skeleton, TextSkeleton } from '../common/Skeleton';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
+// NOTE(bsureshkrishna, 2026-02-07): Community cards gained bookmark support,
+// slug-based routing, and sanitized description rendering vs baseline 5271498.
 // import { useCommunitiesApiJoinJoinCommunity } from '@/api/join-community/join-community';
 
 interface CommunityCardProps {

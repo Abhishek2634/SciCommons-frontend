@@ -5,6 +5,8 @@ const projectRoot = process.cwd();
 const standaloneRoot = path.join(projectRoot, '.next', 'standalone');
 const standaloneServer = path.join(standaloneRoot, 'server.js');
 
+// NOTE(bsureshkrishna, 2026-02-07): Added asset copy step so standalone builds
+// serve public/ and .next/static correctly (missing assets before baseline 5271498).
 if (!fs.existsSync(standaloneServer)) {
   console.error('Missing standalone build at .next/standalone/server.js. Run `yarn build` first.');
   process.exit(1);

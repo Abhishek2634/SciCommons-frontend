@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+// NOTE(bsureshkrishna, 2026-02-07): Added persistent unread tracking after baseline 5271498.
+// Tracks unread discussions/comments per community+article, supports cross-tab sync,
+// and powers activity sorting + badge counts in the discussions UI.
 // Types
 export interface UnreadItem {
   id: number;

@@ -4,6 +4,8 @@ const AXIOS_INSTANCE: AxiosInstance = Axios.create({
   baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
 });
 
+// NOTE(bsureshkrishna, 2026-02-07): Normalize Authorization headers so we never send
+// "Bearer null/undefined" (previously caused noisy 401s and blocked requests).
 const clearAuthHeader = (headers: AxiosRequestConfig['headers']) => {
   if (!headers) return;
 

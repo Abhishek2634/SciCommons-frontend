@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useUnreadNotificationsStore } from '@/stores/unreadNotificationsStore';
 
+// NOTE(bsureshkrishna, 2026-02-07): Sidebar now merges subscriptions with unread state
+// to sort by recent activity and show unread badges (post-baseline 5271498 behavior).
 interface SelectedArticle {
   id: number;
   title: string;

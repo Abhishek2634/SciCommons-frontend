@@ -23,6 +23,9 @@ import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 
+// NOTE(bsureshkrishna, 2026-02-07): Community header now supports join flows,
+// pending request counts for admins, bookmarking, and richer markdown/LaTeX rendering
+// compared to baseline 5271498.
 import ArticleSubmission from './ArticleSubmission';
 
 interface DisplayCommunityProps {

@@ -4,6 +4,8 @@ import nextra from 'nextra';
 
 const isDev = process.env.NODE_ENV === 'development';
 
+// NOTE(bsureshkrishna, 2026-02-07): Config hardened after baseline 5271498
+// (PWA caching defaults relaxed, image optimization retained, remote host allowlist tightened).
 const withPWA = withPWAInit({
   dest: 'public',
   cacheOnFrontEndNav: false,

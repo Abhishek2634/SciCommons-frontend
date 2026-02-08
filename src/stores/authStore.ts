@@ -5,6 +5,9 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { clearRegisteredQueryCache } from '@/api/queryClientRegistry';
 import { useUnreadNotificationsStore } from './unreadNotificationsStore';
 
+// NOTE(bsureshkrishna, 2026-02-07): Auth bootstrap was hardened vs baseline 5271498.
+// We now migrate persisted auth -> cookies, validate expiry, probe server session once,
+// and clear caches/unread state on logout to avoid stale UI.
 export interface AuthenticatedUserType {
   email: string;
   first_name: string;

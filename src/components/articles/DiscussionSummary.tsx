@@ -26,6 +26,8 @@ import { useAuthStore } from '@/stores/authStore';
 
 dayjs.extend(relativeTime);
 
+// NOTE(bsureshkrishna, 2026-02-07): Discussion summary feature added after baseline 5271498
+// so admins can curate a collapsible summary per community article.
 interface DiscussionSummaryProps {
   communityArticleId: number;
   isAdmin: boolean;

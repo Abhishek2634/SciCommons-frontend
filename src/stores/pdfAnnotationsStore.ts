@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+// NOTE(bsureshkrishna, 2026-02-07): PDF annotation state added after baseline 5271498.
+// Persists highlights/notes locally and supports future backend sync/export.
 // Annotation color types matching the UI design
 export type AnnotationColor =
   | 'red'

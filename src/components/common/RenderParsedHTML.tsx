@@ -8,6 +8,8 @@ import { Renderer, marked } from 'marked';
 import { ENABLE_SHOW_MORE, markdownStyles } from '@/constants/common.constants';
 import { cn } from '@/lib/utils';
 
+// NOTE(bsureshkrishna, 2026-02-07): Centralized safe markdown/LaTeX rendering after baseline 5271498.
+// Uses DOMPurify for XSS protection and optional "show more" truncation for long content.
 // Type to ensure at least one of supportMarkdown or supportLatex is true
 type SupportConfig =
   | { supportMarkdown: true; supportLatex?: boolean }

@@ -19,6 +19,8 @@ import { Skeleton, TextSkeleton } from '../common/Skeleton';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
+// NOTE(bsureshkrishna, 2026-02-07): Article cards gained bookmark toggles, preview hover,
+// and community-aware routing/LaTeX title rendering relative to baseline 5271498.
 interface ActionType {
   type: 'button';
   label: string;

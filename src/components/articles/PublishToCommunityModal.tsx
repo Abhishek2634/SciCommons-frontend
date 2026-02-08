@@ -26,6 +26,8 @@ import { useAuthStore } from '@/stores/authStore';
 
 import RenderParsedHTML from '../common/RenderParsedHTML';
 
+// NOTE(bsureshkrishna, 2026-02-07): New flow for publishing an article to a community
+// (select community + submit) added after baseline 5271498.
 interface PublishToCommunityModalProps {
   article: ArticlesListOut;
   open: boolean;

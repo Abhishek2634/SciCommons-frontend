@@ -2,6 +2,8 @@ import { RefObject, useEffect, useRef } from 'react';
 
 import { useUnreadNotificationsStore } from '@/stores/unreadNotificationsStore';
 
+// NOTE(bsureshkrishna, 2026-02-07): Added viewport-based read tracking so unread counts
+// clear automatically when users dwell on a discussion/comment (ties into unread store).
 interface UseMarkAsReadOnViewOptions {
   communityId: number;
   articleId: number;

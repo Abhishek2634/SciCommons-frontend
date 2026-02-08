@@ -33,6 +33,8 @@ import {
 
 import TextSelectionPopup from './TextSelectionPopup';
 
+// NOTE(bsureshkrishna, 2026-02-07): PDF viewer/annotation UX introduced after baseline 5271498.
+// Provides highlight capture, inline notes, and quote-to-review hooks.
 // Separate component for rendering highlights on a single page
 // This component subscribes to the store directly, so it re-renders when annotations change
 interface PageHighlightsProps {

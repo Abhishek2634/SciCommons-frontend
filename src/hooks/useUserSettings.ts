@@ -13,6 +13,8 @@ import { FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
 import { useAuthStore } from '@/stores/authStore';
 import { useUserSettingsStore } from '@/stores/userSettingsStore';
 
+// NOTE(bsureshkrishna, 2026-02-07): User settings sync was added post-baseline 5271498
+// to power notification preferences (sound/email) and other per-user toggles.
 /**
  * Custom hook to fetch and cache user settings
  * Data is cached for 15 minutes (staleTime and gcTime)
