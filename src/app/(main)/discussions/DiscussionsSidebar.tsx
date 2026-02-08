@@ -117,7 +117,9 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
                       const articleSlug =
                         typeof article.article_slug === 'string' ? article.article_slug : null;
                       const articleAbstract =
-                        typeof article.article_abstract === 'string' ? article.article_abstract : '';
+                        typeof article.article_abstract === 'string'
+                          ? article.article_abstract
+                          : '';
 
                       if (articleId === null || articleTitle === null || articleSlug === null) {
                         return null;

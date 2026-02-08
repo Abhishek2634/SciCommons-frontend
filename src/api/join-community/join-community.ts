@@ -249,5 +249,3 @@ export const useCommunitiesApiJoinManageJoinRequest = <
 
   return useMutation(mutationOptions);
 };
-
-

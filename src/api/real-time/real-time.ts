@@ -248,5 +248,3 @@ export const useMyappRealtimeApiGetRealtimeStatus = <
 
   return query;
 };
-
-

@@ -796,7 +796,15 @@ export function useRealtime() {
         loopStartedRef.current = false;
       }
     }
-  }, [fetchPoll, handleEvents, isAuthenticated, isLeader, queryClient, registerQueue, saveQueueState]);
+  }, [
+    fetchPoll,
+    handleEvents,
+    isAuthenticated,
+    isLeader,
+    queryClient,
+    registerQueue,
+    saveQueueState,
+  ]);
 
   const sendHeartbeat = useCallback(async () => {
     if (!queueIdRef.current || !isAuthenticated) return;

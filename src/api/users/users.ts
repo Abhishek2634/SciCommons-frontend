@@ -857,5 +857,3 @@ export const useUsersApiMarkNotificationAsRead = <
 
   return useMutation(mutationOptions);
 };
-
-

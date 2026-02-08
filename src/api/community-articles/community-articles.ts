@@ -705,5 +705,3 @@ export const useCommunitiesArticlesApiToggleArticlePseudonymous = <
 
   return useMutation(mutationOptions);
 };
-
-

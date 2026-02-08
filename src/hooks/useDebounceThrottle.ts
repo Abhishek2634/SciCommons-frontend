@@ -80,4 +80,3 @@ export function useThrottleFunction<TArgs extends unknown[]>(
     [fn, limit]
   );
 }
-

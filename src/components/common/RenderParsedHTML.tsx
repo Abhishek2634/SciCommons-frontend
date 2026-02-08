@@ -109,48 +109,51 @@ const RenderParsedHTML = ({
     }
   }, []);
 
-  const processContent = useCallback((content: string): string => {
-    try {
-      let processedContent = content.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, '');
+  const processContent = useCallback(
+    (content: string): string => {
+      try {
+        let processedContent = content.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, '');
 
-      // If only markdown is supported
-      if (supportMarkdown && !supportLatex) {
-        try {
-          return marked.parse(processedContent) as string;
-        } catch (e) {
-          console.warn('Markdown parsing failed:', e);
+        // If only markdown is supported
+        if (supportMarkdown && !supportLatex) {
+          try {
+            return marked.parse(processedContent) as string;
+          } catch (e) {
+            console.warn('Markdown parsing failed:', e);
+            return processedContent;
+          }
+        }
+
+        // If only latex is supported
+        if (!supportMarkdown && supportLatex) {
+          // Process block math
+          processedContent = processLatex(processedContent);
           return processedContent;
         }
-      }
 
-      // If only latex is supported
-      if (!supportMarkdown && supportLatex) {
-        // Process block math
-        processedContent = processLatex(processedContent);
+        // If both are supported
+        if (supportMarkdown && supportLatex) {
+          // First process block math
+          processedContent = processLatex(processedContent);
+
+          // Finally process markdown
+          try {
+            return marked.parse(processedContent) as string;
+          } catch (e) {
+            console.warn('Markdown parsing failed:', e);
+            return processedContent;
+          }
+        }
+
         return processedContent;
+      } catch (error) {
+        // If everything fails, return original content
+        console.error('Content processing failed completely:', error);
+        return content;
       }
-
-      // If both are supported
-      if (supportMarkdown && supportLatex) {
-        // First process block math
-        processedContent = processLatex(processedContent);
-
-        // Finally process markdown
-        try {
-          return marked.parse(processedContent) as string;
-        } catch (e) {
-          console.warn('Markdown parsing failed:', e);
-          return processedContent;
-        }
-      }
-
-      return processedContent;
-    } catch (error) {
-      // If everything fails, return original content
-      console.error('Content processing failed completely:', error);
-      return content;
-    }
-  }, [processLatex, supportMarkdown, supportLatex]);
+    },
+    [processLatex, supportMarkdown, supportLatex]
+  );
 
   const html = useMemo(() => {
     try {

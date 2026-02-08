@@ -850,5 +850,3 @@ export const usePostsApiReactToComment = <
 
   return useMutation(mutationOptions);
 };
-
-

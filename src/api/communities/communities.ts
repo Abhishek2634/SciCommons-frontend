@@ -608,5 +608,3 @@ export const useCommunitiesApiGetCommunityDashboard = <
 
   return query;
 };
-
-

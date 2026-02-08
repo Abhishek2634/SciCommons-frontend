@@ -556,5 +556,3 @@ export const useCommunitiesApiInvitationGetCommunityInvitationDetails = <
 
   return query;
 };
-
-

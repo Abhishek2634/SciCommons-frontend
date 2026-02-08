@@ -652,5 +652,3 @@ export const useUsersCommonApiListMyPosts = <
 
   return query;
 };
-
-

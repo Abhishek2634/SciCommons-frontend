@@ -1292,5 +1292,3 @@ export const useArticlesDiscussionApiUnsubscribeFromDiscussion = <
 
   return useMutation(mutationOptions);
 };
-
-

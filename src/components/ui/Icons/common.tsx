@@ -4,10 +4,10 @@ import {
   IconArrowNarrowLeft,
   IconBrandFacebookFilled,
   IconBrandInstagramFilled,
-  type IconProps as TablerIconProps,
   IconBrandTwitterFilled,
   IconBrandYoutubeFilled,
   IconChevronLeft,
+  type IconProps as TablerIconProps,
 } from '@tabler/icons-react';
 
 import { cn } from '@/lib/utils';

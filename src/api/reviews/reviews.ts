@@ -908,5 +908,3 @@ export const useArticlesReviewApiGetRating = <
 
   return query;
 };
-
-

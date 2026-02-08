@@ -749,5 +749,3 @@ export const useArticlesApiGetRelevantArticles = <
 
   return query;
 };
-
-
