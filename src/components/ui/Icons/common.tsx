@@ -22,18 +22,13 @@ type IconProps = TablerIconProps;
  * @param {React.ComponentType} Icon - The icon component to be wrapped.
  * @return {React.FC} A new functional component with merged props */
 
-export function IconComponent(
-  Icon: React.ForwardRefExoticComponent<IconProps & React.RefAttributes<SVGSVGElement>>
-): React.ForwardRefExoticComponent<IconProps & React.RefAttributes<SVGSVGElement>> {
-  const WrappedIcon = React.forwardRef<SVGSVGElement, IconProps>(
-    ({ className, strokeWidth = defaultStrokeWidth, ...props }, ref) => (
-      <Icon
-        ref={ref}
-        className={cn(defaultClasses, className)}
-        strokeWidth={strokeWidth}
-        {...props}
-      />
-    )
+export function IconComponent(Icon: React.ComponentType<IconProps>): React.FC<IconProps> {
+  const WrappedIcon: React.FC<IconProps> = ({
+    className,
+    strokeWidth = defaultStrokeWidth,
+    ...props
+  }) => (
+    <Icon className={cn(defaultClasses, className)} strokeWidth={strokeWidth} {...props} />
   );
 
   WrappedIcon.displayName = `IconComponent(${Icon.displayName || Icon.name || 'Icon'})`;

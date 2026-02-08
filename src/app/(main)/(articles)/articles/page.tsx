@@ -58,6 +58,7 @@ const TabContent: React.FC<TabContentProps> = ({
   setSearch,
   page,
   setPage,
+  accessToken,
   isActive,
   viewType,
   setViewType,
