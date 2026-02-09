@@ -108,6 +108,11 @@ const PDFViewerContainer: React.FC<PDFViewerContainerProps> = ({
   onJumpToAnnotationReady,
 }) => {
   const [isLoading, setIsLoading] = React.useState(true);
+  // NOTE(Codex for bsureshkrishna, 2026-02-09): Allow overriding the worker URL for
+  // CSP/offline deployments (prefer hosting a local worker and setting this env var).
+  const pdfWorkerUrl =
+    process.env.NEXT_PUBLIC_PDF_WORKER_URL ??
+    'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
   // Render the highlight target (the tooltip that appears when selecting text)
   const renderHighlightTarget = useCallback(
@@ -314,7 +319,7 @@ const PDFViewerContainer: React.FC<PDFViewerContainerProps> = ({
           </div>
         )}
 
-        <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+        <Worker workerUrl={pdfWorkerUrl}>
           <div className="h-full">
             <Viewer
               fileUrl={pdfUrl}

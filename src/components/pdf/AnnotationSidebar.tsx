@@ -109,18 +109,38 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
   };
 
   const handleCopyText = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard', {
-      position: 'top-right',
-    });
+    // NOTE(Codex for bsureshkrishna, 2026-02-09): Clipboard can fail in insecure
+    // contexts or when permissions are denied, so surface a failure toast.
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        toast.success('Copied to clipboard', {
+          position: 'top-right',
+        });
+      })
+      .catch(() => {
+        toast.error('Failed to copy to clipboard', {
+          position: 'top-right',
+        });
+      });
   };
 
   const handleQuote = (text: string) => {
     const quoteText = `> ${text.replace(/\n/g, '\n> ')}`;
-    navigator.clipboard.writeText(quoteText);
-    toast.success('Quote copied to clipboard', {
-      position: 'top-right',
-    });
+    // NOTE(Codex for bsureshkrishna, 2026-02-09): Clipboard can fail in insecure
+    // contexts or when permissions are denied, so surface a failure toast.
+    navigator.clipboard
+      .writeText(quoteText)
+      .then(() => {
+        toast.success('Quote copied to clipboard', {
+          position: 'top-right',
+        });
+      })
+      .catch(() => {
+        toast.error('Failed to copy quote to clipboard', {
+          position: 'top-right',
+        });
+      });
     if (onQuoteSelect) {
       onQuoteSelect(quoteText);
     }

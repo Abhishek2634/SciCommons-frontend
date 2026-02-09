@@ -72,11 +72,20 @@ const TextSelectionPopup: React.FC<TextSelectionPopupProps> = ({
     const quoteText = `> ${selectedText.replace(/\n/g, '\n> ')}`;
 
     // Copy to clipboard
-    navigator.clipboard.writeText(quoteText).then(() => {
-      toast.success('Quote copied to clipboard', {
-        position: 'top-right',
+    // NOTE(Codex for bsureshkrishna, 2026-02-09): Clipboard can fail in insecure
+    // contexts or when permissions are denied, so surface a failure toast.
+    navigator.clipboard
+      .writeText(quoteText)
+      .then(() => {
+        toast.success('Quote copied to clipboard', {
+          position: 'top-right',
+        });
+      })
+      .catch(() => {
+        toast.error('Failed to copy quote to clipboard', {
+          position: 'top-right',
+        });
       });
-    });
 
     // If onQuoteSelect is provided, call it to insert into review
     if (onQuoteSelect) {
