@@ -204,21 +204,22 @@ All changes include inline comments with explanations, referencing "Fixed by Cla
 
 Fixed by Claude Sonnet 4.5 on 2026-02-08
 
-**Problem**: The title link in ArticleCard extended across the full width of the card even when the title text was short. This made it difficult to click the card itself (which triggers a different action than the title link), because most of the card area showed a link cursor.
+**Problem**: The title link in ArticleCard extended across the full width of the card even when the title text was short. This made it difficult to click the card itself (which triggers a different action than the title link), because most of the card area showed a link cursor. This was particularly problematic in sidebar views (articles page, community page) where card clicking opens article in right panel and title clicking opens article page.
 
-**Root Cause**: The `<Link>` component had `className="flex w-full..."` which forced it to take 100% width, and it wrapped both the title content AND the action buttons, requiring full width layout.
+**Root Cause**: The `<Link>` component originally had `className="flex w-full..."` and wrapped both title and buttons. Initial fix attempt used `flex-1` which still caused the link to grow to fill available space.
 
-**Solution**: Restructured the component hierarchy:
-- Moved flex container classes from Link to a parent `<div>`
-- Link now only wraps the title content with `className="inline-flex min-w-0 flex-1"`
-  - `inline-flex`: Makes link only as wide as its content
-  - `min-w-0`: Allows flex item to shrink below content size if needed
-  - `flex-1`: Allows link to grow and take available space without forcing full width
-- Buttons container is now a sibling with `flex-shrink-0` to maintain size
+**Solution Evolution**:
+1. First attempt: Restructured component (Link only wraps title, buttons separate) but used `inline-flex flex-1` ❌ Still too wide due to flex-1
+2. Final fix: Changed to `className="inline-block"` ✅ Link is ONLY as wide as title text
+   - `inline-block`: Element is only as wide as its content, no flex growth
+   - Parent div uses `flex justify-between` to position buttons
+   - No flex properties on Link means no unwanted expansion
 
-**Result**: The link cursor now only appears when hovering over actual title text, not empty space to the right. Makes clicking the card much easier.
+**Result**: The link cursor now only appears when hovering over actual title text, not empty space to the right. Makes clicking the card much easier in all views.
 
-**File Modified**: `src/components/articles/ArticleCard.tsx` (lines 122-147)
+**Files Modified**:
+- `src/components/articles/ArticleCard.tsx` (lines 122-147)
+- Commits: 5cd1b7c (structure), 5742a47 (docs), 8643337 (final CSS fix)
 
 ---
 

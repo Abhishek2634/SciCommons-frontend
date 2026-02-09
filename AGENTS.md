@@ -5,6 +5,8 @@ Notes for this repository:
 - Line-ending warnings (LF to CRLF) are expected in this workspace; do not treat them as errors.
 
 ## Code Change Guidelines
+
+### Inline Comments
 - **Always add explanatory comments** to non-trivial code changes
 - Comments should include:
   - **Who**: Fixed by [Agent/Person Name] on [Date]
@@ -18,3 +20,14 @@ Notes for this repository:
      Solution: Changed to inline-flex to only wrap title text
      Result: Link cursor only appears over actual content */
   ```
+
+### Changelog Summaries (CHANGE_COMMENTS.md)
+- **Always add summaries** of significant changes to `CHANGE_COMMENTS.md`
+- Include for each change:
+  - **Problem**: Clear description of the issue being solved
+  - **Root Cause**: Why the problem existed (if applicable)
+  - **Solution**: What was changed and how it works
+  - **Result**: Impact and improvement achieved
+  - **Files Modified**: List of affected files and commit references
+- Update existing entries if iterating on a fix (show evolution of solution)
+- Summaries help future maintainers understand the "why" behind changes
