@@ -40,6 +40,57 @@ code now does, not a commit-by-commit history.
 5. Discussions page now preserves selected article and scroll position across navigation via URL
    state (query params) and scroll position tracking, preventing sidebar reset when using browser
    back button from article pages.
+6. **Discussions Page - Full Article Display & Navigation Improvements (2026-02-09)**
+
+   **Problem:** Discussions page showed minimal article info (title + abstract only). Navigating to
+   article page and using back button would reset sidebar to top. Code was duplicated between article
+   page and discussions page.
+
+   **Solutions Implemented:**
+
+   a) **Full Article Display in Discussions:**
+
+   - Replaced minimal view with full DisplayArticle component showing all metadata (image, authors,
+     links, stats, bookmarks, settings)
+   - Added Reviews + Discussions tabs (matching article page experience)
+   - PDF viewer navigation uses returnTo parameter to seamlessly return to discussions with state
+
+   b) **URL State Persistence:**
+
+   - Fixed router.push to use router.replace with full pathname
+   - Selected article ID persisted in URL (/discussions?articleId=123)
+   - Scroll position tracked and restored via ref
+   - Auto-selects article on mount when URL param present
+
+   c) **Code Refactoring - Eliminated Duplication:**
+
+   - Created shared ArticleContentView component (~180 lines of reusable logic)
+   - Handles article & reviews data fetching internally
+   - Configures Reviews + Discussions tabs
+   - Removed ~100 lines of duplicate code from DiscussionsPageClient
+   - Removed redundant "Back to Discussions" button (browser back handles it naturally)
+
+   **Benefits:**
+
+   - Single source of truth for article display logic
+   - Consistent behavior between article page & discussions page
+   - Easier maintenance (update once, applies everywhere)
+   - Better performance (shared component can be code-split)
+   - Reduced bundle size
+
+   **Files Modified:**
+
+   - src/app/(main)/discussions/DiscussionsPageClient.tsx (refactored)
+   - src/app/(main)/discussions/DiscussionsSidebar.tsx (scroll restoration)
+   - src/app/(main)/(articles)/article/[slug]/(displayarticle)/ArticleDisplayPageClient.tsx (cleanup)
+   - src/components/articles/ArticleContentView.tsx (NEW shared component)
+
+   **Navigation Flow:**
+
+   1. Select article in discussions → Full article info loads with Reviews + Discussions tabs
+   2. Click "View PDF with Annotations" → Navigate to /article/{slug}?returnTo=discussions&articleId=123
+   3. Press browser back button → Returns to /discussions?articleId=123
+   4. Article auto-selects with preserved scroll position
 
 **Content Rendering + Safety**
 

@@ -3,25 +3,15 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-import { ChevronsDown, PanelLeft } from 'lucide-react';
+import { PanelLeft } from 'lucide-react';
 
-import DiscussionForum from '@/components/articles/DiscussionForum';
+import ArticleContentView from '@/components/articles/ArticleContentView';
 import EmptyState from '@/components/common/EmptyState';
-import RenderParsedHTML from '@/components/common/RenderParsedHTML';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { cn } from '@/lib/utils';
 
 import DiscussionsSidebar from './DiscussionsSidebar';
 
@@ -38,12 +28,13 @@ interface SelectedArticle {
 
 const DiscussionsPageClientInner: React.FC = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [selectedArticle, setSelectedArticle] = useState<SelectedArticle | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const sidebarScrollPositionRef = useRef<number>(0);
+  const hasRestoredFromUrl = useRef(false);
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
      Problem: When navigating to article page and using back button, sidebar resets to top article
@@ -67,7 +58,7 @@ const DiscussionsPageClientInner: React.FC = () => {
     // Update URL with selected article ID
     const params = new URLSearchParams(searchParams?.toString() || '');
     params.set('articleId', article.id.toString());
-    router.push(`?${params.toString()}`, { scroll: false });
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
 
     // Close mobile sidebar when article is selected
     if (isMobile) {
@@ -90,10 +81,12 @@ const DiscussionsPageClientInner: React.FC = () => {
       }>
     ) => {
       const articleIdParam = searchParams?.get('articleId');
-      if (articleIdParam && !selectedArticle) {
+      // Only restore once when component mounts with URL param
+      if (articleIdParam && !selectedArticle && !hasRestoredFromUrl.current) {
         const articleId = parseInt(articleIdParam, 10);
         const article = articles.find((a) => a.articleId === articleId);
         if (article) {
+          hasRestoredFromUrl.current = true;
           setSelectedArticle({
             id: article.articleId,
             title: article.articleTitle,
@@ -109,6 +102,19 @@ const DiscussionsPageClientInner: React.FC = () => {
     },
     [searchParams, selectedArticle]
   );
+
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Clicking PDF viewer in discussions should open article page, then back button should return
+     Solution: Navigate to article page with returnTo=discussions and articleId params
+     Result: Browser back naturally returns to discussions with preserved article selection */
+  const handleOpenPdfViewer = () => {
+    if (selectedArticle) {
+      const params = new URLSearchParams();
+      params.set('returnTo', 'discussions');
+      params.set('articleId', selectedArticle.id.toString());
+      router.push(`/article/${selectedArticle.slug}?${params.toString()}`);
+    }
+  };
 
   // Mobile Layout
   if (isMobile) {
@@ -142,43 +148,17 @@ const DiscussionsPageClientInner: React.FC = () => {
         <div className="flex-1 overflow-auto">
           {selectedArticle ? (
             <div className="p-4">
-              <div
-                className={cn(
-                  'mb-6 max-h-10 overflow-hidden border-b border-common-minimal pb-10 transition-all duration-300 ease-in-out',
-                  {
-                    'max-h-96 overflow-auto': isExpanded,
-                  }
-                )}
-              >
-                {selectedArticle.abstract.trim().length > 0 && (
-                  <div className="mb-4">
-                    <h2 className="mb-2 text-base font-semibold text-text-secondary">Abstract</h2>
-                    <RenderParsedHTML
-                      rawContent={selectedArticle.abstract}
-                      isShrinked={true}
-                      supportMarkdown={true}
-                      supportLatex={true}
-                      containerClassName="prose prose-sm max-w-none text-sm"
-                      gradientClassName="sm:from-common-background to-transparent"
-                    />
-                  </div>
-                )}
-              </div>
-              <div className="relative">
-                <div
-                  className="absolute -top-9 left-1/2 flex -translate-x-1/2 cursor-pointer items-center gap-1 rounded-full border border-common-contrast bg-common-cardBackground px-2 py-1 text-xxs text-text-tertiary hover:text-text-secondary"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                >
-                  {isExpanded ? 'Collapse' : 'Expand'}
-                  <ChevronsDown className={cn('h-3 w-3', isExpanded && 'rotate-180')} />
-                </div>
-                <DiscussionForum
-                  articleId={selectedArticle.id}
-                  communityId={selectedArticle.communityId}
-                  communityArticleId={selectedArticle.communityArticleId}
-                  isAdmin={selectedArticle.isAdmin}
-                />
-              </div>
+              {/* Refactored by Claude Sonnet 4.5 on 2026-02-09: Use shared ArticleContentView
+                  instead of duplicating article fetching, reviews, and tabs logic */}
+              <ArticleContentView
+                articleSlug={selectedArticle.slug}
+                articleId={selectedArticle.id}
+                communityId={selectedArticle.communityId}
+                communityArticleId={selectedArticle.communityArticleId}
+                isAdmin={selectedArticle.isAdmin}
+                showPdfViewerButton={true}
+                handleOpenPdfViewer={handleOpenPdfViewer}
+              />
             </div>
           ) : (
             <div className="flex h-full items-center justify-center p-4">
@@ -215,77 +195,18 @@ const DiscussionsPageClientInner: React.FC = () => {
         <ResizablePanel defaultSize={75} minSize={60}>
           <div className="h-full overflow-auto">
             {selectedArticle ? (
-              <div className="p-6">
-                <Breadcrumb className="mb-2">
-                  <BreadcrumbList className="text-xs">
-                    <BreadcrumbItem>
-                      <BreadcrumbLink asChild>
-                        <Link
-                          href={`/community/${selectedArticle.communityName}`}
-                          className="max-w-[150px] truncate text-text-tertiary hover:text-text-secondary sm:max-w-[200px]"
-                          title={selectedArticle.communityName}
-                        >
-                          {selectedArticle.communityName}
-                        </Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage
-                        className="max-w-[200px] truncate text-text-secondary sm:max-w-[400px]"
-                        title={selectedArticle.title}
-                      >
-                        {selectedArticle.title}
-                      </BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </BreadcrumbList>
-                </Breadcrumb>
-                <div
-                  className={cn(
-                    'mb-6 max-h-20 overflow-hidden border-b border-common-minimal pb-10 transition-all duration-300 ease-in-out',
-                    {
-                      'h-fit max-h-96 overflow-auto': isExpanded,
-                    }
-                  )}
-                >
-                  <h1
-                    className={cn(
-                      'line-clamp-2 text-2xl font-bold text-text-primary',
-                      isExpanded && 'line-clamp-none'
-                    )}
-                  >
-                    {selectedArticle.title}
-                  </h1>
-                  {selectedArticle.abstract.trim().length > 0 && (
-                    <div className="mt-4 pb-4">
-                      <h2 className="mb-2 text-sm font-semibold text-text-secondary">Abstract</h2>
-                      <RenderParsedHTML
-                        rawContent={selectedArticle.abstract}
-                        isShrinked={true}
-                        supportMarkdown={true}
-                        supportLatex={true}
-                        gradientClassName="sm:from-common-background to-transparent"
-                        contentClassName="text-sm"
-                        containerClassName="mb-0"
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="relative">
-                  <div
-                    className="absolute -top-9 left-1/2 flex -translate-x-1/2 cursor-pointer items-center gap-1 rounded-full border border-common-contrast bg-common-cardBackground px-2 py-1 text-xxs text-text-tertiary hover:text-text-secondary"
-                    onClick={() => setIsExpanded(!isExpanded)}
-                  >
-                    {isExpanded ? 'Collapse' : 'Expand'}
-                    <ChevronsDown className={cn('h-3 w-3', isExpanded && 'rotate-180')} />
-                  </div>
-                  <DiscussionForum
-                    articleId={selectedArticle.id}
-                    communityId={selectedArticle.communityId}
-                    communityArticleId={selectedArticle.communityArticleId}
-                    isAdmin={selectedArticle.isAdmin}
-                  />
-                </div>
+              <div className="p-4 md:p-6">
+                {/* Refactored by Claude Sonnet 4.5 on 2026-02-09: Use shared ArticleContentView
+                    instead of duplicating article fetching, reviews, and tabs logic */}
+                <ArticleContentView
+                  articleSlug={selectedArticle.slug}
+                  articleId={selectedArticle.id}
+                  communityId={selectedArticle.communityId}
+                  communityArticleId={selectedArticle.communityArticleId}
+                  isAdmin={selectedArticle.isAdmin}
+                  showPdfViewerButton={true}
+                  handleOpenPdfViewer={handleOpenPdfViewer}
+                />
               </div>
             ) : (
               <div className="flex h-full items-center justify-center">

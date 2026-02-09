@@ -143,7 +143,10 @@ function ArticleDisplayPageClient({ params }: Props) {
     setShowPdfViewer(true);
   };
 
-  // Handle closing PDF viewer
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Added redundant "Back to Discussions" button when browser back already exists
+     Solution: Removed custom back button and returnTo handling, let browser back handle it naturally
+     Result: Cleaner UI, no duplicate navigation controls */
   const handleClosePdfViewer = () => {
     setShowPdfViewer(false);
   };
