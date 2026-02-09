@@ -79,6 +79,7 @@ const TabContent: React.FC<TabContentProps> = ({
   setSelectedPreviewArticle,
 }) => {
   const searchParams = useSearchParams();
+  const hasRestoredRef = React.useRef(false);
   const { displayedItems, setItems, appendItems, setFilter, activeFilter, reset } =
     useFilteredList<ArticlesListOut>({
       filters: {
@@ -108,22 +109,25 @@ const TabContent: React.FC<TabContentProps> = ({
   };
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
-     Problem: Back button doesn't restore article selection - autoSelectFirst overrides restoration
-     Solution: Detect articleId from URL params and force selection even if another article selected
-     Result: Selected article restored when navigating back from article page */
+     Problem: Restoration useEffect interfered with normal clicks, always selecting first article
+     Solution: Only restore from URL once on mount when data loads, not on every searchParams change
+     Result: Normal article selection works, AND back button restoration works */
   useEffect(() => {
     const articleIdParam = searchParams?.get('articleId');
-    if (articleIdParam && displayedItems.length > 0 && isActive) {
+    // Only restore once when data first loads with a URL param, don't interfere with normal clicks
+    if (articleIdParam && displayedItems.length > 0 && isActive && !hasRestoredRef.current) {
       const articleId = parseInt(articleIdParam, 10);
-      // Only update if the URL article ID doesn't match the currently selected article
-      if (!selectedPreviewArticle || selectedPreviewArticle.id !== articleId) {
-        const article = displayedItems.find((a) => a.id === articleId);
-        if (article) {
-          setSelectedPreviewArticle(article);
-        }
+      const article = displayedItems.find((a) => a.id === articleId);
+      if (article) {
+        setSelectedPreviewArticle(article);
+        hasRestoredRef.current = true;
       }
     }
-  }, [displayedItems, searchParams, selectedPreviewArticle, setSelectedPreviewArticle, isActive]);
+    // Reset restoration flag when tab becomes inactive (allows restoration when switching back)
+    if (!isActive) {
+      hasRestoredRef.current = false;
+    }
+  }, [displayedItems, searchParams, isActive, setSelectedPreviewArticle]);
 
   useKeyboardNavigation({
     items: displayedItems,
@@ -373,6 +377,7 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
   setSelectedPreviewArticle,
 }) => {
   const searchParams = useSearchParams();
+  const hasRestoredRef = React.useRef(false);
   const { displayedItems, setItems, appendItems, setFilter, activeFilter, reset } =
     useFilteredList<ArticlesListOut>({
       filters: {
@@ -402,22 +407,25 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
   };
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
-     Problem: Back button doesn't restore article selection - autoSelectFirst overrides restoration
-     Solution: Detect articleId from URL params and force selection even if another article selected
-     Result: Selected article restored when navigating back from article page */
+     Problem: Restoration useEffect interfered with normal clicks, always selecting first article
+     Solution: Only restore from URL once on mount when data loads, not on every searchParams change
+     Result: Normal article selection works, AND back button restoration works */
   useEffect(() => {
     const articleIdParam = searchParams?.get('articleId');
-    if (articleIdParam && displayedItems.length > 0 && isActive) {
+    // Only restore once when data first loads with a URL param, don't interfere with normal clicks
+    if (articleIdParam && displayedItems.length > 0 && isActive && !hasRestoredRef.current) {
       const articleId = parseInt(articleIdParam, 10);
-      // Only update if the URL article ID doesn't match the currently selected article
-      if (!selectedPreviewArticle || selectedPreviewArticle.id !== articleId) {
-        const article = displayedItems.find((a) => a.id === articleId);
-        if (article) {
-          setSelectedPreviewArticle(article);
-        }
+      const article = displayedItems.find((a) => a.id === articleId);
+      if (article) {
+        setSelectedPreviewArticle(article);
+        hasRestoredRef.current = true;
       }
     }
-  }, [displayedItems, searchParams, selectedPreviewArticle, setSelectedPreviewArticle, isActive]);
+    // Reset restoration flag when tab becomes inactive (allows restoration when switching back)
+    if (!isActive) {
+      hasRestoredRef.current = false;
+    }
+  }, [displayedItems, searchParams, isActive, setSelectedPreviewArticle]);
 
   useKeyboardNavigation({
     items: displayedItems,

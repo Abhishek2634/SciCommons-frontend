@@ -31,8 +31,11 @@ const Community = ({ params }: { params: { slug: string } }) => {
 
   const { data, error, isPending, refetch } = communityQuery;
 
+  // Don't show error toast - we render error state instead
+  // This prevents double error messages (toast + error page)
   useEffect(() => {
-    if (error) {
+    // Only show toast for non-HTTP errors (network issues, etc.)
+    if (error && !error.response?.status) {
       showErrorToast(error);
     }
   }, [error]);
@@ -75,6 +78,44 @@ const Community = ({ params }: { params: { slug: string } }) => {
           : []),
       ]
     : [];
+
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Accessing non-existent/private community caused logout and 404, horrible UX
+     Solution: Add proper error state rendering for 404 and access denied cases
+     Result: User sees meaningful error message without being logged out */
+
+  // Handle error states without logging user out
+  if (error && !isPending) {
+    const is404 = error.response?.status === 404;
+    const is403 = error.response?.status === 403;
+
+    return (
+      <div className="container h-fit p-4">
+        <div className="pl-2">
+          <CommunityBreadcrumb
+            communityName={params.slug}
+            communitySlug={params.slug}
+            isLoading={false}
+          />
+        </div>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <EmptyState
+            logo={<CircleXIcon className="size-16 text-text-tertiary" />}
+            content={
+              is404 ? 'Community Not Found' : is403 ? 'Access Denied' : 'Unable to Load Community'
+            }
+            subcontent={
+              is404
+                ? "This community doesn't exist or has been removed."
+                : is403
+                  ? "You don't have permission to view this private community."
+                  : 'An error occurred while loading this community. Please try again later.'
+            }
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container h-fit p-4">
