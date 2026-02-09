@@ -120,11 +120,9 @@ const ArticleCard: FC<ArticleCardProps> = memo(
         <div className="flex w-full">
           <div className="w-full min-w-0 flex-grow gap-4">
             {/* Fixed by Claude Sonnet 4.5 on 2026-02-08
-                Previously: Link had w-full class and wrapped both title + buttons, causing
-                link cursor to extend across full card width even for short titles.
-                Now: Link only wraps title with inline-flex flex-1, making it only as wide
-                as the title text. Buttons are siblings in a separate flex-shrink-0 container.
-                Result: Link cursor only appears over actual title text, making card easier to click. */}
+                Problem: Link extended full width even for short titles, making card hard to click
+                Solution: Link uses inline-block (not flex-1) to only be as wide as title text
+                Layout: flex container with justify-between pushes buttons to right, link stays minimal */}
             <div className="flex w-full flex-row items-center justify-between gap-2">
               <Link
                 href={
@@ -132,7 +130,7 @@ const ArticleCard: FC<ArticleCardProps> = memo(
                     ? `/community/${encodedCommunityName}/articles/${article.slug}`
                     : `/article/${article.slug}`
                 }
-                className="inline-flex min-w-0 flex-1"
+                className="inline-block"
               >
                 <RenderParsedHTML
                   rawContent={article.title}
