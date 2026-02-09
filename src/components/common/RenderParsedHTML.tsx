@@ -125,7 +125,7 @@ const RenderParsedHTML = ({
         // Fix links without protocols
         renderer.link = ({ href, title, tokens }) => {
           // Extract text from tokens
-          const text = tokens.map((t) => (t as any).text || '').join('');
+          const text = tokens.map((t) => ('text' in t ? t.text : '')).join('');
 
           // If href doesn't start with a protocol or /, assume it's an external link
           if (href && !href.match(/^(https?:\/\/|mailto:|tel:|#|\/)/i)) {
