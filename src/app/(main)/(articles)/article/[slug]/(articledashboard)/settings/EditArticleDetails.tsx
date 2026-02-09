@@ -110,13 +110,14 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
   useEffect(() => {
     if (isSuccess) {
       /* Fixed by Codex on 2026-02-09
-         Problem: Edited articles could remain stale in list views until a manual refresh.
-         Solution: Invalidate articles/my-articles list queries on successful update.
-         Result: Lists refetch and show edits promptly.
+         Problem: Edited articles could remain stale in list views and detail view until a manual refresh.
+         Solution: Invalidate articles/my-articles list queries AND the specific article query on successful update.
+         Result: Both lists and article detail page refetch and show edits immediately.
          Alternatives (not implemented): (1) Optimistically update cached list items,
          (2) Force a refetch when returning to the list pages. */
       queryClient.invalidateQueries({ queryKey: ['articles'] });
       queryClient.invalidateQueries({ queryKey: ['my_articles'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/articles/article/${articleSlug}`] });
       toast.success('Article details updated successfully');
       router.push(`/article/${articleSlug}`);
     }

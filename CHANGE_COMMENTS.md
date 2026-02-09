@@ -351,13 +351,14 @@ Fixed by Codex on 2026-02-09
 
 Fixed by Codex on 2026-02-09
 
-**Problem**: Newly created or edited articles were not visible in list views until a manual refresh.
-**Root Cause**: Create/edit flows redirected without invalidating list queries, and lists used long stale times.
-**Solution**: Invalidate the articles and my-articles query keys on successful create and edit.
-**Result**: Lists refetch promptly and include the new or updated article without a full reload.
+**Problem**: Newly created or edited articles were not visible in list views until a manual refresh. Additionally, after editing an article, the article detail page showed stale data because of the 10-minute stale time.
+**Root Cause**: Create/edit flows redirected without invalidating list queries and individual article queries. Lists used long stale times, and the article detail query had a 10-minute stale time preventing immediate refetch.
+**Solution**: Invalidate the articles and my-articles query keys on successful create and edit. Also invalidate the specific article query (`/api/articles/article/${articleSlug}`) to force the detail page to refetch immediately.
+**Result**: Both lists and the article detail page refetch promptly and show edits without requiring a manual refresh.
 **Alternatives Considered (Not Implemented)**:
 - Optimistically insert the new article into existing caches.
 - Force a refetch when navigating back to list pages.
+- Reduce the stale time globally (would increase server load).
 **Files Modified**:
 - `src/app/(main)/(articles)/submitarticle/page.tsx`
 - `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx`
