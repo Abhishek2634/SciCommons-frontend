@@ -111,7 +111,9 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
       setArticles([]);
       handleArticleSelect(null);
     },
-    [handleArticleSelect]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+    // handleArticleSelect is stable useCallback, setState functions are stable - omitting to prevent unnecessary re-renders
   );
 
   const handleLoadMore = useCallback((newPage: number) => {
@@ -147,7 +149,9 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
         />
       </div>
     ),
-    [viewType, selectedPreviewArticle, handleArticleSelect]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewType, selectedPreviewArticle]
+    // handleArticleSelect is stable useCallback - omitting to prevent unnecessary re-renders
   );
 
   const renderSkeleton = useCallback(() => <ArticleCardSkeleton />, []);

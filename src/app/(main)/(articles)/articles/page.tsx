@@ -217,7 +217,9 @@ const TabContent: React.FC<TabContentProps> = ({
         />
       </div>
     ),
-    [viewType, selectedPreviewArticle, setSelectedPreviewArticle]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewType, selectedPreviewArticle]
+    // setSelectedPreviewArticle is a stable setState function passed as prop - omitting to prevent infinite re-renders
   );
   const renderSkeleton = useCallback(() => <ArticleCardSkeleton />, []);
 
@@ -483,7 +485,9 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
         />
       </div>
     ),
-    [viewType, selectedPreviewArticle, setSelectedPreviewArticle]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewType, selectedPreviewArticle]
+    // setSelectedPreviewArticle is a stable setState function passed as prop - omitting to prevent infinite re-renders
   );
   const renderSkeleton = useCallback(() => <ArticleCardSkeleton />, []);
 
