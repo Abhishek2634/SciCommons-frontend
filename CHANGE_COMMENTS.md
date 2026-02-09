@@ -338,10 +338,11 @@ Fixed by Codex on 2026-02-09
 
 **Problem**: Bookmarks were only reachable via Profile → Contributions → Bookmarks tab, which was too many clicks.
 **Root Cause**: The top navbar lacked a direct bookmarks entry and the contributions page didn’t support tab deep-linking.
-**Solution**: Added a “Bookmarks” nav link for authenticated users and wired the contributions page to honor a `tab=bookmarks` query param. Follow-up: normalized the tab param to avoid undefined values in TypeScript.
-**Result**: Clicking “Bookmarks” in the navbar opens the bookmarks tab immediately and the page compiles cleanly.
+**Solution**: Added a “Bookmarks” nav link for authenticated users and wired the contributions page to honor a `tab=bookmarks` query param. Follow-up: moved tab parsing to a server wrapper to avoid `useSearchParams` prerender errors, and normalized the param for TypeScript.
+**Result**: Clicking “Bookmarks” in the navbar opens the bookmarks tab immediately without static export errors.
 **Files Modified**:
 - `src/components/common/NavBar.tsx`
+- `src/app/(main)/(users)/mycontributions/MyContributionsClient.tsx`
 - `src/app/(main)/(users)/mycontributions/page.tsx`
 
 ---
