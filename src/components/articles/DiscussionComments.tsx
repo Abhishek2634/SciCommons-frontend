@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { ChevronsDown, ChevronsUp, Layers, SquareMinus, SquarePlus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,6 +22,26 @@ import { useAuthStore } from '@/stores/authStore';
 import { useRealtimeContextStore } from '@/stores/realtimeStore';
 
 import InfiniteSpinnerAnimation from '../animations/InfiniteSpinnerAnimation';
+
+// Helper function to extract unique users from nested comments
+const extractUniqueUsers = (
+  comments: DiscussionCommentOut[]
+): Array<{ id: number; username: string }> => {
+  const userMap = new Map<number, string>();
+
+  const processComment = (comment: DiscussionCommentOut) => {
+    if (comment.author?.id && comment.author?.username) {
+      userMap.set(comment.author.id, comment.author.username);
+    }
+    if (comment.replies && comment.replies.length > 0) {
+      comment.replies.forEach(processComment);
+    }
+  };
+
+  comments.forEach(processComment);
+
+  return Array.from(userMap.entries()).map(([id, username]) => ({ id, username }));
+};
 
 interface DiscussionCommentsProps {
   discussionId: number;
@@ -123,6 +143,12 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({ discussionId })
     deleteComment({ commentId });
   };
 
+  // Extract unique users for mentions
+  const mentionableUsers = useMemo(() => {
+    if (!data?.data) return [];
+    return extractUniqueUsers(data.data);
+  }, [data?.data]);
+
   return (
     <div className="mt-2 flex flex-col">
       <div className="mb-2 flex items-center gap-2">
@@ -144,9 +170,10 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({ discussionId })
       {!isCommentFormCollapsed && (
         <CommentInput
           onSubmit={addNewComment}
-          placeholder="Write a new comment..."
+          placeholder="Write a new comment... (use @username to mention)"
           buttonText="Post Comment"
           isPending={isCreateCommentPending}
+          mentionableUsers={mentionableUsers}
         />
       )}
       {isPending && (
@@ -210,6 +237,7 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({ discussionId })
             onUpdateComment={updateComment}
             onDeleteComment={deleteCommentbyId}
             contentType={ContentTypeEnum.articlesdiscussioncomment}
+            mentionableUsers={mentionableUsers}
           />
         </div>
       )}

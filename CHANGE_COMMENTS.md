@@ -378,4 +378,28 @@ Fixed by Codex on 2026-02-09
 
 ---
 
+## User Mention Support in Discussions (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: No way to tag specific users in discussion comments to notify them or reference them directly.
+**Root Cause**: The comment system lacked mention/tagging functionality commonly found in social platforms.
+**Solution**: Implemented @mention autocomplete feature:
+- Created `MentionTextarea` component that detects `@` and shows dropdown with usernames
+- Autocomplete filters users who have commented in the discussion
+- Keyboard navigation (Arrow keys, Enter/Tab, Escape)
+- Visual highlighting of @mentions in rendered comments (styled with blue background)
+- Backend can scan for `@username` patterns to send notifications
+**Result**: Users can now type `@username` with autocomplete suggestions, making it easy to mention and notify other participants in discussions.
+**Files Modified**:
+- `src/components/common/MentionTextarea.tsx` (NEW)
+- `src/lib/mentionHelpers.ts` (NEW)
+- `src/components/common/CommentInput.tsx` - Added mentionableUsers prop and conditional MentionTextarea
+- `src/components/articles/DiscussionComments.tsx` - Extract unique users and pass to CommentInput
+- `src/components/common/RenderComments.tsx` - Pass mentionableUsers through component tree
+- `src/components/common/Comment.tsx` - Pass mentionableUsers to nested comments and highlight mentions
+- `src/app/globals.css` - Added `.mention-tag` styling
+
+---
+
 If you want deeper traceability, use `git diff 5271498..HEAD` for exact code deltas.

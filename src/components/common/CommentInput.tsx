@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 
 import { Button, ButtonIcon, ButtonTitle } from '../ui/button';
 import CustomTooltip from './CustomTooltip';
+import MentionTextarea from './MentionTextarea';
 import RenderParsedHTML from './RenderParsedHTML';
 import { BlockSkeleton, Skeleton } from './Skeleton';
 
@@ -28,6 +29,8 @@ interface CommentInputProps {
   isAuthor?: boolean;
   isPending?: boolean;
   onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  // Mention specific props
+  mentionableUsers?: Array<{ id: number; username: string }>;
 }
 
 interface FormInputs {
@@ -48,6 +51,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
   isAuthor = false,
   isPending = false,
   onChange: _onChange,
+  mentionableUsers = [],
 }) => {
   const {
     register,
@@ -95,26 +99,48 @@ const CommentInput: React.FC<CommentInputProps> = ({
             'h-0 overflow-hidden opacity-0': isMarkdownPreview,
           })}
         >
-          <textarea
-            {...register('content', {
-              required: 'Content is required',
-              minLength: { value: 3, message: 'Content must be at least 3 characters long' },
-              maxLength: { value: 500, message: 'Content must not exceed 500 characters' },
-            })}
-            placeholder={placeholder}
-            className={cn(
-              'block w-full rounded-md bg-common-background px-3 py-2 text-text-primary shadow-sm ring-1 ring-common-contrast res-text-sm placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-functional-green',
-              {
-                'border-functional-red': errors.content,
-              }
-            )}
-            rows={3}
-            value={contentValue}
-            onChange={(e) => {
-              setValue('content', e.target.value);
-              // onChange?.(e);
-            }}
-          />
+          {mentionableUsers.length > 0 ? (
+            <Controller
+              name="content"
+              control={control}
+              rules={{
+                required: 'Content is required',
+                minLength: { value: 3, message: 'Content must be at least 3 characters long' },
+                maxLength: { value: 500, message: 'Content must not exceed 500 characters' },
+              }}
+              render={({ field }) => (
+                <MentionTextarea
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder={placeholder}
+                  rows={3}
+                  mentionableUsers={mentionableUsers}
+                  hasError={!!errors.content}
+                />
+              )}
+            />
+          ) : (
+            <textarea
+              {...register('content', {
+                required: 'Content is required',
+                minLength: { value: 3, message: 'Content must be at least 3 characters long' },
+                maxLength: { value: 500, message: 'Content must not exceed 500 characters' },
+              })}
+              placeholder={placeholder}
+              className={cn(
+                'block w-full rounded-md bg-common-background px-3 py-2 text-text-primary shadow-sm ring-1 ring-common-contrast res-text-sm placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-functional-green',
+                {
+                  'border-functional-red': errors.content,
+                }
+              )}
+              rows={3}
+              value={contentValue}
+              onChange={(e) => {
+                setValue('content', e.target.value);
+                // onChange?.(e);
+              }}
+            />
+          )}
         </div>
         {errors.content && (
           <p className="mt-1 text-sm text-functional-red">{errors.content.message}</p>
