@@ -59,7 +59,8 @@ code now does, not a commit-by-commit history.
 
    - Fixed router.push to use router.replace with full pathname
    - Selected article ID persisted in URL (/discussions?articleId=123)
-   - Scroll position tracked and restored via ref
+   - Scroll position tracked in ref and persisted to sessionStorage
+   - Scroll position restored from sessionStorage on mount (preserves across navigation)
    - Auto-selects article on mount when URL param present
 
    c) **Code Refactoring - Eliminated Duplication:**

@@ -119,15 +119,43 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
     }
   }, [sortedArticles, onArticlesLoaded]);
 
-  // Save scroll position when scrolling
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Scroll position resets when navigating to article page and back
+     Solution: Persist scroll position in sessionStorage, restore on mount
+     Result: Scroll position preserved across navigation, better UX */
+
+  const SCROLL_POSITION_KEY = 'discussions-sidebar-scroll';
+
+  // Restore scroll position from sessionStorage on mount
+  React.useEffect(() => {
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+
+    const savedScroll = sessionStorage.getItem(SCROLL_POSITION_KEY);
+    if (savedScroll) {
+      const scrollPos = parseInt(savedScroll, 10);
+      if (scrollPositionRef) {
+        scrollPositionRef.current = scrollPos;
+      }
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        sidebar.scrollTop = scrollPos;
+      }, 100);
+    }
+  }, []); // Run once on mount
+
+  // Save scroll position when scrolling (to both ref and sessionStorage)
   React.useEffect(() => {
     const sidebar = sidebarRef.current;
     if (!sidebar || !scrollPositionRef) return;
 
     const handleScroll = () => {
+      const scrollPos = sidebar.scrollTop;
       if (scrollPositionRef) {
-        scrollPositionRef.current = sidebar.scrollTop;
+        scrollPositionRef.current = scrollPos;
       }
+      // Persist to sessionStorage for cross-navigation preservation
+      sessionStorage.setItem(SCROLL_POSITION_KEY, scrollPos.toString());
     };
 
     sidebar.addEventListener('scroll', handleScroll);
