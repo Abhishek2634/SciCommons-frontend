@@ -12,6 +12,7 @@ import MultiLabelSelector from '@/components/common/MultiLabelSelector';
 import { BlockSkeleton, Skeleton, TextSkeleton } from '@/components/common/Skeleton';
 import { Button, ButtonTitle } from '@/components/ui/button';
 import { Option } from '@/components/ui/multiple-selector';
+import { ARTICLE_TITLE_MIN_LENGTH } from '@/constants/common.constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { FileObj } from '@/types';
@@ -33,8 +34,6 @@ interface EditArticleDetailsProps {
   // keywords: Option[];
   submissionType: 'Public' | 'Private';
   defaultImageURL: string | null;
-  isEditEnabled: boolean;
-  setIsEditEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   articleSlug: string;
 }
 
@@ -46,8 +45,6 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
     submissionType,
     defaultImageURL: _defaultImageURL,
     articleId,
-    isEditEnabled,
-    setIsEditEnabled: _setIsEditEnabled,
     articleSlug,
   } = props;
   const {
@@ -119,6 +116,10 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
   }, [updateError, isSuccess, router, articleSlug]);
 
   return (
+    /* Fixed by Codex on 2026-02-09
+       Problem: Edit screen required an extra toggle and showed community-focused helper text.
+       Solution: Keep fields editable by default and update labels/messages for articles.
+       Result: Users can edit immediately with accurate guidance. */
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col space-y-8">
       {/* <Controller
         name="articleImageFile"
@@ -137,28 +138,26 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
         label="Title"
         name="title"
         type="text"
-        placeholder="Briefly describe your community"
+        placeholder="Enter the title of your article"
         register={register}
-        requiredMessage="Description is required"
-        minLengthValue={10}
-        minLengthMessage="Description must be at least 10 characters"
-        info="Your community's name should be unique and descriptive."
+        requiredMessage="Title is required"
+        minLengthValue={ARTICLE_TITLE_MIN_LENGTH}
+        minLengthMessage={`Title must be at least ${ARTICLE_TITLE_MIN_LENGTH} characters`}
+        info="Please provide a clear and concise title for your article."
         errors={errors}
-        readOnly={!isEditEnabled}
       />
       <FormInput<FormValues>
         label="Abstract"
         name="abstract"
         type="text"
         textArea={true}
-        placeholder="Briefly describe your community"
+        placeholder="Enter the abstract of your article"
         register={register}
-        requiredMessage="Description is required"
+        requiredMessage="Abstract is required"
         minLengthValue={10}
-        minLengthMessage="Description must be at least 10 characters"
-        info="Your community's name should be unique and descriptive."
+        minLengthMessage="Abstract must be at least 10 characters"
+        info="Provide a brief summary of your article's content."
         errors={errors}
-        readOnly={!isEditEnabled}
       />
       <Controller
         name="authors"
@@ -167,13 +166,12 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
         render={({ field: { onChange, value }, fieldState }) => (
           <MultiLabelSelector
             label="Authors"
-            tooltipText="Help users find your community by adding tags."
-            placeholder="Add Tags"
+            tooltipText="Select authors for the article."
+            placeholder="Add Authors"
             creatable
             value={value}
             onChange={onChange}
             fieldState={fieldState}
-            readonly={!isEditEnabled}
           />
         )}
       />
@@ -209,7 +207,7 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
                 )}
                 type="button"
                 variant={'outline'}
-                onClick={() => isEditEnabled && onChange('Public')}
+                onClick={() => onChange('Public')}
               >
                 <ButtonTitle className="text-base">Public</ButtonTitle>
               </Button>
@@ -235,9 +233,8 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
         loading={isUpdatePending}
         className="mx-auto w-full"
         type="submit"
-        disabled={!isEditEnabled}
       >
-        <ButtonTitle>{isUpdatePending ? 'Loading...' : 'Submit Article'}</ButtonTitle>
+        <ButtonTitle>{isUpdatePending ? 'Loading...' : 'Update Article'}</ButtonTitle>
       </Button>
     </form>
   );

@@ -12,6 +12,7 @@ import {
 import FileUpload from '@/components/common/FileUpload';
 import FormInput from '@/components/common/FormInput';
 import MultiLabelSelector from '@/components/common/MultiLabelSelector';
+import { ARTICLE_TITLE_MIN_LENGTH } from '@/constants/common.constants';
 import { useSubmitOnCtrlEnter } from '@/hooks/useSubmitOnCtrlEnter';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
@@ -104,8 +105,8 @@ const SubmitArticleForm: React.FC<SubmitArticleFormProps> = ({
           placeholder="Enter the title of your article"
           register={register}
           requiredMessage="Title is required"
-          minLengthValue={5}
-          minLengthMessage="Title must be at least 5 characters"
+          minLengthValue={ARTICLE_TITLE_MIN_LENGTH}
+          minLengthMessage={`Title must be at least ${ARTICLE_TITLE_MIN_LENGTH} characters`}
           maxLengthValue={500}
           maxLengthMessage="Title cannot exceed 500 characters"
           info="Please provide a clear and concise title for your article."

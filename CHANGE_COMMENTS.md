@@ -302,4 +302,33 @@ Fixed by Codex on 2026-02-09
 
 ---
 
+## Article Title Min Length Consistency (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: Article title validation used 5 characters on create but 10 characters on edit, creating inconsistent rules.
+**Root Cause**: The edit form hard-coded a different minimum length value than the create form.
+**Solution**: Added a shared `ARTICLE_TITLE_MIN_LENGTH` constant (set to 5) and referenced it in both create and edit forms.
+**Result**: Title length validation is consistent across create and edit flows.
+**Files Modified**:
+- `src/constants/common.constants.tsx`
+- `src/components/articles/SubmitArticleForm.tsx`
+- `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx`
+
+---
+
+## Article Settings UX Cleanup (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: The article settings page required an extra edit toggle before fields were editable, showed community-focused helper text, and used a misleading “Submit Article” button label.
+**Root Cause**: The edit screen was ported from community settings patterns and retained the edit-lock toggle and copy.
+**Solution**: Keep article settings fields editable on arrival, update helper text to article language, and rename the primary action to “Update Article.”
+**Result**: Editing is immediate and the UI messaging matches the article context.
+**Files Modified**:
+- `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/page.tsx`
+- `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx`
+
+---
+
 If you want deeper traceability, use `git diff 5271498..HEAD` for exact code deltas.
