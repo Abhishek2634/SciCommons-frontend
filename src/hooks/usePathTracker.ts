@@ -1,15 +1,8 @@
-// hooks/usePathTracker.ts
 'use client';
 
 import { useEffect } from 'react';
 
 import { usePathname } from 'next/navigation';
-
-// hooks/usePathTracker.ts
-
-// hooks/usePathTracker.ts
-
-// hooks/usePathTracker.ts
 
 export function usePathTracker() {
   const pathname = usePathname();

@@ -18,16 +18,19 @@ run-all-checks-fix.bat
 ### Before Committing (Auto-fix Mode) ⭐ RECOMMENDED
 
 **Windows:**
+
 ```bash
 run-all-checks-fix.bat
 ```
 
 **Cross-platform:**
+
 ```bash
 yarn test:fix
 ```
 
 This will:
+
 - ✅ Auto-fix Prettier formatting
 - ✅ Auto-fix ESLint issues
 - ✅ Run TypeScript type check (fast mode)
@@ -36,11 +39,13 @@ This will:
 ### Check Only (No Auto-fix)
 
 **Windows:**
+
 ```bash
 run-all-checks.bat
 ```
 
 **Cross-platform:**
+
 ```bash
 yarn test:all
 ```
@@ -50,21 +55,25 @@ yarn test:all
 The comprehensive test suite runs the following checks in sequence:
 
 ### 1. Jest Tests (`yarn test`)
+
 - Runs all unit and integration tests
 - Tests for components, utilities, stores, and hooks
 - Validates application logic and behavior
 
 ### 2. TypeScript Type Check (`yarn check-types`)
+
 - Runs `tsc --noEmit` to check for type errors
 - Validates TypeScript types across the entire codebase
 - Catches type mismatches and interface violations
 
 ### 3. ESLint (`yarn lint`)
+
 - Runs `next lint` to check code quality
 - Validates code style and best practices
 - Checks for potential bugs and anti-patterns
 
 ### 4. Prettier Check (`yarn prettier:check`)
+
 - Verifies code formatting consistency
 - Checks if all files match Prettier config
 - **Note**: Does NOT auto-fix (use `yarn prettier` to fix)
@@ -151,6 +160,7 @@ run-all-checks-fix.bat
 ### When to Run Checks
 
 Run checks before:
+
 - ✅ **Every commit** (use `yarn test:fix`)
 - ✅ Creating a pull request
 - ✅ Merging branches
@@ -159,6 +169,7 @@ Run checks before:
 ## Troubleshooting
 
 ### Tests Failing
+
 ```bash
 # Run tests in watch mode for debugging
 yarn test --watch
@@ -168,6 +179,7 @@ yarn test --coverage
 ```
 
 ### TypeScript Errors
+
 ```bash
 # Check types with detailed output
 yarn check-types
@@ -177,6 +189,7 @@ tsc --skipLibCheck --noEmit
 ```
 
 ### ESLint Errors
+
 ```bash
 # Try auto-fixing first
 yarn lint:fix
@@ -186,6 +199,7 @@ yarn lint --file path/to/file.tsx
 ```
 
 ### Prettier Issues
+
 ```bash
 # Auto-fix all formatting issues
 yarn prettier
@@ -217,13 +231,16 @@ These scripts are designed to be used in CI/CD pipelines:
 ## Performance Tips
 
 ### Faster Type Checking
+
 ```bash
 # Skip lib checks (faster, but less thorough)
 tsc --skipLibCheck --noEmit
 ```
 
 ### Parallel Execution
+
 The batch scripts run sequentially for clarity, but you can run checks in parallel:
+
 ```bash
 # Run all checks in parallel (bash/zsh)
 yarn test & yarn check-types & yarn lint & yarn prettier:check
@@ -234,6 +251,7 @@ npm-run-all --parallel test check-types lint prettier:check
 ```
 
 ### Selective Checks
+
 ```bash
 # Only run checks for changed files
 git diff --name-only --cached | grep -E '\.(ts|tsx|js|jsx)$' | xargs yarn eslint

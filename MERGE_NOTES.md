@@ -1,6 +1,7 @@
 # Merge Notes
 
 **Context**
+
 - User: bsureshkrishna.
 - Goal: make `codexfix-fullhistory` include the latest `origin/test` changes while preserving full pre-squash history and keeping your post-squash work.
 - `codexfix-before-squash` is a descendant of `test` and contains 50 test commits + 19 of your commits.
@@ -9,12 +10,14 @@
 - A merge with `origin/test` is in progress on `codexfix-fullhistory`.
 
 **Objective**
+
 - Preserve `test` history for maintainers.
 - Incorporate your post-squash work.
 - Merge in any newer `origin/test` changes.
 - Resolve conflicts deliberately, keeping security and UX fixes.
 
 **Current State**
+
 - Branch: `codexfix-fullhistory`.
 - Merge in progress with conflicts in these files:
   - `next.config.mjs`
@@ -34,6 +37,7 @@
   - `yarn.lock`
 
 **Decisions (Conflict Resolutions)**
+
 - `next.config.mjs`: combine. Keep your PWA caching settings and image remote patterns, add test security/perf additions, and use `disable: isDev`.
 - `src/app/layout.tsx`: keep yours. `<html>` must wrap `<body>`; providers go inside `<body>`.
 - `src/app/(main)/about/page.tsx`: keep test (new About page).
@@ -51,6 +55,7 @@
 - `yarn.lock`: regenerate after resolving conflicts.
 
 **Planned Code Changes**
+
 - Apply the conflict resolutions above.
 - Add a TODO comment in `src/hooks/useRealtime.tsx` about re-validating multi-tab behavior, retries, and unread sync.
 - Add a TODO comment near community description rendering about LaTeX safety/perf.
@@ -59,10 +64,12 @@
 - Regenerate `yarn.lock` after conflict resolution.
 
 **Notes**
+
 - This merge is intended to keep all latest `origin/test` changes while preserving your history and post-squash commits.
 - Any differences remaining vs `origin/test` should be deliberate per the decisions above.
 
 **Post-merge Checks / Test Gaps**
+
 - Re-validate realtime leader election, retry/backoff, and unread sync in `src/hooks/useRealtime.tsx`.
 - LaTeX rendering: disabled in community description for now; if re-enabled, add a length guard
   and fall back to markdown-only rendering for large descriptions (see inline note).

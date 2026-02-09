@@ -1,6 +1,7 @@
 # AGENTS.md
 
 Notes for this repository:
+
 - **Git commit hooks are DISABLED** (as of 2026-02-09) - git commit is now fast and doesn't run automatic checks
 - **You MUST run `yarn test:fix` or `run-all-checks-fix.bat` before committing** to ensure code quality
 - Line-ending warnings (LF to CRLF) are expected in this workspace; do not treat them as errors.
@@ -8,6 +9,7 @@ Notes for this repository:
 - **NEVER redirect stderr to `Nul` or `nul`** - these are Windows reserved device names; use `NUL` (all caps) instead to avoid creating phantom untracked files that git cannot remove.
 
 ## Git Remote Management (CRITICAL)
+
 - **ALWAYS execute `git remote remove origin` at the start of any code changes session. However, if the command fails with "origin not found" or something similar, that means origin has already been removed. and that is fine. So dont bother fixing it beyond that. Move on**
 - This prevents accidental pushes to the remote repository
 - User will manually reset the remote (`git remote add origin <url>`) when ready to push
@@ -16,6 +18,7 @@ Notes for this repository:
 ## Code Change Guidelines
 
 ### Inline Comments
+
 - **Always add explanatory comments** to non-trivial code changes
 - Comments should include:
   - **Who**: Fixed by [Agent/Person Name] on [Date]
@@ -31,6 +34,7 @@ Notes for this repository:
   ```
 
 ### Changelog Summaries (CHANGE_COMMENTS.md)
+
 - **Always add summaries** of significant changes to `CHANGE_COMMENTS.md`
 - Include for each change:
   - **Problem**: Clear description of the issue being solved

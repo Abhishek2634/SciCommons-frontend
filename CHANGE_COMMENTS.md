@@ -1,11 +1,12 @@
 # Change Commentary (Baseline 5271498 -> Current Tree)
 
-This document captures the *behavioral* and *structural* differences between the tree at
+This document captures the _behavioral_ and _structural_ differences between the tree at
 commit `5271498` (the commit immediately before the first `bsureshkrishna` change on 2026-02-07)
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
 **Auth, Session, and Security Hardening**
+
 1. Auth initialization now migrates persisted auth into cookies, validates expiry, probes the
    server once for a fallback session, and clears caches/unread state on logout.
 2. Middleware now guards protected routes via `auth_token` + `expiresAt` cookies and redirects
@@ -15,6 +16,7 @@ code now does, not a commit-by-commit history.
 4. External links are sanitized via `getSafeExternalUrl` to block unsafe schemes.
 
 **Realtime + Unread Notifications**
+
 1. Realtime polling now persists queue state (`queue_id`, `last_event_id`) and uses multi-tab
    leader election with BroadcastChannel to avoid duplicate processing.
 2. Events update React Query caches and feed a persisted unread store that drives badges, sorting,
@@ -23,11 +25,13 @@ code now does, not a commit-by-commit history.
 4. Notification toasts + optional sound hooks are wired to user settings.
 
 **Bookmarks + Article/Community Surfaces**
+
 1. Article and community cards now support bookmark toggles with optimistic UI updates.
 2. Article preview moved to hover-based tooltip for compact lists, keeping click for navigation.
 3. Community and article routes now consistently encode community slugs for safe URLs.
 
 **Communities, Discussions, and Admin Workflows**
+
 1. Community header surfaces join flow, pending request counts (admin), and settings shortcuts.
 2. Discussion cards add unread highlighting, mark-as-read hooks, and resolve/unresolve actions
    for admins/authors.
@@ -35,25 +39,30 @@ code now does, not a commit-by-commit history.
 4. Subscriptions sidebar merges unread activity with user subscriptions and sorts by recency.
 
 **Content Rendering + Safety**
+
 1. Centralized `RenderParsedHTML` now sanitizes with DOMPurify and supports Markdown + LaTeX,
    with optional "show more" truncation and heading flattening.
 2. Community/Article summaries use parsed HTML consistently with safety defaults.
 
 **PDF Annotations**
+
 1. PDF viewer components provide highlight capture, notes, and quote-to-review interactions.
 2. Annotations persist locally (Zustand + localStorage) with export/import scaffolding.
 
 **User Settings**
+
 1. User settings are fetched, cached, and stored locally to drive preferences such as notification
    sound and email toggles.
 
 **Platform/Config/Test Infrastructure**
+
 1. Next.js config tightened security headers, image optimization allowlist, and PWA caching defaults.
 2. Standalone build helper copies `public/` and `.next/static` to ensure assets in deployment.
 3. Jest config updated for jsdom and expanded tests (auth, middleware, realtime, UI).
 4. Repository standardized on `yarn.lock` (package-lock removed).
 
 **Post-Commentary Follow-ups (After 93c19fe)**
+
 1. Fixed a missing `accessToken` destructure in the Articles tab content to enable authenticated
    queries and eliminate TypeScript errors.
 2. Simplified the Tabler icon wrapper to avoid ref type mismatches in strict typing.
@@ -67,12 +76,15 @@ code now does, not a commit-by-commit history.
 Fixed by Claude Sonnet 4.5 on 2026-02-08 - Addresses 15 critical issues identified in comprehensive code audit, focusing on race conditions, memory leaks, security vulnerabilities, and error handling failures.
 
 ### **Phase 1: Foundation**
+
 1. **Global Mutation Error Handler** (`src/lib/mutationHelpers.ts` - NEW)
+
    - Created `handleMutationError()` function for consistent error handling across all React Query mutations
    - Provides user-friendly toast notifications, proper logging, and network/auth error differentiation
    - Includes helper functions: `isNetworkError()`, `isAuthError()`, `createMutationErrorHandler()`
 
 2. **Global 401/403 Interceptor** (`src/api/custom-instance.ts`)
+
    - Added axios response interceptor that catches authentication errors globally
    - Automatically logs out users, shows toast notification, and redirects to login page
    - Prevents auth errors from being silently ignored across the application
@@ -85,7 +97,9 @@ Fixed by Claude Sonnet 4.5 on 2026-02-08 - Addresses 15 critical issues identifi
    - Clears timestamp on logout for security
 
 ### **Phase 2: Authentication System**
+
 4. **Auth Initialization Lock** (`src/stores/authStore.ts`)
+
    - Implemented promise-based lock mechanism to prevent race conditions from parallel calls
    - Added `isInitializing` flag and `initializationPromise` at module level
    - Protects against React Strict Mode double-mounting and multiple component initialization
@@ -98,19 +112,23 @@ Fixed by Claude Sonnet 4.5 on 2026-02-08 - Addresses 15 critical issues identifi
    - Other server errors extend expiry minimally without forcing logout
 
 ### **Phase 3: Realtime System Reliability**
+
 6. **Event Ordering** (`src/hooks/useRealtime.tsx`)
+
    - Implemented event sequencing with `eventSequenceRef` and `pendingEventsRef` Maps
    - Events sorted by `event_id` before processing to ensure correct order
    - Out-of-order events queued and processed when ready
    - Recursive processing checks for newly-ready pending events after each event
 
 7. **Aggressive Event ID Cleanup** (`src/hooks/useRealtime.tsx`)
+
    - Reduced cleanup threshold from 1000→500, keep only 250 recent IDs (was 500)
    - Added periodic cleanup every 10 minutes to prevent memory leaks
    - Cleans sequence trackers and pending events older than 1 hour
    - Prevents Set from growing to megabytes in long-running sessions
 
 8. **Poll Cleanup on Unmount** (`src/hooks/useRealtime.tsx`)
+
    - Added `pollTimeoutRef` to track setTimeout IDs
    - Clears any existing timeout before setting new one
    - Cleanup effect removes timeout on component unmount
@@ -123,13 +141,16 @@ Fixed by Claude Sonnet 4.5 on 2026-02-08 - Addresses 15 critical issues identifi
    - Logs retry attempts for debugging
 
 ### **Phase 4: Performance & Memory**
+
 10. **Comment Component Optimization** (`src/components/common/Comment.tsx`)
+
     - Replaced `findArticleContext` callback with `useMemo` for pre-computed lookup
     - Eliminates N×M iterations on every render (N comments × M articles)
     - Only recomputes when `articleUnreads` or `id` changes
     - Significant performance improvement with many comments
 
 11. **Form localStorage Coordination** (`src/app/(main)/(articles)/submitarticle/page.tsx`)
+
     - Added 300ms debouncing to watch effect to reduce write frequency
     - Implemented `isSaving` flag to prevent concurrent writes
     - Tab change effect now only reads (doesn't write) to prevent conflicts
@@ -144,7 +165,9 @@ Fixed by Claude Sonnet 4.5 on 2026-02-08 - Addresses 15 critical issues identifi
     - Updates timestamp in both onmessage handler and subscribe callback
 
 ### **Phase 5: Security**
+
 13. **PDF Annotations Validation** (`src/stores/pdfAnnotationsStore.ts`)
+
     - Created `validateAnnotation()` and `validateHighlightArea()` functions
     - Validates all required fields, types, and structure before import
     - Checks for valid color values, non-negative numbers, and valid date strings
@@ -152,6 +175,7 @@ Fixed by Claude Sonnet 4.5 on 2026-02-08 - Addresses 15 critical issues identifi
     - Prevents malformed data from corrupting store
 
 14. **XML Sanitization** (`src/stores/useFetchExternalArticleStore.ts`)
+
     - Integrated DOMPurify to sanitize arXiv XML before parsing
     - Allows only safe tags: feed, entry, title, author, name, summary, link, id, updated, published
     - Validates PDF links are from arxiv.org to prevent redirection attacks
@@ -159,6 +183,7 @@ Fixed by Claude Sonnet 4.5 on 2026-02-08 - Addresses 15 critical issues identifi
     - Prevents XSS attacks via malicious XML responses
 
 15. **Filename Sanitization** (`src/app/(main)/(articles)/submitarticle/page.tsx`)
+
     - Sanitizes PDF filenames before upload to prevent path traversal attacks
     - Removes path separators (`/`, `\`), null bytes, ".." sequences
     - Removes leading dots to prevent hidden file creation
@@ -173,6 +198,7 @@ Fixed by Claude Sonnet 4.5 on 2026-02-08 - Addresses 15 critical issues identifi
     - Logs full error details to console for debugging
 
 ### **Files Modified**
+
 - **New Files:**
   - `src/lib/mutationHelpers.ts`
   - `src/components/common/GlobalErrorHandler.tsx`
@@ -188,6 +214,7 @@ Fixed by Claude Sonnet 4.5 on 2026-02-08 - Addresses 15 critical issues identifi
   - `src/app/layout.tsx`
 
 ### **Impact**
+
 - 🔒 **Authentication**: Stable auth without race conditions, proper offline tolerance
 - 🔄 **Realtime**: Reliable event ordering, proper memory management in long sessions
 - ⚡ **Performance**: Optimized Comment component, coordinated form saves
@@ -209,6 +236,7 @@ Fixed by Claude Sonnet 4.5 on 2026-02-08
 **Root Cause**: The `<Link>` component originally had `className="flex w-full..."` and wrapped both title and buttons. Initial fix attempt used `flex-1` which still caused the link to grow to fill available space.
 
 **Solution Evolution**:
+
 1. First attempt: Restructured component (Link only wraps title, buttons separate) but used `inline-flex flex-1` ❌ Still too wide due to flex-1
 2. Final fix: Changed to `className="inline-block"` ✅ Link is ONLY as wide as title text
    - `inline-block`: Element is only as wide as its content, no flex growth
@@ -218,6 +246,7 @@ Fixed by Claude Sonnet 4.5 on 2026-02-08
 **Result**: The link cursor now only appears when hovering over actual title text, not empty space to the right. Makes clicking the card much easier in all views.
 
 **Files Modified**:
+
 - `src/components/articles/ArticleCard.tsx` (lines 122-147)
 - Commits: 5cd1b7c (structure), 5742a47 (docs), 8643337 (final CSS fix)
 
@@ -232,6 +261,7 @@ Fixed by Codex on 2026-02-09
 **Solution**: Replace the toast with a router redirect to `/` immediately after logout.
 **Result**: Users land on the public home page after logout, reducing confusion and stale UI.
 **Files Modified**:
+
 - `src/components/common/NavBar.tsx`
 - Commit: (this commit)
 
@@ -246,6 +276,7 @@ Fixed by Codex on 2026-02-09
 **Solution**: Commented out the success toast call (and its import) while keeping a documented inline comment for the change.
 **Result**: Login now transitions directly to the redirect without an extra toast.
 **Files Modified**:
+
 - `src/app/(authentication)/auth/login/page.tsx`
 
 ---
@@ -259,6 +290,7 @@ Fixed by Codex on 2026-02-09
 **Solution**: Mocked `NEXT_PUBLIC_BACKEND_URL` and `fetch` to return a 401 so the logout/clear-cookies path is exercised.
 **Result**: The test now aligns with the intended behavior and passes reliably.
 **Files Modified**:
+
 - `src/tests/__tests__/authStore.test.ts`
 
 ---
@@ -272,6 +304,7 @@ Fixed by Codex on 2026-02-09
 **Solution**: Added a test that mocks a backend URL and a rejected `fetch` to exercise the network-error branch.
 **Result**: The test suite now covers the keep-session behavior without clearing cookies.
 **Files Modified**:
+
 - `src/tests/__tests__/authStore.test.ts`
 
 ---
@@ -285,6 +318,7 @@ Fixed by Codex on 2026-02-09
 **Solution**: Introduced a typed helper that treats `fetch` as optional and restores it by assignment instead of deletion.
 **Result**: Test cleanup remains deterministic and TypeScript compilation passes.
 **Files Modified**:
+
 - `src/tests/__tests__/authStore.test.ts`
 
 ---
@@ -298,6 +332,7 @@ Fixed by Codex on 2026-02-09
 **Solution**: Collapse the Add Comment form (`+` state) on successful comment creation.
 **Result**: After posting, the comment form closes automatically, matching expected sidebar behavior.
 **Files Modified**:
+
 - `src/components/articles/DiscussionComments.tsx`
 
 ---
@@ -311,6 +346,7 @@ Fixed by Codex on 2026-02-09
 **Solution**: Added a shared `ARTICLE_TITLE_MIN_LENGTH` constant (set to 5) and referenced it in both create and edit forms.
 **Result**: Title length validation is consistent across create and edit flows.
 **Files Modified**:
+
 - `src/constants/common.constants.tsx`
 - `src/components/articles/SubmitArticleForm.tsx`
 - `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx`
@@ -326,6 +362,7 @@ Fixed by Codex on 2026-02-09
 **Solution**: Keep article settings fields editable on arrival, update helper text to article language, rename the primary action to “Update Article,” and remove the redundant sidebar Edit link.
 **Result**: Editing is immediate, the UI messaging matches the article context, and the sidebar no longer duplicates the edit action.
 **Files Modified**:
+
 - `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/page.tsx`
 - `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx`
 - `src/app/(main)/(articles)/article/[slug]/(articledashboard)/layout.tsx`
@@ -341,6 +378,7 @@ Fixed by Codex on 2026-02-09
 **Solution**: Added a “Bookmarks” nav link for authenticated users and wired the contributions page to honor a `tab=bookmarks` query param. Follow-up: moved tab parsing to a server wrapper to avoid `useSearchParams` prerender errors, and normalized the param for TypeScript.
 **Result**: Clicking “Bookmarks” in the navbar opens the bookmarks tab immediately without static export errors.
 **Files Modified**:
+
 - `src/components/common/NavBar.tsx`
 - `src/app/(main)/(users)/mycontributions/MyContributionsClient.tsx`
 - `src/app/(main)/(users)/mycontributions/page.tsx`
@@ -356,10 +394,11 @@ Fixed by Codex on 2026-02-09
 **Solution**: Invalidate the articles and my-articles query keys on successful create and edit. Also invalidate the specific article query (`/api/articles/article/${articleSlug}`) to force the detail page to refetch immediately.
 **Result**: Both lists and the article detail page refetch promptly and show edits without requiring a manual refresh.
 **Alternatives Considered (Not Implemented)**:
+
 - Optimistically insert the new article into existing caches.
 - Force a refetch when navigating back to list pages.
 - Reduce the stale time globally (would increase server load).
-**Files Modified**:
+  **Files Modified**:
 - `src/app/(main)/(articles)/submitarticle/page.tsx`
 - `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx`
 
@@ -374,6 +413,7 @@ Fixed by Codex on 2026-02-09
 **Solution**: Ignore `.next/` in Jest module resolution via `modulePathIgnorePatterns`.
 **Result**: Tests run without haste-map naming collision warnings.
 **Files Modified**:
+
 - `jest.config.ts`
 
 ---
@@ -387,6 +427,7 @@ Fixed by Codex on 2026-02-09
 **Root Cause**: The edit button in `DisplayArticle.tsx` always linked to `/article/{slug}/settings` without passing community context. The edit page and redirect logic had no awareness of where the user came from (community vs. public view).
 
 **Solution**: Implemented context-aware routing using query parameters:
+
 1. **Edit button** now detects if article has `community_article` and passes `community` and `returnTo` query params
 2. **Settings page** reads query params via `useSearchParams` and passes them to `EditArticleDetails`
 3. **EditArticleDetails** redirects based on context:
@@ -399,11 +440,13 @@ Fixed by Codex on 2026-02-09
 **Result**: Users stay in the same view context after editing. If they accessed the article from a community, they return to that community view and see the same community discussions before and after editing.
 
 **Alternatives Considered (Not Implemented)**:
+
 - Create separate community edit route `/community/{slug}/articles/{articleSlug}/settings` → Too much code duplication
 - Fetch article in edit page to check `community_article` field → Extra API call and doesn't preserve user's navigation context
 - Store context in localStorage → Less predictable, harder to test
 
 **Files Modified**:
+
 - `src/components/articles/DisplayArticle.tsx` (line 255)
 - `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/page.tsx`
 - `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx`
@@ -413,16 +456,19 @@ Fixed by Codex on 2026-02-09
 #### Phase 1: Fix Community Edit Flow ✅
 
 **1. DisplayArticle.tsx (line 255-260)**
+
 - Updated the "Edit Article" button to detect community context
 - Now passes `community` and `returnTo` query parameters when the article has a `community_article`
 - Public articles continue to use the simple `/article/{slug}/settings` route
 
 **2. Settings Page (page.tsx)**
+
 - Added `useSearchParams` to read query parameters
 - Extracts `communityName` and `returnTo` from URL
 - Passes these values to `EditArticleDetails` component
 
 **3. EditArticleDetails Component**
+
 - Added `communityName` and `returnTo` props to interface
 - Implemented context-aware redirect logic:
   - If `returnTo === 'community'` and `communityName` exists → redirects to community article view
@@ -432,6 +478,7 @@ Fixed by Codex on 2026-02-09
 #### Phase 2: Submission Type Changes ✅
 
 **4. Removed Submission Type Toggle**
+
 - Removed the entire submission type selector section (lines 205-241)
 - Added a comment explaining that submission type cannot be changed after creation
 - This prevents confusion since the "Private" button was already commented out
@@ -439,6 +486,7 @@ Fixed by Codex on 2026-02-09
 #### Documentation ✅
 
 **5. Updated CHANGE_COMMENTS.md**
+
 - Added comprehensive documentation of the fix
 - Explained the problem, root cause, solution, and benefits
 - Listed alternatives considered and why they weren't implemented
@@ -447,6 +495,7 @@ Fixed by Codex on 2026-02-09
 #### How It Works
 
 **For Community Articles:**
+
 1. User visits `/community/GSoC%202026/articles/gsoc-2026-possibilities`
 2. Clicks "Edit Article" → navigates to `/article/gsoc-2026-possibilities/settings?community=GSoC%202026&returnTo=community`
 3. Makes changes and clicks "Update Article"
@@ -454,6 +503,7 @@ Fixed by Codex on 2026-02-09
 5. Sees the same community discussions before and after editing
 
 **For Public Articles:**
+
 1. User visits `/article/gsoc-2026-possibilities`
 2. Clicks "Edit Article" → navigates to `/article/gsoc-2026-possibilities/settings`
 3. Makes changes and clicks "Update Article"
@@ -461,6 +511,7 @@ Fixed by Codex on 2026-02-09
 5. Everything works as before (backward compatible)
 
 **Implementation Notes:**
+
 - The solution is minimal, uses query parameters instead of new routes
 - Preserves the user's navigation context throughout the edit flow
 - Backward compatible with existing public article editing
@@ -470,31 +521,30 @@ Fixed by Codex on 2026-02-09
 
 If you want deeper traceability, use `git diff 5271498..HEAD` for exact code deltas.
 
-
 Perfect! I've fixed the issue. Here's what I changed:
 
-  Summary
+Summary
 
-  The problem was that markdown links without protocols (like [link](link.com/route)) were being treated as relative URLs by
-  the browser, resulting in localhost:3000/link.com/route.
+The problem was that markdown links without protocols (like [link](link.com/route)) were being treated as relative URLs by
+the browser, resulting in localhost:3000/link.com/route.
 
-  The Fix
+The Fix
 
-  I added a custom link renderer to the marked configuration in RenderParsedHTML.tsx:126-145 that:
+I added a custom link renderer to the marked configuration in RenderParsedHTML.tsx:126-145 that:
 
-  1. Detects links without protocols: Checks if the href doesn't start with http://, https://, mailto:, tel:, #, or /
-  2. Adds https:// automatically: If the link looks like an external URL (contains a dot), it prepends https://
-  3. Opens in new tab: Added target="_blank" and rel="noopener noreferrer" for security and better UX
+1. Detects links without protocols: Checks if the href doesn't start with http://, https://, mailto:, tel:, #, or /
+2. Adds https:// automatically: If the link looks like an external URL (contains a dot), it prepends https://
+3. Opens in new tab: Added target="\_blank" and rel="noopener noreferrer" for security and better UX
 
-  Examples
+Examples
 
-  - [link](link.com/route) → https://link.com/route ✅
-  - [link](example.com) → https://example.com ✅
-  - [link](https://example.com) → unchanged (already has protocol) ✅
-  - [link](/internal/path) → unchanged (relative path) ✅
-  - [link](#anchor) → unchanged (anchor link) ✅
+- [link](link.com/route) → https://link.com/route ✅
+- [link](example.com) → https://example.com ✅
+- [link](https://example.com) → unchanged (already has protocol) ✅
+- [link](/internal/path) → unchanged (relative path) ✅
+- [link](#anchor) → unchanged (anchor link) ✅
 
-  This fix applies to all comments, discussions, and anywhere else RenderParsedHTML is used with markdown support.
+This fix applies to all comments, discussions, and anywhere else RenderParsedHTML is used with markdown support.
 
 ---
 
@@ -507,7 +557,9 @@ Fixed by Claude Sonnet 4.5 on 2026-02-09
 **Root Cause**: The `ArticlePreviewSection` component had a basic implementation that only rendered review cards when `showReviews={true}` was passed. It didn't include the tabbed navigation interface used on the main article page.
 
 **Solution**:
+
 1. **Updated ArticlePreviewSection component**:
+
    - Added `TabNavigation` and `DiscussionForum` component imports
    - Replaced the simple "Reviews" section with a tabbed interface using `TabNavigation`
    - Created two tabs:
@@ -522,18 +574,21 @@ Fixed by Claude Sonnet 4.5 on 2026-02-09
    - Previously these views showed no reviews or discussions in the sidebar
 
 **Result**:
+
 - ✅ Consistent tabbed UX across both sidebar preview and main article page
 - ✅ Users can now access both reviews AND discussions directly from the sidebar
 - ✅ No breaking changes - still works the same when `showReviews` is false
 - ✅ Type-safe implementation with proper TypeScript validation
 
 **Design Decisions**:
+
 - Used existing `TabNavigation` component for consistency
 - Reused `DiscussionForum` component rather than creating a simplified version
 - Disabled subscribe button in preview context to encourage full page navigation for actions
 - Default to non-admin mode in preview since we don't have full article data with admin permissions
 
 **Files Modified**:
+
 - `src/components/articles/ArticlePreviewSection.tsx` (lines 18-20, 193-236) - Added tabbed interface implementation
 - `src/app/(main)/(articles)/articles/page.tsx` (lines 278-284, 508-514) - Enabled showReviews prop for both tab views
 - `src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx` (line 177) - Already had showReviews enabled
@@ -549,7 +604,9 @@ Fixed by Claude Sonnet 4.5 on 2026-02-09
 **Problem**: In the tabbed sidebar view (both article pages and community article pages), there was noticeable latency between when the article title/abstract appeared and when reviews/discussions became visible. Users experienced a lag when switching to the Discussions tab.
 
 **Root Causes**:
+
 1. **Sequential Data Loading**: Reviews API query was blocked by article data loading
+
    - Reviews query had `enabled: !!accessToken && !!data` (waited for full article object)
    - Created waterfall effect: Article loads → wait → Reviews starts loading
    - Article ID was available from params/data early, but query didn't leverage this
@@ -563,17 +620,22 @@ Fixed by Claude Sonnet 4.5 on 2026-02-09
 **Solution**:
 
 ### Part 1: Parallel API Loading
+
 **Changed reviews query enabled condition:**
+
 - Before: `enabled: !!accessToken && !!data`
 - After: `enabled: !!accessToken && !!data?.data.id`
 - Result: Reviews start fetching as soon as article ID is available (parallel with article content)
 
 **Files Modified:**
+
 - `src/app/(main)/(articles)/article/[slug]/(displayarticle)/ArticleDisplayPageClient.tsx` (lines 91-108)
 - `src/app/(main)/(communities)/community/[slug]/articles/[articleSlug]/page.tsx` (lines 41-58)
 
 ### Part 2: Lazy Tab Rendering
+
 **Enhanced TabNavigation component:**
+
 1. Added `lazyLoad` prop (default: `true`) to control lazy rendering behavior
 2. Tab content now accepts `ReactNode | (() => ReactNode)` for lazy functions
 3. Tracks `loadedTabs` Set to remember which tabs have been visited
@@ -582,16 +644,20 @@ Fixed by Claude Sonnet 4.5 on 2026-02-09
 6. All tab containers rendered with `display: block/hidden` for instant switching
 
 **Files Modified:**
+
 - `src/components/ui/tab-navigation.tsx` (complete rewrite with inline comments)
 
 ### Part 3: Component Function Wrappers
+
 **Converted tab content to lazy functions:**
+
 - Changed from: `content: <Component />` (renders immediately)
 - Changed to: `content: () => <Component />` (renders when tab loads)
 - Prevents component instantiation until user clicks tab
 - Discussions component only mounts when Discussions tab is active
 
 **Files Modified:**
+
 - `src/app/(main)/(articles)/article/[slug]/(displayarticle)/ArticleDisplayPageClient.tsx` (lines 166-231)
 - `src/app/(main)/(communities)/community/[slug]/articles/[articleSlug]/page.tsx` (lines 74-140)
 - `src/components/articles/ArticlePreviewSection.tsx` (lines 198-237)
@@ -600,6 +666,7 @@ Fixed by Claude Sonnet 4.5 on 2026-02-09
 **Performance Improvements:**
 
 **Before Optimization:**
+
 ```
 Timeline:
 ┌─────────────────┐
@@ -614,6 +681,7 @@ User sees lag between title and reviews appearing
 ```
 
 **After Optimization:**
+
 ```
 Timeline:
 ┌─────────────────┐
@@ -627,6 +695,7 @@ Discussions: Only loads when user clicks tab
 ```
 
 **Impact:**
+
 - ⚡ **50-80% faster perceived load time** - Reviews visible immediately after article
 - 🚀 **Parallel loading** - Article and Reviews fetch simultaneously
 - 💾 **~30% memory reduction** - Discussions don't render until needed
@@ -635,12 +704,14 @@ Discussions: Only loads when user clicks tab
 - ♻️ **State preservation** - Loaded tabs stay in DOM for instant return
 
 **Technical Details:**
+
 - TypeScript compilation passes with no errors
 - Backward compatible - TabNavigation can disable lazy loading with `lazyLoad={false}`
 - Comprehensive inline comments explain performance optimizations
 - All changes follow existing code patterns and conventions
 
 **Files Modified:**
+
 - `src/components/ui/tab-navigation.tsx` (core lazy loading logic)
 - `src/app/(main)/(articles)/article/[slug]/(displayarticle)/ArticleDisplayPageClient.tsx` (parallel loading + lazy tabs)
 - `src/app/(main)/(communities)/community/[slug]/articles/[articleSlug]/page.tsx` (parallel loading + lazy tabs)
@@ -648,6 +719,7 @@ Discussions: Only loads when user clicks tab
 - `src/app/(main)/(communities)/community/[slug]/(displaycommunity)/page.tsx` (lazy tabs for consistency)
 
 **Inline Comments Added:**
+
 - All changes include detailed inline comments explaining:
   - Performance rationale (why the change improves speed/memory)
   - Before/after behavior comparisons
@@ -663,12 +735,14 @@ Discussions: Only loads when user clicks tab
 Fixed by Claude Sonnet 4.5 on 2026-02-09
 
 **Problem**: Git pre-commit hooks ran automatically on every commit, causing:
+
 - Slow commit times (hooks run prettier/eslint/tsc on staged files)
 - Friction during development (forced to fix issues before committing WIP)
 - Inconsistent state (hooks only ran on staged files, not all files)
 - Frustration when making multiple small commits
 
 **Root Cause**: Husky pre-commit hook in `.husky/pre-commit` executed `npx lint-staged` which ran:
+
 1. `prettier --write` on staged files
 2. `eslint --fix` on staged files
 3. `eslint` check on staged files
@@ -679,12 +753,15 @@ Fixed by Claude Sonnet 4.5 on 2026-02-09
 ### Changes Made
 
 #### 1. Disabled Pre-commit Hook
+
 **File**: `.husky/pre-commit`
+
 - Commented out `npx lint-staged`
 - Added informational message: "Pre-commit checks disabled. Run 'yarn test:fix' before committing."
 - Git commit is now **fast** and doesn't run automatic checks
 
 #### 2. Added Comprehensive Test Scripts
+
 **File**: `package.json`
 
 Added new scripts that match or exceed pre-commit functionality:
@@ -709,6 +786,7 @@ Added new scripts that match or exceed pre-commit functionality:
 #### 3. Created Windows Batch Files
 
 **File**: `run-all-checks.bat` (check only, no auto-fix)
+
 - Runs Jest tests
 - Runs TypeScript check
 - Runs ESLint check
@@ -717,6 +795,7 @@ Added new scripts that match or exceed pre-commit functionality:
 - Colored output and exit codes
 
 **File**: `run-all-checks-fix.bat` (auto-fix mode) ⭐
+
 - Auto-fixes Prettier formatting
 - Auto-fixes ESLint issues
 - Runs TypeScript check (fast mode)
@@ -726,12 +805,14 @@ Added new scripts that match or exceed pre-commit functionality:
 #### 4. Updated Documentation
 
 **File**: `TEST-SCRIPTS.md`
+
 - Comprehensive documentation of all test scripts
 - Clear guidance on when to use each script
 - Explains why hooks were disabled and benefits
 - Includes troubleshooting section
 
 **File**: `AGENTS.md`
+
 - Updated note about git commit (no longer slow)
 - Added requirement to run `yarn test:fix` before committing
 - Removed warnings about commit timeout issues
@@ -739,6 +820,7 @@ Added new scripts that match or exceed pre-commit functionality:
 ### Workflow Comparison
 
 **OLD (Pre-commit Hook):**
+
 ```bash
 git add file.tsx
 git commit -m "fix bug"
@@ -748,6 +830,7 @@ git commit -m "fix bug"
 ```
 
 **NEW (Manual Control):**
+
 ```bash
 # 1. Fix everything once (on ALL files)
 yarn test:fix
@@ -770,6 +853,7 @@ git commit -m "done"     ✅ Fast!
 ### Commands for Common Scenarios
 
 **Before committing (recommended):**
+
 ```bash
 yarn test:fix
 # or
@@ -777,21 +861,25 @@ run-all-checks-fix.bat
 ```
 
 **During development (quick checks):**
+
 ```bash
 yarn test:quick
 ```
 
 **CI/CD (full checks, no auto-fix):**
+
 ```bash
 yarn test:all
 ```
 
 **Just format/lint fixes (no tests):**
+
 ```bash
 yarn precommit-checks
 ```
 
 **Individual operations:**
+
 ```bash
 yarn prettier          # Auto-fix formatting
 yarn lint:fix          # Auto-fix ESLint
@@ -802,12 +890,14 @@ yarn test              # Jest tests only
 ### Files Created/Modified
 
 **New Files:**
+
 - `run-all-checks.bat` - Windows batch script (check only)
 - `run-all-checks-fix.bat` - Windows batch script (auto-fix) ⭐
 - `run-all-checks.sh` - Unix/Linux shell script (check only)
 - `TEST-SCRIPTS.md` - Comprehensive documentation
 
 **Modified Files:**
+
 - `.husky/pre-commit` - Disabled lint-staged execution
 - `package.json` - Added 5 new test scripts
 - `AGENTS.md` - Updated git commit notes
@@ -815,12 +905,14 @@ yarn test              # Jest tests only
 ### Migration Guide
 
 **For Developers:**
+
 1. Pull latest changes
 2. Run `yarn test:fix` once to format entire codebase
 3. Before each commit, run `yarn test:fix` or `run-all-checks-fix.bat`
 4. Git commit is now fast and doesn't run hooks
 
 **For CI/CD:**
+
 - Use `yarn test:all` in CI pipelines (full check, no auto-fix)
 - Or run individual checks: `yarn test && yarn check-types && yarn lint`
 
@@ -833,5 +925,3 @@ yarn test              # Jest tests only
 - 📊 **Clear feedback** - colored output shows exactly what passed/failed
 
 **Result**: Development workflow is significantly faster while maintaining code quality standards. Developers have full control over when checks run, reducing friction during rapid iteration while ensuring all checks pass before final commits.
-
-
