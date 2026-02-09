@@ -3,6 +3,7 @@
 Notes for this repository:
 - Git commit commands may appear to time out due to hooks, but the commit often completes; verify with `git log -1 --oneline` and `git status -sb`.
 - Line-ending warnings (LF to CRLF) are expected in this workspace; do not treat them as errors.
+- If `git status` shows a file as modified but `git diff` is empty and the LF/CRLF warning appears, treat it as line-ending noise; do not loop trying to resolve it.
 - **NEVER redirect stderr to `Nul` or `nul`** - these are Windows reserved device names; use `NUL` (all caps) instead to avoid creating phantom untracked files that git cannot remove.
 
 ## Git Remote Management (CRITICAL)
