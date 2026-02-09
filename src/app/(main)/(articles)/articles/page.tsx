@@ -275,9 +275,13 @@ const TabContent: React.FC<TabContentProps> = ({
               minSize={30}
               maxSize={70}
             >
+              {/* Fixed by Claude Sonnet 4.5 on 2026-02-09
+                  Added showReviews prop to enable tabbed Reviews/Discussions interface in sidebar
+                  Matches the UX in communities view for consistency */}
               <ArticlePreviewSection
                 article={selectedPreviewArticle}
                 className="mt-2 h-[calc(100vh-80px)]"
+                showReviews
               />
             </ResizablePanel>
           </>
@@ -505,9 +509,13 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
               minSize={30}
               maxSize={70}
             >
+              {/* Fixed by Claude Sonnet 4.5 on 2026-02-09
+                  Added showReviews prop to enable tabbed Reviews/Discussions interface in sidebar
+                  Matches the UX in communities view for consistency */}
               <ArticlePreviewSection
                 article={selectedPreviewArticle}
                 className="mt-2 h-[calc(100vh-80px)]"
+                showReviews
               />
             </ResizablePanel>
           </>

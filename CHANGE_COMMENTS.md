@@ -502,18 +502,24 @@ Perfect! I've fixed the issue. Here's what I changed:
 
 Fixed by Claude Sonnet 4.5 on 2026-02-09
 
-**Problem**: In the article preview sidebar (used in communities and articles pages), when viewing an article in the right panel, only reviews were shown with a simple "Reviews" heading. Users had no way to access discussions without navigating to the full article page. This created an inconsistent experience compared to the main article page which has a tabbed interface for both Reviews and Discussions.
+**Problem**: In the article preview sidebar, when viewing an article in the right panel, only the article metadata was shown without reviews or discussions access. In communities view, reviews were shown but discussions were not accessible. In articles view, neither reviews nor discussions were shown. Users had no way to access this content without navigating to the full article page. This created an inconsistent experience compared to the main article page which has a tabbed interface for both Reviews and Discussions.
 
 **Root Cause**: The `ArticlePreviewSection` component had a basic implementation that only rendered review cards when `showReviews={true}` was passed. It didn't include the tabbed navigation interface used on the main article page.
 
 **Solution**:
-1. Added `TabNavigation` and `DiscussionForum` component imports
-2. Replaced the simple "Reviews" section with a tabbed interface using `TabNavigation`
-3. Created two tabs:
-   - **Reviews Tab**: Shows review cards (same functionality as before)
-   - **Discussions Tab**: Full `DiscussionForum` component with ability to create/view discussions
-4. Set `isAdmin={false}` for discussions since `CommunityArticleForList` type doesn't include admin status (preview context only)
-5. Set `showSubscribeButton={false}` since subscription actions should be done on the full article page
+1. **Updated ArticlePreviewSection component**:
+   - Added `TabNavigation` and `DiscussionForum` component imports
+   - Replaced the simple "Reviews" section with a tabbed interface using `TabNavigation`
+   - Created two tabs:
+     - **Reviews Tab**: Shows review cards (same functionality as before)
+     - **Discussions Tab**: Full `DiscussionForum` component with ability to create/view discussions
+   - Set `isAdmin={false}` for discussions since `CommunityArticleForList` type doesn't include admin status (preview context only)
+   - Set `showSubscribeButton={false}` since subscription actions should be done on the full article page
+
+2. **Enabled in Articles view**:
+   - Added `showReviews` prop to both ArticlePreviewSection instances in articles/page.tsx
+   - This enables the tabbed interface for "All Articles" and "My Articles" tabs
+   - Previously these views showed no reviews or discussions in the sidebar
 
 **Result**:
 - ✅ Consistent tabbed UX across both sidebar preview and main article page
@@ -528,8 +534,10 @@ Fixed by Claude Sonnet 4.5 on 2026-02-09
 - Default to non-admin mode in preview since we don't have full article data with admin permissions
 
 **Files Modified**:
-- `src/components/articles/ArticlePreviewSection.tsx` (lines 18-20, 188-236)
+- `src/components/articles/ArticlePreviewSection.tsx` (lines 18-20, 193-236) - Added tabbed interface implementation
+- `src/app/(main)/(articles)/articles/page.tsx` (lines 278-284, 508-514) - Enabled showReviews prop for both tab views
+- `src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx` (line 177) - Already had showReviews enabled
 
-**Impact**: Users viewing articles in communities or articles list view can now toggle between Reviews and Discussions without leaving the preview panel, significantly improving the browsing experience.
+**Impact**: Users viewing articles in both communities AND articles list views can now toggle between Reviews and Discussions without leaving the preview panel, significantly improving the browsing experience across the entire application.
 
 
