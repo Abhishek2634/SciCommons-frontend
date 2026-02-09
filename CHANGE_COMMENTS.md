@@ -419,6 +419,65 @@ code now does, not a commit-by-commit history.
    **Files Modified:**
    - src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx
 
+   **Problem 4: Blank Page When Accessing Community (Intermittent)**
+
+   **Issue:** Sometimes when clicking on a private community (that user is a member of and has access to),
+   page would be blank - not an error state, just empty. Reload would show articles correctly.
+
+   **Root Cause:** Rendering logic gap in page.tsx:
+
+   ```typescript
+   // If we reached final render block with:
+   // - accessToken exists (passed line 130 check)
+   // - No error (passed line 97 check)
+   // - But isPending = false AND data = undefined (edge case during hydration)
+
+   // Would render:
+   {isPending ? (  // false, so skip skeleton
+     <DisplayCommunitySkeleton />
+   ) : (
+     data && <DisplayCommunity />  // data undefined, so skip content
+   )}
+   {data && <TabNavigation />}  // data undefined, so skip tabs
+
+   // Result: Empty container = blank page!
+   ```
+
+   **Solution:** Added explicit check to show loading state if no data and no error:
+
+   ```typescript
+   // Show loading state if we don't have data yet (unless there's an error)
+   // This handles edge cases during hydration where isPending might be false but data not loaded
+   if (!data && !error) {
+     return (
+       <div className="container h-fit p-4">
+         <DisplayCommunitySkeleton />
+       </div>
+     );
+   }
+
+   // At this point we either have data or an error (both cases handled)
+   // Simplified final render - data check now redundant
+   return (
+     <div className="container h-fit p-4">
+       {data && (
+         <>
+           <DisplayCommunity community={data.data} refetch={refetch} />
+           <TabNavigation tabs={tabs} />
+         </>
+       )}
+     </div>
+   );
+   ```
+
+   **Result:**
+   - Always show either skeleton, error state, or content - never blank page
+   - Handles hydration edge cases gracefully
+   - Reload no longer needed
+
+   **Files Modified:**
+   - src/app/(main)/(communities)/community/[slug]/(displaycommunity)/page.tsx
+
 10. **Fixed Grid View Navigation in Community Articles (2026-02-09)**
 
    **Problem:** In community page, clicking on articles in grid view would not navigate to the article

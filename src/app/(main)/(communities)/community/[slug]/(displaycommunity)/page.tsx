@@ -126,6 +126,13 @@ const Community = ({ params }: { params: { slug: string } }) => {
     );
   }
 
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Sometimes blank page when accessing community (no error, just empty)
+     Root cause: If accessToken exists, no error, but data is undefined (edge case during hydration),
+                 the render logic would skip skeleton (isPending=false) and skip content (data=undefined)
+     Solution: Show loading state whenever we don't have data AND no error, regardless of isPending
+     Result: No more blank pages - always show either skeleton, error, or content */
+
   // Show loading state while waiting for auth to initialize
   if (!accessToken) {
     return (
@@ -135,6 +142,17 @@ const Community = ({ params }: { params: { slug: string } }) => {
     );
   }
 
+  // Show loading state if we don't have data yet (unless there's an error)
+  // This handles edge cases during hydration where isPending might be false but data not loaded
+  if (!data && !error) {
+    return (
+      <div className="container h-fit p-4">
+        <DisplayCommunitySkeleton />
+      </div>
+    );
+  }
+
+  // At this point we either have data or an error (error case already handled above)
   return (
     <div className="container h-fit p-4">
       <div className="pl-2">
@@ -144,15 +162,13 @@ const Community = ({ params }: { params: { slug: string } }) => {
           isLoading={isPending}
         />
       </div>
-      {isPending ? (
-        <DisplayCommunitySkeleton />
-      ) : (
-        data && <DisplayCommunity community={data.data} refetch={refetch} />
-      )}
       {data && (
-        <div className="mt-2 md:mt-0">
-          <TabNavigation tabs={tabs} />
-        </div>
+        <>
+          <DisplayCommunity community={data.data} refetch={refetch} />
+          <div className="mt-2 md:mt-0">
+            <TabNavigation tabs={tabs} />
+          </div>
+        </>
       )}
     </div>
   );
