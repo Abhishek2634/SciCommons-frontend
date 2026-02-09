@@ -937,6 +937,7 @@ Fixed by Claude Sonnet 4.5 on 2026-02-09
 **Root Causes**:
 
 1. **Hardcoded 1-second delay blocking cache access**:
+
    - Component had `setTimeout(..., 1000)` that artificially delayed review query enabling
    - Even though React Query had cached data (15min staleTime), the delay prevented the query from being enabled
    - Cache was available but the delay logic blocked access to it
@@ -953,17 +954,20 @@ Fixed by Claude Sonnet 4.5 on 2026-02-09
 ### Part 1: Removed 1-Second Delay Mechanism
 
 **Deleted delay logic** (`ArticlePreviewSection.tsx` lines 35-75):
+
 - Removed `useState` for `shouldLoadReviews`
 - Removed `useRef` for `currentArticleIdRef`
 - Removed entire `useEffect` with `setTimeout(..., 1000)` delay
 - Removed loading spinner that showed "Loading..." for 1 second (lines 144-153)
 
 **Simplified query enabling**:
+
 - Before: Complex conditional logic with delay state checks
 - After: `const isQueryEnabled = showReviews && !!accessToken && !!article?.id && !!communityId;`
 - Result: Query enabled immediately when conditions are met
 
 **Updated render logic** (line 144):
+
 - Before: `{showReviews && shouldLoadReviews && currentArticleIdRef.current === article?.id &&`
 - After: `{showReviews && article &&`
 - Result: TabNavigation renders as soon as article data available
@@ -973,6 +977,7 @@ Fixed by Claude Sonnet 4.5 on 2026-02-09
 ### Part 2: Added Refetch for Cache Invalidation
 
 **Added refetch to query destructuring** (line 52):
+
 ```typescript
 const {
   data: reviewsData,
@@ -983,6 +988,7 @@ const {
 ```
 
 **Passed refetch to ReviewCard** (line 173):
+
 ```typescript
 <ReviewCard key={review.id} review={review} refetch={reviewsRefetch} />
 ```
@@ -992,6 +998,7 @@ const {
 ### React Query Caching Behavior
 
 **Current Configuration**:
+
 ```typescript
 staleTime: FIFTEEN_MINUTES_IN_MS,  // Data stays "fresh" for 15min
 refetchOnWindowFocus: false,        // Won't refetch when you switch tabs
@@ -1008,6 +1015,7 @@ refetchOnMount: false,              // Won't refetch when component remounts
 6. **Wait 15 minutes** → Cache expires → Next click fetches fresh data ✅
 
 **Cache Invalidation Triggers**:
+
 - ✅ **Current user mutations**: Add/edit/delete review via `refetch()`
 - ✅ **Cache expiry**: After 15 minutes pass automatically
 - ❌ **Other users' changes**: NOT reflected until cache expires
@@ -1017,6 +1025,7 @@ refetchOnMount: false,              // Won't refetch when component remounts
 **Trade-offs**:
 
 **Current Strategy (15min cache, no auto-refetch):**
+
 - ✅ **Fast performance**: Instant loading from cache (<1ms vs ~200-500ms API call)
 - ✅ **Efficient**: Dramatically reduces server load and API calls
 - ✅ **Good UX for current user**: Your changes appear immediately via refetch
@@ -1026,16 +1035,19 @@ refetchOnMount: false,              // Won't refetch when component remounts
 **Alternative Strategies (not implemented):**
 
 1. **Shorter cache (1-2min staleTime)**:
+
    - More frequent updates, catches other users' changes faster
    - Still good performance (cache hits common)
    - Moderate increase in API calls
 
 2. **Refetch on window focus (`refetchOnWindowFocus: true`)**:
+
    - Updates cache when user returns to browser tab
    - Catches changes while user was away
    - More API calls when switching tabs
 
 3. **Polling (`refetchInterval: 30000`)**:
+
    - Auto-refresh every 30 seconds
    - Near real-time updates
    - Significantly more API calls (2 per minute per active user)
@@ -1046,6 +1058,7 @@ refetchOnMount: false,              // Won't refetch when component remounts
    - Requires backend infrastructure
 
 **Chosen Strategy Rationale**:
+
 - Reviews don't change frequently (unlike chat messages)
 - Most users read reviews more than they edit them
 - 15-minute staleness is acceptable for this use case
@@ -1055,6 +1068,7 @@ refetchOnMount: false,              // Won't refetch when component remounts
 **Performance Impact**:
 
 **Before Fix:**
+
 ```
 Click Article A:
   └─> Wait 1 second delay
@@ -1068,6 +1082,7 @@ Click back to Article A (cached):
 ```
 
 **After Fix:**
+
 ```
 Click Article A:
   └─> Reviews API call (200-500ms)
@@ -1079,6 +1094,7 @@ Click back to Article A (cached):
 ```
 
 **Measured Improvements**:
+
 - 🚀 **5x faster on cache hits**: ~1000ms → <1ms
 - ⚡ **2-3x faster on cache misses**: ~1200ms → ~300ms
 - 💾 **Dramatic API reduction**: 15min cache prevents repeated calls
@@ -1086,6 +1102,7 @@ Click back to Article A (cached):
 - 🎯 **Better UX**: No artificial waiting, reviews appear when ready
 
 **Files Modified**:
+
 - `src/components/articles/ArticlePreviewSection.tsx`:
   - Lines 1: Removed unused imports (useState, useRef)
   - Lines 35-75: Deleted entire delay mechanism
@@ -1096,6 +1113,7 @@ Click back to Article A (cached):
   - Line 173: Passed refetch prop to ReviewCard
 
 **Backward Compatibility**:
+
 - No breaking changes
 - All existing functionality preserved
 - Just faster and more responsive

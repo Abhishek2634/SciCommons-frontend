@@ -11,7 +11,6 @@ import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 
-import InfiniteSpinnerAnimation from '../animations/InfiniteSpinnerAnimation';
 import EmptyState from '../common/EmptyState';
 import RenderParsedHTML from '../common/RenderParsedHTML';
 import TruncateText from '../common/TruncateText';
