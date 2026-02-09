@@ -13,7 +13,7 @@
     "lint:strict": "next lint --dir .",
     "eslint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "prettier": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "prettier:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\" --ignore-path .gitignore",
+    "prettier:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "prepare": "husky",
     "generate-api": "npx orval",
     "check-types": "tsc --noEmit",
