@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect } from 'react';
 
 import Link from 'next/link';
 
@@ -32,60 +32,24 @@ const ArticlePreviewSection = ({
   showReviews?: boolean;
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
-  const [shouldLoadReviews, setShouldLoadReviews] = useState(false);
-  const currentArticleIdRef = useRef<number | null>(null);
 
   const href = article?.community_article
     ? `/community/${article.community_article.community.name}/articles/${article.slug}`
     : `/article/${article?.slug}`;
 
-  // Handle 1-second delay for loading reviews
-  useEffect(() => {
-    if (!showReviews || !article) {
-      setShouldLoadReviews(false);
-      currentArticleIdRef.current = null;
-      return;
-    }
-
-    // Check if article has changed
-    const articleId = article.id;
-    if (currentArticleIdRef.current !== articleId) {
-      // Article changed - reset everything
-      setShouldLoadReviews(false);
-      currentArticleIdRef.current = articleId;
-
-      // Set timer to enable API call only after 1 second
-      const timer = setTimeout(() => {
-        // Double-check that we're still on the same article
-        if (currentArticleIdRef.current === articleId) {
-          setShouldLoadReviews(true);
-        }
-      }, 1000);
-
-      // Cleanup timer if article changes before 1 second
-      return () => {
-        clearTimeout(timer);
-      };
-    }
-  }, [article, showReviews]);
-
   const communityId = article?.community_article?.community.id
     ? Number(article.community_article.community.id)
     : undefined;
 
-  // API call will only execute when shouldLoadReviews is true (after 1 second delay)
-  // AND we're still on the same article
-  const isQueryEnabled =
-    shouldLoadReviews &&
-    !!accessToken &&
-    !!article?.id &&
-    !!communityId &&
-    currentArticleIdRef.current === article?.id;
+  // Performance: Removed 1-second delay - React Query caching (15min staleTime) prevents excessive API calls
+  // Reviews now load instantly, especially when cached
+  const isQueryEnabled = showReviews && !!accessToken && !!article?.id && !!communityId;
 
   const {
     data: reviewsData,
     error: reviewsError,
     isPending: reviewsIsPending,
+    refetch: reviewsRefetch,
   } = useArticlesReviewApiListReviews(
     article?.id || 0,
     {
@@ -94,11 +58,10 @@ const ArticlePreviewSection = ({
     },
     {
       query: {
-        // Only enable query after 1 second delay AND all required data is available
         enabled: isQueryEnabled,
         refetchOnWindowFocus: false,
-        refetchOnMount: false, // Don't refetch on mount - we control when to fetch
-        staleTime: FIFTEEN_MINUTES_IN_MS,
+        refetchOnMount: false,
+        staleTime: FIFTEEN_MINUTES_IN_MS, // 15min cache prevents excessive API calls
         queryKey: ['reviews', article?.id, communityId],
       },
       request: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -178,17 +141,7 @@ const ArticlePreviewSection = ({
         <span className="text-xs">Go to the Article Page</span>
         <ArrowRightIcon className="h-4 w-4 -rotate-45" />
       </Link>
-      {showReviews && !shouldLoadReviews && (
-        <div className="mt-6 border-t border-common-minimal pt-6">
-          <div className="flex w-full animate-pulse items-center justify-center gap-2">
-            <div className="w-5">
-              <InfiniteSpinnerAnimation color="#737373" strokeWidth={16} />
-            </div>
-            <span className="text-xs text-text-secondary">Loading</span>
-          </div>
-        </div>
-      )}
-      {showReviews && shouldLoadReviews && currentArticleIdRef.current === article?.id && (
+      {showReviews && article && (
         <div className="mt-6 border-t border-common-minimal pt-6">
           {/* Fixed by Claude Sonnet 4.5 on 2026-02-09
               Problem: Sidebar only showed Reviews section without Discussions access
@@ -217,7 +170,7 @@ const ArticlePreviewSection = ({
                     )}
                     {!reviewsIsPending &&
                       reviewsData?.data.items.map((review) => (
-                        <ReviewCard key={review.id} review={review} />
+                        <ReviewCard key={review.id} review={review} refetch={reviewsRefetch} />
                       ))}
                   </div>
                 ),
