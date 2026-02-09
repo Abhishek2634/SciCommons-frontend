@@ -34,6 +34,7 @@ interface SubmitArticleFormProps {
   setActiveTab: React.Dispatch<React.SetStateAction<'upload' | 'search'>>;
   onSearch: (query: string) => void;
   showPrivateCheckOption?: boolean;
+  hideSubmissionTypeSelector?: boolean;
   articleData: {
     pdfLink?: string;
   } | null;
@@ -50,6 +51,7 @@ const SubmitArticleForm: React.FC<SubmitArticleFormProps> = ({
   setActiveTab,
   onSearch,
   showPrivateCheckOption = false,
+  hideSubmissionTypeSelector = false,
   articleData,
 }) => {
   const formRef = React.useRef<HTMLFormElement>(null);
@@ -215,62 +217,66 @@ const SubmitArticleForm: React.FC<SubmitArticleFormProps> = ({
           />
         )}
       /> */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-text-secondary">Submission Type</label>
-        <Controller
-          name="submissionType"
-          control={control}
-          render={({ field: { onChange, value } }) => (
-            <div className="flex flex-col gap-4">
-              <div className="mt-1 flex gap-2">
-                <Button
+      {/* Submission type selector hidden for community articles -
+          backend determines visibility based on community settings */}
+      {!hideSubmissionTypeSelector && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-text-secondary">Submission Type</label>
+          <Controller
+            name="submissionType"
+            control={control}
+            render={({ field: { onChange, value } }) => (
+              <div className="flex flex-col gap-4">
+                <div className="mt-1 flex gap-2">
+                  <Button
+                    className={cn(
+                      'w-fit cursor-pointer rounded-lg border px-4 py-2',
+                      value === 'Public'
+                        ? 'border-functional-green bg-functional-green/10'
+                        : 'border-common-contrast'
+                    )}
+                    type="button"
+                    variant={'outline'}
+                    onClick={() => onChange('Public')}
+                  >
+                    <ButtonTitle className="text-base">Public</ButtonTitle>
+                  </Button>
+                  {/* <Button
                   className={cn(
                     'w-fit cursor-pointer rounded-lg border px-4 py-2',
-                    value === 'Public'
+                    value === 'Private'
                       ? 'border-functional-green bg-functional-green/10'
                       : 'border-common-contrast'
                   )}
                   type="button"
                   variant={'outline'}
-                  onClick={() => onChange('Public')}
+                  onClick={() => onChange('Private')}
                 >
-                  <ButtonTitle className="text-base">Public</ButtonTitle>
-                </Button>
-                {/* <Button
-                className={cn(
-                  'w-fit cursor-pointer rounded-lg border px-4 py-2',
-                  value === 'Private'
-                    ? 'border-functional-green bg-functional-green/10'
-                    : 'border-common-contrast'
-                )}
-                type="button"
-                variant={'outline'}
-                onClick={() => onChange('Private')}
-              >
-                <ButtonTitle className="text-base">Private</ButtonTitle>
-              </Button> */}
-              </div>
-              {showPrivateCheckOption && value === 'Public' && (
-                <p className="text-sm italic text-functional-yellow">
-                  (Article will be submitted to the community and visible publicly.)
-                </p>
-              )}
-              {showPrivateCheckOption && (
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    onCheckedChange={(checked) => onChange(checked ? 'Private' : 'Public')}
-                    checked={value === 'Private'}
-                  />
-                  <span className="text-sm text-text-secondary">
-                    Submit the article exclusively to the community (if the community is public, it
-                    will be visible to everyone).
-                  </span>
+                  <ButtonTitle className="text-base">Private</ButtonTitle>
+                </Button> */}
                 </div>
-              )}
-            </div>
-          )}
-        />
-      </div>
+                {showPrivateCheckOption && value === 'Public' && (
+                  <p className="text-sm italic text-functional-yellow">
+                    (Article will be submitted to the community and visible publicly.)
+                  </p>
+                )}
+                {showPrivateCheckOption && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      onCheckedChange={(checked) => onChange(checked ? 'Private' : 'Public')}
+                      checked={value === 'Private'}
+                    />
+                    <span className="text-sm text-text-secondary">
+                      Submit the article exclusively to the community (if the community is public,
+                      it will be visible to everyone).
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          />
+        </div>
+      )}
       {activeTab === 'search' && articleData?.pdfLink && (
         <div className="flex flex-col gap-2">
           <label className="block text-sm font-medium text-text-secondary">PDF</label>
