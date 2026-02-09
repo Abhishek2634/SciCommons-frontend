@@ -119,30 +119,32 @@ const ArticleCard: FC<ArticleCardProps> = memo(
         )}
         <div className="flex w-full">
           <div className="w-full min-w-0 flex-grow gap-4">
-            <Link
-              href={
-                forCommunity
-                  ? `/community/${encodedCommunityName}/articles/${article.slug}`
-                  : `/article/${article.slug}`
-              }
-              className="flex w-full flex-row items-center justify-between gap-2"
-            >
-              <RenderParsedHTML
-                rawContent={article.title}
-                supportLatex={true}
-                supportMarkdown={false}
-                contentClassName={cn(
-                  `text-wrap font-semibold text-text-primary text-sm sm:text-sm md:text-sm lg:text-sm hover:underline`,
-                  {
-                    'line-clamp-2 text-xs sm:text-xs md:text-xs lg:text-xs':
-                      compactType === 'minimal' || compactType === 'default',
-                    'underline underline-text-tertiary hover:text-functional-green':
-                      compactType === 'minimal',
-                  }
-                )}
-                containerClassName="mb-0"
-              />
-              <div className="flex h-full flex-col items-center justify-between gap-1">
+            <div className="flex w-full flex-row items-center justify-between gap-2">
+              <Link
+                href={
+                  forCommunity
+                    ? `/community/${encodedCommunityName}/articles/${article.slug}`
+                    : `/article/${article.slug}`
+                }
+                className="inline-flex min-w-0 flex-1"
+              >
+                <RenderParsedHTML
+                  rawContent={article.title}
+                  supportLatex={true}
+                  supportMarkdown={false}
+                  contentClassName={cn(
+                    `text-wrap font-semibold text-text-primary text-sm sm:text-sm md:text-sm lg:text-sm hover:underline`,
+                    {
+                      'line-clamp-2 text-xs sm:text-xs md:text-xs lg:text-xs':
+                        compactType === 'minimal' || compactType === 'default',
+                      'underline underline-text-tertiary hover:text-functional-green':
+                        compactType === 'minimal',
+                    }
+                  )}
+                  containerClassName="mb-0"
+                />
+              </Link>
+              <div className="flex h-full flex-shrink-0 flex-col items-center justify-between gap-1">
                 <Button
                   variant="transparent"
                   size="xs"
@@ -222,7 +224,7 @@ const ArticleCard: FC<ArticleCardProps> = memo(
                   </Tooltip>
                 )}
               </div>
-            </Link>
+            </div>
             {compactType === 'full' && (
               <RenderParsedHTML
                 rawContent={article.abstract}
