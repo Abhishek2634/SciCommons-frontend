@@ -276,4 +276,30 @@ Fixed by Codex on 2026-02-09
 
 ---
 
+## AuthStore Test Cleanup Typing Fix (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: `tsc --skipLibCheck --noEmit` failed in pre-commit due to deleting the non-optional global `fetch` during test cleanup.
+**Root Cause**: TypeScript disallows the `delete` operator on required global properties.
+**Solution**: Introduced a typed helper that treats `fetch` as optional and restores it by assignment instead of deletion.
+**Result**: Test cleanup remains deterministic and TypeScript compilation passes.
+**Files Modified**:
+- `src/tests/__tests__/authStore.test.ts`
+
+---
+
+## Discussion Add Comment Collapse (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: In the discussion sidebar, the Add Comment form stayed open after posting, leaving an unnecessary input box above the newly added comment.
+**Root Cause**: The create-comment success handler refetched comments but did not reset the collapse state.
+**Solution**: Collapse the Add Comment form (`+` state) on successful comment creation.
+**Result**: After posting, the comment form closes automatically, matching expected sidebar behavior.
+**Files Modified**:
+- `src/components/articles/DiscussionComments.tsx`
+
+---
+
 If you want deeper traceability, use `git diff 5271498..HEAD` for exact code deltas.

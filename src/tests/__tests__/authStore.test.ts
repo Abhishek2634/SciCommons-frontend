@@ -10,6 +10,11 @@ jest.mock('js-cookie', () => ({
 
 const mockedCookies = Cookies as jest.Mocked<typeof Cookies>;
 const mockedGet = mockedCookies.get as unknown as jest.Mock;
+/* Fixed by Codex on 2026-02-09
+   Problem: TypeScript disallows deleting non-optional globals (e.g., fetch) in test cleanup.
+   Solution: Use a typed global helper with an optional fetch reference.
+   Result: Cleanup can restore or clear fetch without delete operator errors. */
+const getGlobalWithFetch = () => global as typeof globalThis & { fetch?: typeof globalThis.fetch };
 
 describe('authStore', () => {
   beforeEach(() => {
@@ -39,8 +44,9 @@ describe('authStore', () => {
        Result: The test validates the intended logout path instead of falling into offline tolerance. */
     const originalBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
     process.env.NEXT_PUBLIC_BACKEND_URL = 'http://example.com';
-    const originalFetch = (global as typeof globalThis).fetch;
-    (global as typeof globalThis).fetch = jest.fn().mockResolvedValue({
+    const globalWithFetch = getGlobalWithFetch();
+    const originalFetch = globalWithFetch.fetch;
+    globalWithFetch.fetch = jest.fn().mockResolvedValue({
       ok: false,
       status: 401,
     } as Response);
@@ -52,11 +58,7 @@ describe('authStore', () => {
       await useAuthStore.getState().initializeAuth();
     } finally {
       process.env.NEXT_PUBLIC_BACKEND_URL = originalBackendUrl;
-      if (originalFetch) {
-        (global as typeof globalThis).fetch = originalFetch;
-      } else {
-        delete (global as typeof globalThis).fetch;
-      }
+      globalWithFetch.fetch = originalFetch;
     }
 
     expect(mockedCookies.remove).toHaveBeenCalledWith('auth_token', {
@@ -77,8 +79,9 @@ describe('authStore', () => {
        Result: Auth remains active and cookies are not cleared. */
     const originalBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
     process.env.NEXT_PUBLIC_BACKEND_URL = 'http://example.com';
-    const originalFetch = (global as typeof globalThis).fetch;
-    (global as typeof globalThis).fetch = jest.fn().mockRejectedValue(new Error('network down'));
+    const globalWithFetch = getGlobalWithFetch();
+    const originalFetch = globalWithFetch.fetch;
+    globalWithFetch.fetch = jest.fn().mockRejectedValue(new Error('network down'));
     const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
 
     mockedGet.mockReturnValueOnce('token-3');
@@ -88,11 +91,7 @@ describe('authStore', () => {
       await useAuthStore.getState().initializeAuth();
     } finally {
       process.env.NEXT_PUBLIC_BACKEND_URL = originalBackendUrl;
-      if (originalFetch) {
-        (global as typeof globalThis).fetch = originalFetch;
-      } else {
-        delete (global as typeof globalThis).fetch;
-      }
+      globalWithFetch.fetch = originalFetch;
       nowSpy.mockRestore();
     }
 

@@ -61,6 +61,11 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({ discussionId })
       mutation: {
         onSuccess: () => {
           refetch();
+          /* Fixed by Codex on 2026-02-09
+             Problem: Add Comment form stays open after posting, cluttering sidebar flow
+             Solution: Collapse the form on successful comment creation
+             Result: UI returns to the "+" collapsed state after posting */
+          setIsCommentFormCollapsed(true);
         },
         onError: (error) => {
           showErrorToast(error);
