@@ -133,9 +133,17 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
     hasMore: false,
   });
 
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Clicking articles in grid view does nothing - navigation broken
+     Root cause: onClick wrapper intercepts all clicks, prevents ArticleCard navigation
+     Solution: Only intercept clicks in preview mode, let ArticleCard navigate in grid mode
+     Result: Grid view navigates to article page, preview mode selects for sidebar */
   const renderArticle = useCallback(
     (article: ArticlesListOut) => (
-      <div data-article-id={String(article.id)} onClick={() => handleArticleSelect(article)}>
+      <div
+        data-article-id={String(article.id)}
+        onClick={viewType === 'preview' ? () => handleArticleSelect(article) : undefined}
+      >
         <ArticleCard
           article={article}
           forCommunity
