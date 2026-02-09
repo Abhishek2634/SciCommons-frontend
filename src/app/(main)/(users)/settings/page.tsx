@@ -4,6 +4,9 @@ import React, { useEffect } from 'react';
 
 import { toast } from 'sonner';
 
+// NOTE(Codex for bsureshkrishna, 2026-02-09): Gate settings behind auth to prevent
+// unauthenticated access to user preferences.
+import { withAuthRedirect } from '@/HOCs/withAuthRedirect';
 import { UserConfigKey } from '@/api/schemas/userConfigKey';
 import { Switch } from '@/components/ui/switch';
 import { useUpdateUserSettings, useUserSettings } from '@/hooks/useUserSettings';
@@ -125,4 +128,5 @@ const SettingsPage: React.FC = () => {
   );
 };
 
-export default SettingsPage;
+// NOTE(Codex for bsureshkrishna, 2026-02-09): Enforce auth requirement for settings.
+export default withAuthRedirect(SettingsPage, { requireAuth: true });

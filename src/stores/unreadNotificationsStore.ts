@@ -244,27 +244,39 @@ export const useUnreadNotificationsStore = create<UnreadNotificationsState>()(
 
 // BroadcastChannel for cross-tab sync
 const BROADCAST_CHANNEL_NAME = 'unread-notifications-sync';
+// NOTE(Codex for bsureshkrishna, 2026-02-09): Tag outbound syncs so we can ignore
+// our own updates and prevent cross-tab ping-pong.
+const BROADCAST_SENDER_ID =
+  typeof window !== 'undefined' ? `${Date.now()}-${Math.random().toString(36).slice(2)}` : 'server';
 
 let broadcastChannel: BroadcastChannel | null = null;
+// NOTE(Codex for bsureshkrishna, 2026-02-09): Guard against rebroadcast loops when
+// applying remote sync payloads.
+let isApplyingRemoteSync = false;
 
 if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
   broadcastChannel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
 
   // Listen for updates from other tabs
   broadcastChannel.onmessage = (event) => {
-    const { type, payload } = event.data;
+    const { type, payload, senderId } = event.data ?? {};
+    if (senderId && senderId === BROADCAST_SENDER_ID) return;
 
     if (type === 'sync') {
-      // Sync the entire state from another tab
+      // Sync the entire state from another tab without rebroadcasting.
+      isApplyingRemoteSync = true;
       useUnreadNotificationsStore.setState({ articleUnreads: payload });
+      isApplyingRemoteSync = false;
     }
   };
 
   // Subscribe to store changes and broadcast to other tabs
   useUnreadNotificationsStore.subscribe((state) => {
+    if (isApplyingRemoteSync) return;
     broadcastChannel?.postMessage({
       type: 'sync',
       payload: state.articleUnreads,
+      senderId: BROADCAST_SENDER_ID,
     });
   });
 }
@@ -275,5 +287,6 @@ export const syncUnreadNotifications = () => {
   broadcastChannel?.postMessage({
     type: 'sync',
     payload: state.articleUnreads,
+    senderId: BROADCAST_SENDER_ID,
   });
 };

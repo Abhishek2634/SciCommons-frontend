@@ -5,6 +5,9 @@ import React, { useEffect } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
+// NOTE(Codex for bsureshkrishna, 2026-02-09): Gate profile behind auth to prevent
+// unauthenticated access to user data editing.
+import { withAuthRedirect } from '@/HOCs/withAuthRedirect';
 import { useUsersApiUpdateUser } from '@/api/users/users';
 import { Button, ButtonTitle } from '@/components/ui/button';
 import { Option } from '@/components/ui/multiple-selector';
@@ -166,4 +169,5 @@ const Home: React.FC = () => {
   );
 };
 
-export default Home;
+// NOTE(Codex for bsureshkrishna, 2026-02-09): Enforce auth requirement for profile.
+export default withAuthRedirect(Home, { requireAuth: true });

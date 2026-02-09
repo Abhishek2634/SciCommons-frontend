@@ -34,6 +34,9 @@ describe('middleware route protection', () => {
     expect(isProtectedPathname('/submitarticle')).toBe(true);
     expect(isProtectedPathname('/community/abc/dashboard')).toBe(true);
     expect(isProtectedPathname('/article/test-slug/settings')).toBe(true);
+    // NOTE(Codex for bsureshkrishna, 2026-02-09): Ensure new auth-only pages are protected.
+    expect(isProtectedPathname('/settings')).toBe(true);
+    expect(isProtectedPathname('/myprofile')).toBe(true);
     expect(isProtectedPathname('/')).toBe(false);
     expect(isProtectedPathname('/auth/login')).toBe(false);
   });

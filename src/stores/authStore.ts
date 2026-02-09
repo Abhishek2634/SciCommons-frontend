@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { clearRegisteredQueryCache } from '@/api/queryClientRegistry';
 
 import { useUnreadNotificationsStore } from './unreadNotificationsStore';
+import { useUserSettingsStore } from './userSettingsStore';
 
 // NOTE(bsureshkrishna, 2026-02-07): Auth bootstrap was hardened vs baseline 5271498.
 // We now migrate persisted auth -> cookies, validate expiry, probe server session once,
@@ -159,6 +160,9 @@ export const useAuthStore = create<AuthState>()(
         clearCookies();
         clearRegisteredQueryCache();
         useUnreadNotificationsStore.getState().clearAll();
+        // NOTE(Codex for bsureshkrishna, 2026-02-09): Clear persisted settings
+        // to avoid showing a prior user's preferences after logout.
+        useUserSettingsStore.getState().clearSettings();
         set(() => ({
           isAuthenticated: false,
           isAuthInitialized: true,

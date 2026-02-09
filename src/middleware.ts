@@ -10,6 +10,10 @@ const PROTECTED_ROUTE_PATTERNS: ReadonlyArray<RegExp> = [
   /^\/createcommunity\/?$/,
   /^\/posts\/createpost\/?$/,
   /^\/mycontributions\/?$/,
+  // NOTE(Codex for bsureshkrishna, 2026-02-09): Protect settings/profile routes
+  // since they display user-specific configuration.
+  /^\/myprofile\/?$/,
+  /^\/settings\/?$/,
   /^\/notifications\/?$/,
   /^\/article\/[^/]+\/(community-stats|submit|notifications|settings|official-stats)\/?$/,
   /^\/community\/[^/]+\/(articles\/[^/]+|dashboard|submissions|invite|roles|requests|settings)\/?$/,

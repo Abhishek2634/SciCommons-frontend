@@ -1,6 +1,6 @@
 'use client';
 
-import React, { lazy, useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -96,38 +96,48 @@ const CreateDropdown: React.FC = () => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger>
+    // NOTE(Codex for bsureshkrishna, 2026-02-09): Wrap lazy drawer in Suspense to avoid
+    // "component suspended while rendering" on first mobile render.
+    <Suspense
+      fallback={
         <div className="rounded-full bg-common-minimal p-2">
           <Plus size={24} />
         </div>
-      </DrawerTrigger>
-      <DrawerContent className="flex flex-col items-center p-0 pt-4" showThumb={true}>
-        <div className="flex w-full flex-col px-4 pb-4 text-sm font-semibold text-text-secondary">
-          <button
-            type="button"
-            className="flex select-none items-center gap-2 border-b border-common-minimal p-4 hover:bg-common-minimal/50 hover:text-text-primary"
-            onClick={() => {
-              setOpen(false);
-              router.push('/submitarticle');
-            }}
-          >
-            <BookOpenText size={18} />
-            <span>Submit Article</span>
-          </button>
-          <button
-            type="button"
-            className="flex select-none items-center gap-2 p-4 hover:bg-common-minimal/50 hover:text-text-primary"
-            onClick={() => {
-              setOpen(false);
-              router.push('/createcommunity');
-            }}
-          >
-            <Users size={18} />
-            <span>Create Community</span>
-          </button>
-        </div>
-      </DrawerContent>
-    </Drawer>
+      }
+    >
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerTrigger>
+          <div className="rounded-full bg-common-minimal p-2">
+            <Plus size={24} />
+          </div>
+        </DrawerTrigger>
+        <DrawerContent className="flex flex-col items-center p-0 pt-4" showThumb={true}>
+          <div className="flex w-full flex-col px-4 pb-4 text-sm font-semibold text-text-secondary">
+            <button
+              type="button"
+              className="flex select-none items-center gap-2 border-b border-common-minimal p-4 hover:bg-common-minimal/50 hover:text-text-primary"
+              onClick={() => {
+                setOpen(false);
+                router.push('/submitarticle');
+              }}
+            >
+              <BookOpenText size={18} />
+              <span>Submit Article</span>
+            </button>
+            <button
+              type="button"
+              className="flex select-none items-center gap-2 p-4 hover:bg-common-minimal/50 hover:text-text-primary"
+              onClick={() => {
+                setOpen(false);
+                router.push('/createcommunity');
+              }}
+            >
+              <Users size={18} />
+              <span>Create Community</span>
+            </button>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </Suspense>
   );
 };

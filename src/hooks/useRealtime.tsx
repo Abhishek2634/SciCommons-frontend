@@ -1016,9 +1016,15 @@ export function useRealtime() {
       try {
         localStorage.removeItem(STORAGE_KEYS.QUEUE_ID);
         localStorage.removeItem(STORAGE_KEYS.LAST_EVENT_ID);
+        // NOTE(Codex for bsureshkrishna, 2026-02-09): Clear leader state on logout
+        // so other tabs can take over realtime polling.
+        localStorage.removeItem(STORAGE_KEYS.LEADER);
       } catch {
         // ignore storage errors
       }
+      // NOTE(Codex for bsureshkrishna, 2026-02-09): Explicitly release leadership
+      // to avoid a stale heartbeat holding the leader slot.
+      releaseLeadership();
       setStatus('disabled');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
