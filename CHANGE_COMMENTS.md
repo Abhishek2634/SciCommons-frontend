@@ -223,4 +223,18 @@ Fixed by Claude Sonnet 4.5 on 2026-02-08
 
 ---
 
+## Logout Redirect After Logout (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: After logout, users stayed on the current page with only a toast, which could leave a stale view on protected pages.
+**Root Cause**: The profile dropdown logout handler only invoked a toast and did not navigate away.
+**Solution**: Replace the toast with a router redirect to `/` immediately after logout.
+**Result**: Users land on the public home page after logout, reducing confusion and stale UI.
+**Files Modified**:
+- `src/components/common/NavBar.tsx`
+- Commit: (this commit)
+
+---
+
 If you want deeper traceability, use `git diff 5271498..HEAD` for exact code deltas.

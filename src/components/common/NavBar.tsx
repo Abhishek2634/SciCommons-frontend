@@ -21,7 +21,6 @@ import {
   User,
   Users,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import {
   DropdownMenu,
@@ -227,6 +226,7 @@ const ProfileDropdown: React.FC = () => {
   const imageData = useIdenticon(40);
   const { handleAppInstall } = usePWAInstallPrompt('install');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const router = useRouter();
 
   const { data } = useCurrentUser();
   // Fetch user settings on app load (similar to useCurrentUser)
@@ -236,7 +236,11 @@ const ProfileDropdown: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    toast.success('Logged out successfully');
+    /* Fixed by Codex on 2026-02-09
+       What: Redirect to home after logout
+       Why: Avoid leaving users on a stale authenticated page
+       How: Navigate with next/navigation router after logout */
+    router.push('/');
   };
 
   return (
