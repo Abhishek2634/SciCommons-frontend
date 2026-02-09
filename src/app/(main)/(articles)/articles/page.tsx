@@ -108,16 +108,19 @@ const TabContent: React.FC<TabContentProps> = ({
   };
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
-     Problem: Back button doesn't restore article selection in articles page
-     Solution: Detect articleId from URL params and auto-select when data loads
+     Problem: Back button doesn't restore article selection - autoSelectFirst overrides restoration
+     Solution: Detect articleId from URL params and force selection even if another article selected
      Result: Selected article restored when navigating back from article page */
   useEffect(() => {
     const articleIdParam = searchParams?.get('articleId');
-    if (articleIdParam && displayedItems.length > 0 && !selectedPreviewArticle && isActive) {
+    if (articleIdParam && displayedItems.length > 0 && isActive) {
       const articleId = parseInt(articleIdParam, 10);
-      const article = displayedItems.find((a) => a.id === articleId);
-      if (article) {
-        setSelectedPreviewArticle(article);
+      // Only update if the URL article ID doesn't match the currently selected article
+      if (!selectedPreviewArticle || selectedPreviewArticle.id !== articleId) {
+        const article = displayedItems.find((a) => a.id === articleId);
+        if (article) {
+          setSelectedPreviewArticle(article);
+        }
       }
     }
   }, [displayedItems, searchParams, selectedPreviewArticle, setSelectedPreviewArticle, isActive]);
@@ -399,16 +402,19 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
   };
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
-     Problem: Back button doesn't restore article selection in my articles tab
-     Solution: Detect articleId from URL params and auto-select when data loads
+     Problem: Back button doesn't restore article selection - autoSelectFirst overrides restoration
+     Solution: Detect articleId from URL params and force selection even if another article selected
      Result: Selected article restored when navigating back from article page */
   useEffect(() => {
     const articleIdParam = searchParams?.get('articleId');
-    if (articleIdParam && displayedItems.length > 0 && !selectedPreviewArticle && isActive) {
+    if (articleIdParam && displayedItems.length > 0 && isActive) {
       const articleId = parseInt(articleIdParam, 10);
-      const article = displayedItems.find((a) => a.id === articleId);
-      if (article) {
-        setSelectedPreviewArticle(article);
+      // Only update if the URL article ID doesn't match the currently selected article
+      if (!selectedPreviewArticle || selectedPreviewArticle.id !== articleId) {
+        const article = displayedItems.find((a) => a.id === articleId);
+        if (article) {
+          setSelectedPreviewArticle(article);
+        }
       }
     }
   }, [displayedItems, searchParams, selectedPreviewArticle, setSelectedPreviewArticle, isActive]);

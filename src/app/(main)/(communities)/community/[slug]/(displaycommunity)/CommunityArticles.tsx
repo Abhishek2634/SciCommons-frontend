@@ -158,7 +158,7 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
   const renderSkeleton = useCallback(() => <ArticleCardSkeleton />, []);
 
   return (
-    <div className="space-y-2">
+    <div className="h-[calc(100vh-130px)] space-y-2">
       <ResizablePanelGroup
         direction="horizontal"
         className="h-full w-full"
