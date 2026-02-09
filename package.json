@@ -13,10 +13,16 @@
     "lint:strict": "next lint --dir .",
     "eslint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "prettier": "prettier --write */**/*.{js,jsx,json,ts,tsx,scss,css,md}",
+    "prettier:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\" --ignore-path .gitignore",
     "prepare": "husky",
     "generate-api": "npx orval",
     "check-types": "tsc --noEmit",
-    "test": "jest"
+    "check-types:fast": "tsc --skipLibCheck --noEmit",
+    "test": "jest",
+    "test:all": "yarn test && yarn check-types && yarn lint && yarn prettier:check",
+    "test:quick": "yarn test && yarn check-types && yarn lint",
+    "test:fix": "yarn prettier && yarn lint:fix && yarn check-types:fast && yarn test",
+    "precommit-checks": "yarn prettier && yarn lint:fix && yarn check-types:fast"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.7",

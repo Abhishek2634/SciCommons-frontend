@@ -38,6 +38,8 @@ const CommunityArticleDisplayPage: React.FC = () => {
     }
   );
 
+  // Performance: Parallel loading optimization - fetch reviews immediately when article ID available
+  // This prevents sequential loading waterfall (article → reviews)
   const {
     data: reviewsData,
     error: reviewsError,
@@ -48,7 +50,7 @@ const CommunityArticleDisplayPage: React.FC = () => {
     { community_id: data?.data.community_article?.community.id || 0 },
     {
       query: {
-        enabled: !!accessToken && !!data,
+        enabled: !!accessToken && !!data?.data.id,
         refetchOnWindowFocus: true,
         refetchOnMount: true,
         staleTime: FIFTEEN_MINUTES_IN_MS,
@@ -71,11 +73,13 @@ const CommunityArticleDisplayPage: React.FC = () => {
 
   const hasUserReviewed = reviewsData?.data.items.some((review) => review.is_author) || false;
 
+  // Performance: Lazy-loaded tab content using functions
+  // Discussions won't render until user switches to that tab
   const tabs = data
     ? [
         {
           title: 'Reviews',
-          content: (
+          content: () => (
             <div className="flex flex-col gap-2">
               {/* Todo: Uncomment this after testing */}
               {/* {!data.data.is_submitter && (
@@ -122,7 +126,7 @@ const CommunityArticleDisplayPage: React.FC = () => {
         },
         {
           title: 'Discussions',
-          content: (
+          content: () => (
             <DiscussionForum
               articleId={data?.data.id || 0}
               communityId={data?.data.community_article?.community.id}

@@ -195,11 +195,12 @@ const ArticlePreviewSection = ({
               Solution: Added TabNavigation with both Reviews and Discussions tabs
               Result: Consistent tabbed UX matching the main article page
               Note: isAdmin defaults to false since CommunityArticleForList doesn't include admin status */}
+          {/* Performance: Lazy-loaded tabs prevent Discussions from rendering until clicked */}
           <TabNavigation
             tabs={[
               {
                 title: 'Reviews',
-                content: (
+                content: () => (
                   <div className="flex flex-col gap-2">
                     {reviewsIsPending && (
                       <div className="flex flex-col gap-2">
@@ -223,7 +224,7 @@ const ArticlePreviewSection = ({
               },
               {
                 title: 'Discussions',
-                content: (
+                content: () => (
                   <DiscussionForum
                     articleId={article.id}
                     communityId={communityId}

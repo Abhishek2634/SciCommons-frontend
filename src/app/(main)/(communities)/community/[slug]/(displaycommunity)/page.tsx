@@ -37,11 +37,12 @@ const Community = ({ params }: { params: { slug: string } }) => {
     }
   }, [error]);
 
+  // Performance: Lazy-loaded tabs - Rules and Assessments only render when clicked
   const tabs = data
     ? [
         {
           title: 'Articles',
-          content:
+          content: () =>
             data.data.type == 'private' && !data.data.is_member ? (
               <EmptyState
                 logo={<CircleXIcon className="size-8 text-text-secondary" />}
@@ -54,13 +55,13 @@ const Community = ({ params }: { params: { slug: string } }) => {
         },
         // {
         //   title: 'About',
-        //   content: <CommunityAbout about={data.data.about as YooptaContentValue} />,
+        //   content: () => <CommunityAbout about={data.data.about as YooptaContentValue} />,
         // },
         ...(data.data.rules || data.data.is_member
           ? [
               {
                 title: 'Rules',
-                content: <CommunityRules community={data.data} />,
+                content: () => <CommunityRules community={data.data} />,
               },
             ]
           : []),
@@ -68,7 +69,7 @@ const Community = ({ params }: { params: { slug: string } }) => {
           ? [
               {
                 title: 'Assessments',
-                content: <AssessmentsList communityId={data.data.id} />,
+                content: () => <AssessmentsList communityId={data.data.id} />,
               },
             ]
           : []),

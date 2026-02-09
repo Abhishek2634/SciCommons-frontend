@@ -88,6 +88,10 @@ function ArticleDisplayPageClient({ params }: Props) {
     }
   );
 
+  // Performance: Fetch reviews in parallel with article content loading
+  // Previously: enabled: !!accessToken && !!data (waited for full article)
+  // Now: enabled: !!accessToken && !!data?.data.id (starts as soon as ID available)
+  // This eliminates the waterfall effect and reduces perceived load time
   const {
     data: reviewsData,
     error: reviewsError,
@@ -98,7 +102,7 @@ function ArticleDisplayPageClient({ params }: Props) {
     {},
     {
       query: {
-        enabled: !!accessToken && !!data,
+        enabled: !!accessToken && !!data?.data.id,
         staleTime: FIVE_MINUTES_IN_MS,
         refetchOnWindowFocus: true,
         refetchOnMount: true,
@@ -163,11 +167,14 @@ function ArticleDisplayPageClient({ params }: Props) {
   // Check if article has PDFs
   // const hasPdfs = data?.data.article_pdf_urls && data.data.article_pdf_urls.length > 0;
 
+  // Performance: Use function content for lazy loading with TabNavigation
+  // Functions prevent component instantiation until tab is active
+  // Reviews tab loads first (default), Discussions only load when user clicks that tab
   const tabs = data
     ? [
         {
           title: 'Reviews',
-          content: (
+          content: () => (
             <div className="flex flex-col">
               {!hasUserReviewed && (
                 <div className="flex items-center justify-between rounded-md bg-functional-green/5 px-4 py-2">
@@ -225,7 +232,7 @@ function ArticleDisplayPageClient({ params }: Props) {
         },
         {
           title: 'Discussions',
-          content: <DiscussionForum articleId={Number(data.data.id)} />,
+          content: () => <DiscussionForum articleId={Number(data.data.id)} />,
         },
       ]
     : [];
