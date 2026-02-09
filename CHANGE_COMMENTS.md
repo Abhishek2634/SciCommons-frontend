@@ -323,11 +323,12 @@ Fixed by Codex on 2026-02-09
 
 **Problem**: The article settings page required an extra edit toggle before fields were editable, showed community-focused helper text, and used a misleading “Submit Article” button label.
 **Root Cause**: The edit screen was ported from community settings patterns and retained the edit-lock toggle and copy.
-**Solution**: Keep article settings fields editable on arrival, update helper text to article language, and rename the primary action to “Update Article.”
-**Result**: Editing is immediate and the UI messaging matches the article context.
+**Solution**: Keep article settings fields editable on arrival, update helper text to article language, rename the primary action to “Update Article,” and remove the redundant sidebar Edit link.
+**Result**: Editing is immediate, the UI messaging matches the article context, and the sidebar no longer duplicates the edit action.
 **Files Modified**:
 - `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/page.tsx`
 - `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx`
+- `src/app/(main)/(articles)/article/[slug]/(articledashboard)/layout.tsx`
 
 ---
 
