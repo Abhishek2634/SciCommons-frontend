@@ -61,3 +61,12 @@
 **Notes**
 - This merge is intended to keep all latest `origin/test` changes while preserving your history and post-squash commits.
 - Any differences remaining vs `origin/test` should be deliberate per the decisions above.
+
+**Post-merge Checks / Test Gaps**
+- Re-validate realtime leader election, retry/backoff, and unread sync in `src/hooks/useRealtime.tsx`.
+- LaTeX rendering: disabled in community description for now; if re-enabled, add a length guard
+  and fall back to markdown-only rendering for large descriptions (see inline note).
+- Run targeted tests:
+  - `src/tests/__tests__/useRealtime.test.tsx`
+  - `src/tests/__tests__/authStore.test.tsx`
+  - UI regression checks for discussions and bookmark flows.

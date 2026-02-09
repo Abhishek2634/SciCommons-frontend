@@ -144,11 +144,12 @@ const DisplayCommunity: React.FC<DisplayCommunityProps> = ({ community, refetch 
                 wordBreak: 'break-word',
               }}
             >
-              {/* TODO: Revisit LaTeX support here if safety/perf issues appear. */}
+              {/* NOTE: LaTeX disabled for now. If re-enabled, add a length guard and fall back
+                  to markdown-only rendering for large descriptions to avoid heavy KaTeX work. */}
               <RenderParsedHTML
                 rawContent={community.description || ''}
                 supportMarkdown={true}
-                supportLatex={true}
+                supportLatex={false}
                 containerClassName="mb-0"
                 contentClassName="text-text-secondary"
               />

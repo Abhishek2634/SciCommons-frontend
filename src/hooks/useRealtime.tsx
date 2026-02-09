@@ -941,10 +941,12 @@ export function useRealtime() {
     if (!isLeader || loopStartedRef.current) return;
     // Don't start polling if not authenticated
     if (!isAuthenticated || !accessToken) return;
+    // Refresh persisted queue state when leadership changes to avoid stale last_event_id.
+    loadQueueState();
     loopStartedRef.current = true;
     void pollLoop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLeader, isAuthenticated, accessToken]);
+  }, [isLeader, isAuthenticated, accessToken, loadQueueState]);
 
   // Keep status in other tabs updated
   useEffect(() => {
