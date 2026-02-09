@@ -199,3 +199,115 @@ All changes include inline comments with explanations, referencing "Fixed by Cla
 ---
 
 If you want deeper traceability, use `git diff 5271498..HEAD` for exact code deltas.
+
+
+More notes about the same change above (copy-pasted and added here):
+
+ Perfect! All 16 tasks are complete. Let me create a summary of what was implemented:
+
+  Implementation Complete! 🎉
+
+  I've successfully implemented all 15 critical fixes from the comprehensive audit plan. Here's a summary of what was
+  accomplished:
+
+  Phase 1: Foundation ✅
+
+  1. ✅ Global Mutation Error Handler - Created src/lib/mutationHelpers.ts with handleMutationError() function for consistent
+  error handling across all mutations
+  2. ✅ Global 401/403 Interceptor - Added axios response interceptor in src/api/custom-instance.ts that automatically logs
+  out users and redirects on auth errors
+  3. ✅ Server-Based Token Validation - Enhanced src/stores/authStore.ts to revalidate tokens with server every 5 minutes,
+  preventing clock manipulation attacks
+
+  Phase 2: Authentication System ✅
+
+  4. ✅ Auth Initialization Lock - Added promise-based lock in authStore.ts to prevent race conditions from React Strict Mode
+  double-mounting
+  5. ✅ Auth Failure Handling - Updated probeServerSession() to distinguish network errors (keep session) from auth failures
+  (logout), providing offline tolerance
+
+  Phase 3: Realtime System ✅
+
+  6. ✅ Event Ordering - Implemented event sequencing in src/hooks/useRealtime.tsx with sorting, sequence tracking, and
+  out-of-order event queuing
+  7. ✅ Aggressive Event ID Cleanup - Reduced cleanup threshold from 1000→500, keep only 250 recent IDs, added periodic
+  10-minute cleanup
+  8. ✅ Poll Cleanup on Unmount - Added pollTimeoutRef to clear timeouts and prevent zombie polls after component unmount
+  9. ✅ Queue Registration Retry - Implemented retry logic (up to 3 attempts) with exponential backoff, distinguishing auth
+  errors from network errors
+
+  Phase 4: Performance & Memory ✅
+
+  10. ✅ Comment Component Optimization - Replaced N×M callback with useMemo in src/components/common/Comment.tsx for O(1)
+  article context lookup
+  11. ✅ Form localStorage Coordination - Added 300ms debouncing and isSaving flag in submitarticle/page.tsx to prevent race
+  conditions between 3 useEffects
+  12. ✅ Notification Sync Loop Fix - Added timestamp tracking (100ms window) in unreadNotificationsStore.ts to prevent
+  ping-pong between tabs
+
+  Phase 5: Security ✅
+
+  13. ✅ PDF Annotations Validation - Created validateAnnotation() function in pdfAnnotationsStore.ts to check all required
+  fields and structure before import
+  14. ✅ XML Sanitization - Integrated DOMPurify in useFetchExternalArticleStore.ts to sanitize arXiv XML, validate PDF links,
+   and escape text content
+  15. ✅ Filename Sanitization - Added path traversal protection in submitarticle/page.tsx by removing path separators, null
+  bytes, ".." sequences, and leading dots
+  16. ✅ Global Error Handler - Created GlobalErrorHandler.tsx component with unhandledrejection listener to catch all promise
+   rejections
+
+  Key Files Modified:
+
+  - src/lib/mutationHelpers.ts (NEW)
+  - src/components/common/GlobalErrorHandler.tsx (NEW)
+  - src/api/custom-instance.ts
+  - src/stores/authStore.ts
+  - src/hooks/useRealtime.tsx
+  - src/components/common/Comment.tsx
+  - src/app/(main)/(articles)/submitarticle/page.tsx
+  - src/stores/unreadNotificationsStore.ts
+  - src/stores/pdfAnnotationsStore.ts
+  - src/stores/useFetchExternalArticleStore.ts
+  - src/app/layout.tsx
+
+  All changes include:
+
+  - ✅ Inline comments explaining the fix
+  - ✅ Reference to "Fixed by Claude Sonnet 4.5 on 2026-02-08"
+  - ✅ Issue numbers from the audit plan
+
+  The application is now significantly more robust with:
+  - 🔒 Secure authentication without race conditions
+  - 🔄 Reliable realtime updates with proper event ordering
+  - ⚡ Optimized performance with reduced memory leaks
+  - 🛡️ Enhanced security against XSS and path traversal attacks
+  - 🎯 Graceful error handling across the entire application
+
+Commit Successful!
+
+  Commit: 99d144e - Fix 15 critical audit issues
+
+  Summary:
+
+  - 12 files changed: 1,111 insertions(+), 158 deletions(-)
+  - 2 new files created:
+    - src/lib/mutationHelpers.ts - Global mutation error handling
+    - src/components/common/GlobalErrorHandler.tsx - Unhandled rejection catcher
+
+  Detailed changelog added to:
+
+  CHANGE_COMMENTS.md - Contains complete documentation of all 15 fixes organized by phase with impact analysis
+
+  Key changes across all 5 phases:
+
+  ✅ Foundation - Error handling infrastructure
+  ✅ Authentication - Race condition fixes + offline tolerance
+  ✅ Realtime - Event ordering + memory leak prevention
+  ✅ Performance - Optimizations + debouncing
+  ✅ Security - XSS prevention + input validation
+
+  All changes include inline comments with "Fixed by Claude Sonnet 4.5 on 2026-02-08" for traceability.
+
+  The commit message includes the full summary you requested, and references CHANGE_COMMENTS.md for complete details! 🎉
+
+✻ Brewed for 3m 26s
