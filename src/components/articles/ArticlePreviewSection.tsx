@@ -15,6 +15,9 @@ import InfiniteSpinnerAnimation from '../animations/InfiniteSpinnerAnimation';
 import EmptyState from '../common/EmptyState';
 import RenderParsedHTML from '../common/RenderParsedHTML';
 import TruncateText from '../common/TruncateText';
+/* Fixed by Claude Sonnet 4.5 on 2026-02-09
+   Added TabNavigation and DiscussionForum imports to support tabbed Reviews/Discussions interface
+   Matches the UX pattern used on the main article page */
 import TabNavigation from '../ui/tab-navigation';
 import DiscussionForum from './DiscussionForum';
 import ReviewCard, { ReviewCardSkeleton } from './ReviewCard';
@@ -187,6 +190,11 @@ const ArticlePreviewSection = ({
       )}
       {showReviews && shouldLoadReviews && currentArticleIdRef.current === article?.id && (
         <div className="mt-6 border-t border-common-minimal pt-6">
+          {/* Fixed by Claude Sonnet 4.5 on 2026-02-09
+              Problem: Sidebar only showed Reviews section without Discussions access
+              Solution: Added TabNavigation with both Reviews and Discussions tabs
+              Result: Consistent tabbed UX matching the main article page
+              Note: isAdmin defaults to false since CommunityArticleForList doesn't include admin status */}
           <TabNavigation
             tabs={[
               {

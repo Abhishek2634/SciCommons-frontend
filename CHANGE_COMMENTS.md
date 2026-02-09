@@ -496,4 +496,40 @@ Perfect! I've fixed the issue. Here's what I changed:
 
   This fix applies to all comments, discussions, and anywhere else RenderParsedHTML is used with markdown support.
 
-  
+---
+
+## Article Preview Sidebar - Tabbed Reviews/Discussions (2026-02-09)
+
+Fixed by Claude Sonnet 4.5 on 2026-02-09
+
+**Problem**: In the article preview sidebar (used in communities and articles pages), when viewing an article in the right panel, only reviews were shown with a simple "Reviews" heading. Users had no way to access discussions without navigating to the full article page. This created an inconsistent experience compared to the main article page which has a tabbed interface for both Reviews and Discussions.
+
+**Root Cause**: The `ArticlePreviewSection` component had a basic implementation that only rendered review cards when `showReviews={true}` was passed. It didn't include the tabbed navigation interface used on the main article page.
+
+**Solution**:
+1. Added `TabNavigation` and `DiscussionForum` component imports
+2. Replaced the simple "Reviews" section with a tabbed interface using `TabNavigation`
+3. Created two tabs:
+   - **Reviews Tab**: Shows review cards (same functionality as before)
+   - **Discussions Tab**: Full `DiscussionForum` component with ability to create/view discussions
+4. Set `isAdmin={false}` for discussions since `CommunityArticleForList` type doesn't include admin status (preview context only)
+5. Set `showSubscribeButton={false}` since subscription actions should be done on the full article page
+
+**Result**:
+- ✅ Consistent tabbed UX across both sidebar preview and main article page
+- ✅ Users can now access both reviews AND discussions directly from the sidebar
+- ✅ No breaking changes - still works the same when `showReviews` is false
+- ✅ Type-safe implementation with proper TypeScript validation
+
+**Design Decisions**:
+- Used existing `TabNavigation` component for consistency
+- Reused `DiscussionForum` component rather than creating a simplified version
+- Disabled subscribe button in preview context to encourage full page navigation for actions
+- Default to non-admin mode in preview since we don't have full article data with admin permissions
+
+**Files Modified**:
+- `src/components/articles/ArticlePreviewSection.tsx` (lines 18-20, 188-236)
+
+**Impact**: Users viewing articles in communities or articles list view can now toggle between Reviews and Discussions without leaving the preview panel, significantly improving the browsing experience.
+
+
