@@ -2,6 +2,8 @@
 
 import React, { useEffect } from 'react';
 
+import { useSearchParams } from 'next/navigation';
+
 import { toast } from 'sonner';
 
 import { withAuth } from '@/HOCs/withAuth';
@@ -13,6 +15,9 @@ import EditArticleDetails, { EditArticleDetailsSkeleton } from './EditArticleDet
 const ArticleSettings = ({ params }: { params: { slug: string } }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
   const axiosConfig = { headers: { Authorization: `Bearer ${accessToken}` } };
+  const searchParams = useSearchParams();
+  const communityName = searchParams?.get('community') ?? null;
+  const returnTo = searchParams?.get('returnTo') ?? null;
   // const [activeTab, setActiveTab] = React.useState<ActiveTab>('Details');
 
   const { data, isPending, error } = useArticlesApiGetArticle(
@@ -69,6 +74,8 @@ const ArticleSettings = ({ params }: { params: { slug: string } }) => {
             defaultImageURL={data.data.article_image_url || ''}
             articleId={Number(data.data.id)}
             articleSlug={params.slug}
+            communityName={communityName}
+            returnTo={returnTo}
           />
         )}
       </div>

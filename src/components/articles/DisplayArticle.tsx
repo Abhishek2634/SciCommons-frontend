@@ -252,7 +252,13 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({
 
         <div className="mb-2 flex w-full items-center justify-end gap-2 sm:absolute sm:bottom-0 sm:right-0 sm:mb-0 sm:w-fit">
           {article.is_submitter && (
-            <Link href={`/article/${article.slug}/settings`}>
+            <Link
+              href={
+                article.community_article
+                  ? `/article/${article.slug}/settings?community=${encodeURIComponent(article.community_article.community.name)}&returnTo=community`
+                  : `/article/${article.slug}/settings`
+              }
+            >
               <div className="rounded-md border border-common-contrast bg-white px-3 py-1.5 text-xs text-black dark:bg-black dark:text-white">
                 Edit Article
               </div>

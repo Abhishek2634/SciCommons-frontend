@@ -378,4 +378,94 @@ Fixed by Codex on 2026-02-09
 
 ---
 
+## Community Article Edit Flow Preservation (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: When editing articles accessed from a community view (`/community/{slug}/articles/{articleSlug}`), users were redirected to the public article view (`/article/{slug}`) after saving. This caused confusion because users lost the community context and saw different discussions (public vs. community discussions), making them think they "lost" their discussions.
+
+**Root Cause**: The edit button in `DisplayArticle.tsx` always linked to `/article/{slug}/settings` without passing community context. The edit page and redirect logic had no awareness of where the user came from (community vs. public view).
+
+**Solution**: Implemented context-aware routing using query parameters:
+1. **Edit button** now detects if article has `community_article` and passes `community` and `returnTo` query params
+2. **Settings page** reads query params via `useSearchParams` and passes them to `EditArticleDetails`
+3. **EditArticleDetails** redirects based on context:
+   - If `returnTo=community` and `communityName` is present → redirect to community article view
+   - Otherwise → redirect to public article view (default behavior)
+4. **Cache invalidation** includes community article query to ensure fresh data
+
+**Additional Change**: Removed the submission type toggle from the edit form since it cannot be changed after article creation. Submission type is determined at creation time only.
+
+**Result**: Users stay in the same view context after editing. If they accessed the article from a community, they return to that community view and see the same community discussions before and after editing.
+
+**Alternatives Considered (Not Implemented)**:
+- Create separate community edit route `/community/{slug}/articles/{articleSlug}/settings` → Too much code duplication
+- Fetch article in edit page to check `community_article` field → Extra API call and doesn't preserve user's navigation context
+- Store context in localStorage → Less predictable, harder to test
+
+**Files Modified**:
+- `src/components/articles/DisplayArticle.tsx` (line 255)
+- `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/page.tsx`
+- `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx`
+
+### Detailed Implementation Summary
+
+#### Phase 1: Fix Community Edit Flow ✅
+
+**1. DisplayArticle.tsx (line 255-260)**
+- Updated the "Edit Article" button to detect community context
+- Now passes `community` and `returnTo` query parameters when the article has a `community_article`
+- Public articles continue to use the simple `/article/{slug}/settings` route
+
+**2. Settings Page (page.tsx)**
+- Added `useSearchParams` to read query parameters
+- Extracts `communityName` and `returnTo` from URL
+- Passes these values to `EditArticleDetails` component
+
+**3. EditArticleDetails Component**
+- Added `communityName` and `returnTo` props to interface
+- Implemented context-aware redirect logic:
+  - If `returnTo === 'community'` and `communityName` exists → redirects to community article view
+  - Otherwise → redirects to public article view (default)
+- Added cache invalidation for community article query to ensure fresh data
+
+#### Phase 2: Submission Type Changes ✅
+
+**4. Removed Submission Type Toggle**
+- Removed the entire submission type selector section (lines 205-241)
+- Added a comment explaining that submission type cannot be changed after creation
+- This prevents confusion since the "Private" button was already commented out
+
+#### Documentation ✅
+
+**5. Updated CHANGE_COMMENTS.md**
+- Added comprehensive documentation of the fix
+- Explained the problem, root cause, solution, and benefits
+- Listed alternatives considered and why they weren't implemented
+- Referenced all modified files
+
+#### How It Works
+
+**For Community Articles:**
+1. User visits `/community/GSoC%202026/articles/gsoc-2026-possibilities`
+2. Clicks "Edit Article" → navigates to `/article/gsoc-2026-possibilities/settings?community=GSoC%202026&returnTo=community`
+3. Makes changes and clicks "Update Article"
+4. Redirected back to `/community/GSoC%202026/articles/gsoc-2026-possibilities`
+5. Sees the same community discussions before and after editing
+
+**For Public Articles:**
+1. User visits `/article/gsoc-2026-possibilities`
+2. Clicks "Edit Article" → navigates to `/article/gsoc-2026-possibilities/settings`
+3. Makes changes and clicks "Update Article"
+4. Redirected back to `/article/gsoc-2026-possibilities`
+5. Everything works as before (backward compatible)
+
+**Implementation Notes:**
+- The solution is minimal, uses query parameters instead of new routes
+- Preserves the user's navigation context throughout the edit flow
+- Backward compatible with existing public article editing
+- Cache invalidation ensures data freshness in both views
+
+---
+
 If you want deeper traceability, use `git diff 5271498..HEAD` for exact code deltas.

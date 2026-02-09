@@ -308,3 +308,241 @@ This audit was conducted through systematic exploration of:
 
 **Review completed by:** Claude Sonnet 4.5
 **Timestamp:** 2026-02-08 (Session time)
+
+---
+---
+---
+
+# Fix Community Article Edit Flow and Submission Type
+
+**Date:** 2026-02-09
+**Implemented by:** Codex
+
+## Context
+
+When articles are submitted to private communities, they can appear in two contexts:
+1. Public article view: `/article/{slug}` - Global, non-community context
+2. Community article view: `/community/{communitySlug}/articles/{articleSlug}` - Within community context
+
+**Current Problem:**
+- Both views share the same edit button that always routes to `/article/{slug}/settings`
+- After editing, users are redirected to `/article/{slug}` (public view)
+- If the article was accessed from a community context, users lose that context and see different discussions
+- This creates confusion: users think they "lost" discussions when they just ended up in a different view
+
+**Root Cause:**
+- Edit button is hardcoded to public article route
+- Edit page has no awareness of community context
+- Redirect after save always goes to public article view
+
+## Implementation Plan
+
+### Phase 1: Fix Community Edit Flow (High Priority)
+
+#### 1.1 Detect Community Context in Edit Button
+
+**File:** `src/components/articles/DisplayArticle.tsx` (line 255)
+
+**Current:**
+```tsx
+<Link href={`/article/${article.slug}/settings`}>
+```
+
+**Change to:**
+```tsx
+<Link href={
+  article.community_article
+    ? `/article/${article.slug}/settings?community=${encodeURIComponent(article.community_article.community.name)}&returnTo=community`
+    : `/article/${article.slug}/settings`
+}>
+```
+
+**Rationale:** Pass community context as query parameters so the edit page knows where to redirect back to.
+
+#### 1.2 Update Edit Page to Read Query Parameters
+
+**File:** `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/page.tsx`
+
+**Current:** Page doesn't read query parameters
+
+**Change:** Extract query parameters and pass to EditArticleDetails:
+```tsx
+const searchParams = useSearchParams();
+const communityName = searchParams.get('community');
+const returnTo = searchParams.get('returnTo');
+```
+
+Pass as props to `<EditArticleDetails>`:
+```tsx
+<EditArticleDetails
+  {...existingProps}
+  communityName={communityName}
+  returnTo={returnTo}
+/>
+```
+
+#### 1.3 Implement Context-Aware Redirect in EditArticleDetails
+
+**File:** `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx`
+
+**Current redirect logic** (lines 110-127):
+```tsx
+useEffect(() => {
+  if (isSuccess) {
+    queryClient.invalidateQueries({ queryKey: ['articles'] });
+    queryClient.invalidateQueries({ queryKey: ['my_articles'] });
+    queryClient.invalidateQueries({ queryKey: [`/api/articles/article/${articleSlug}`] });
+    toast.success('Article details updated successfully');
+    router.push(`/article/${articleSlug}`);
+  }
+  // ...
+}, [updateError, isSuccess, router, articleSlug, queryClient]);
+```
+
+**New redirect logic:**
+```tsx
+useEffect(() => {
+  if (isSuccess) {
+    queryClient.invalidateQueries({ queryKey: ['articles'] });
+    queryClient.invalidateQueries({ queryKey: ['my_articles'] });
+    queryClient.invalidateQueries({ queryKey: [`/api/articles/article/${articleSlug}`] });
+
+    toast.success('Article details updated successfully');
+
+    // Redirect based on context
+    if (returnTo === 'community' && communityName) {
+      router.push(`/community/${encodeURIComponent(communityName)}/articles/${articleSlug}`);
+    } else {
+      router.push(`/article/${articleSlug}`);
+    }
+  }
+  // ...
+}, [updateError, isSuccess, router, articleSlug, communityName, returnTo, queryClient]);
+```
+
+**Interface update** (add new props):
+```typescript
+interface EditArticleDetailsProps {
+  // ... existing props
+  communityName?: string | null;
+  returnTo?: string | null;
+}
+```
+
+#### 1.4 Invalidate Community Article Query
+
+**File:** `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx`
+
+**Add invalidation** for community article query:
+```tsx
+if (communityName) {
+  queryClient.invalidateQueries({
+    queryKey: [`/api/articles/article/${articleSlug}`, { community_name: communityName }]
+  });
+}
+```
+
+This ensures the community article view also gets fresh data.
+
+### Phase 2: Submission Type Changes (Medium Priority)
+
+#### 2.1 Remove Public/Private Toggle from Edit Form
+
+**File:** `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx` (lines 205-241)
+
+**Current:** Shows submission type selector with Public button
+
+**Change:** Remove the entire submission type selector section since:
+- Users cannot change submission type after creation (Private button already commented out)
+- Submission type should be determined at creation time only
+- Editing shouldn't allow changing article visibility
+
+#### 2.2 Evaluate Article Creation Defaults
+
+**Files to review:**
+- `src/app/(main)/(articles)/submitarticle/page.tsx` - Regular article submission (default: Public)
+- `src/app/(main)/(communities)/community/[slug]/createcommunityarticle/page.tsx` - Community article submission
+
+**User's suggestion:** Only allow community submission, make public visibility dependent on community settings
+
+**Recommendation:** Keep current behavior for now, but add clear documentation:
+- Regular article submission: Always public (no community context)
+- Community article submission: Defaults to Public with option for Private
+  - If community is public, Private articles are still visible to everyone within community
+  - If community is private, Private articles are only visible to community members
+
+**Future consideration:** Add a setting to control default submission type per community.
+
+### Phase 3: Testing & Verification
+
+#### Test Scenarios
+
+**Scenario 1: Edit Public Article**
+1. Navigate to `/article/gsoc-2026-possibilities`
+2. Click "Edit Article"
+3. Should go to `/article/gsoc-2026-possibilities/settings`
+4. Make changes and click "Update Article"
+5. Should redirect to `/article/gsoc-2026-possibilities`
+6. ✓ Verify: Same discussions visible before and after edit
+
+**Scenario 2: Edit Community Article**
+1. Navigate to `/community/GSoC%202026/articles/gsoc-2026-possibilities`
+2. Click "Edit Article"
+3. Should go to `/article/gsoc-2026-possibilities/settings?community=GSoC%202026&returnTo=community`
+4. Make changes and click "Update Article"
+5. Should redirect to `/community/GSoC%202026/articles/gsoc-2026-possibilities`
+6. ✓ Verify: Same discussions visible before and after edit (community discussions, not public ones)
+
+**Scenario 3: Manual URL Navigation**
+1. User manually goes to `/article/gsoc-2026-possibilities/settings` (no query params)
+2. Make changes and click "Update Article"
+3. Should redirect to `/article/gsoc-2026-possibilities` (default behavior)
+4. ✓ Verify: No errors, works as before
+
+**Scenario 4: Cache Invalidation**
+1. Edit community article
+2. Check Network tab for refetch requests
+3. ✓ Verify: Both public and community article queries are invalidated
+4. ✓ Verify: Article data is fresh on redirect
+
+## Critical Files
+
+### Modified Files
+- `src/components/articles/DisplayArticle.tsx` - Edit button with community context
+- `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/page.tsx` - Read query params
+- `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx` - Context-aware redirect
+- `CHANGE_COMMENTS.md` - Document the fix
+
+### Reference Files (Read-only)
+- `src/app/(main)/(communities)/community/[slug]/articles/[articleSlug]/page.tsx` - Community article view
+- `src/api/articles/articles.ts` - Article API methods
+- `src/api/schemas/articleOut.ts` - Article schema with community_article field
+
+## Benefits
+
+1. **Preserves Context:** Users stay in the same view after editing
+2. **Prevents Confusion:** No more "lost discussions" - users see the same discussions before and after edit
+3. **Minimal Changes:** Uses query parameters instead of creating new routes
+4. **Backward Compatible:** Public articles continue to work as before
+5. **Explicit Intent:** Query parameters make it clear where to redirect
+
+## Alternative Approaches Considered
+
+### Alternative 1: Create Separate Community Edit Route
+- Create `/community/{slug}/articles/{articleSlug}/settings`
+- **Pros:** Clean separation, explicit routing
+- **Cons:** Code duplication, more complex routing, requires new route files
+- **Rejected:** Too much duplication for a simple redirect logic change
+
+### Alternative 2: Fetch Article in Edit Page
+- Fetch article data in edit page to check `community_article` field
+- **Pros:** No query parameters needed
+- **Cons:** Extra API call, slower page load, doesn't know original context
+- **Rejected:** Performance impact and doesn't preserve user's navigation context
+
+## Notes
+
+- This fix addresses the immediate issue (Phase 1) while leaving Phase 2 for future consideration
+- The query parameter approach is simple and doesn't require route changes
+- Community context is explicitly passed through URL, making behavior predictable
+- Cache invalidation ensures data is fresh in both views

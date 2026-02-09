@@ -14,7 +14,6 @@ import { BlockSkeleton, Skeleton, TextSkeleton } from '@/components/common/Skele
 import { Button, ButtonTitle } from '@/components/ui/button';
 import { Option } from '@/components/ui/multiple-selector';
 import { ARTICLE_TITLE_MIN_LENGTH } from '@/constants/common.constants';
-import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { FileObj } from '@/types';
 
@@ -36,6 +35,8 @@ interface EditArticleDetailsProps {
   submissionType: 'Public' | 'Private';
   defaultImageURL: string | null;
   articleSlug: string;
+  communityName?: string | null;
+  returnTo?: string | null;
 }
 
 const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
@@ -47,6 +48,8 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
     defaultImageURL: _defaultImageURL,
     articleId,
     articleSlug,
+    communityName,
+    returnTo,
   } = props;
   const {
     control,
@@ -118,13 +121,27 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
       queryClient.invalidateQueries({ queryKey: ['my_articles'] });
       queryClient.invalidateQueries({ queryKey: [`/api/articles/article/${articleSlug}`] });
+
+      // Invalidate community article query if editing from community context
+      if (communityName) {
+        queryClient.invalidateQueries({
+          queryKey: [`/api/articles/article/${articleSlug}`, { community_name: communityName }],
+        });
+      }
+
       toast.success('Article details updated successfully');
-      router.push(`/article/${articleSlug}`);
+
+      // Redirect based on context
+      if (returnTo === 'community' && communityName) {
+        router.push(`/community/${encodeURIComponent(communityName)}/articles/${articleSlug}`);
+      } else {
+        router.push(`/article/${articleSlug}`);
+      }
     }
     if (updateError) {
       toast.error(`${updateError.response?.data.message}`);
     }
-  }, [updateError, isSuccess, router, articleSlug, queryClient]);
+  }, [updateError, isSuccess, router, articleSlug, communityName, returnTo, queryClient]);
 
   return (
     /* Fixed by Codex on 2026-02-09
@@ -202,43 +219,8 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
           />
         )}
       /> */}
-      <div className="mb-4 space-y-2">
-        <label className="block text-sm font-medium text-text-secondary">Submission Type</label>
-        <Controller
-          name="submissionType"
-          control={control}
-          render={({ field: { onChange, value } }) => (
-            <div className="mt-1 flex gap-2">
-              <Button
-                className={cn(
-                  'w-fit cursor-pointer rounded-lg border px-4 py-2',
-                  value === 'Public'
-                    ? 'border-functional-green bg-functional-green/10'
-                    : 'border-common-contrast'
-                )}
-                type="button"
-                variant={'outline'}
-                onClick={() => onChange('Public')}
-              >
-                <ButtonTitle className="text-base">Public</ButtonTitle>
-              </Button>
-              {/* <Button
-                className={cn(
-                  'w-fit cursor-pointer rounded-lg border px-4 py-2',
-                  value === 'Private'
-                    ? 'border-functional-green bg-functional-green/10'
-                    : 'border-common-contrast'
-                )}
-                type="button"
-                variant={'outline'}
-                onClick={() => isEditEnabled && onChange('Private')}
-              >
-                <ButtonTitle className="text-base">Private</ButtonTitle>
-              </Button> */}
-            </div>
-          )}
-        />
-      </div>
+      {/* Submission type removed - cannot be changed after article creation.
+          Determined at creation time only. */}
       <Button
         showLoadingSpinner={false}
         loading={isUpdatePending}
