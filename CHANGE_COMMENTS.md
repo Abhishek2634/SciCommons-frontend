@@ -469,3 +469,31 @@ Fixed by Codex on 2026-02-09
 ---
 
 If you want deeper traceability, use `git diff 5271498..HEAD` for exact code deltas.
+
+
+Perfect! I've fixed the issue. Here's what I changed:
+
+  Summary
+
+  The problem was that markdown links without protocols (like [link](link.com/route)) were being treated as relative URLs by
+  the browser, resulting in localhost:3000/link.com/route.
+
+  The Fix
+
+  I added a custom link renderer to the marked configuration in RenderParsedHTML.tsx:126-145 that:
+
+  1. Detects links without protocols: Checks if the href doesn't start with http://, https://, mailto:, tel:, #, or /
+  2. Adds https:// automatically: If the link looks like an external URL (contains a dot), it prepends https://
+  3. Opens in new tab: Added target="_blank" and rel="noopener noreferrer" for security and better UX
+
+  Examples
+
+  - [link](link.com/route) → https://link.com/route ✅
+  - [link](example.com) → https://example.com ✅
+  - [link](https://example.com) → unchanged (already has protocol) ✅
+  - [link](/internal/path) → unchanged (relative path) ✅
+  - [link](#anchor) → unchanged (anchor link) ✅
+
+  This fix applies to all comments, discussions, and anywhere else RenderParsedHTML is used with markdown support.
+
+  

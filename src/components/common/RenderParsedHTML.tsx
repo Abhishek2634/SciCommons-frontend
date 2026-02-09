@@ -117,14 +117,34 @@ const RenderParsedHTML = ({
     try {
       let processedContent = content.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, '');
 
-      // Create custom renderer if flattenHeadings is true
+      // Create custom renderer
       let renderer: Renderer | undefined;
-      if (flattenHeadings && supportMarkdown) {
+      if (supportMarkdown) {
         renderer = new Renderer();
-        // Convert all headings to strong tags instead of h1-h6
-        renderer.heading = ({ text }) => {
-          return `<strong>${text}</strong> `;
+
+        // Fix links without protocols
+        renderer.link = ({ href, title, tokens }) => {
+          // Extract text from tokens
+          const text = tokens.map((t) => (t as any).text || '').join('');
+
+          // If href doesn't start with a protocol or /, assume it's an external link
+          if (href && !href.match(/^(https?:\/\/|mailto:|tel:|#|\/)/i)) {
+            // Check if it looks like a domain (contains a dot)
+            if (href.includes('.') || href.includes('://')) {
+              href = `https://${href}`;
+            }
+          }
+
+          const titleAttr = title ? ` title="${title}"` : '';
+          return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
         };
+
+        // Flatten headings if needed
+        if (flattenHeadings) {
+          renderer.heading = ({ text }) => {
+            return `<strong>${text}</strong> `;
+          };
+        }
       }
 
       // If only markdown is supported
