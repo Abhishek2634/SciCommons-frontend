@@ -23,6 +23,8 @@ type IconProps = TablerIconProps;
  * @return {React.FC} A new functional component with merged props */
 
 export function IconComponent(Icon: React.ComponentType<IconProps>): React.FC<IconProps> {
+  // NOTE(bsureshkrishna, 2026-02-09): Tabler icons' ref typing differs from SVG refs,
+  // so we wrap without forwarding ref to keep the types compatible.
   const WrappedIcon: React.FC<IconProps> = ({
     className,
     strokeWidth = defaultStrokeWidth,

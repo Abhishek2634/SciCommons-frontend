@@ -53,4 +53,11 @@ code now does, not a commit-by-commit history.
 3. Jest config updated for jsdom and expanded tests (auth, middleware, realtime, UI).
 4. Repository standardized on `yarn.lock` (package-lock removed).
 
+**Post-Commentary Follow-ups (After 93c19fe)**
+1. Fixed a missing `accessToken` destructure in the Articles tab content to enable authenticated
+   queries and eliminate TypeScript errors.
+2. Simplified the Tabler icon wrapper to avoid ref type mismatches in strict typing.
+3. Forced `canvas@3.2.1` via Yarn `resolutions` to avoid Node 22 binary issues from transitive deps.
+4. Minor formatting-only normalization in a few files (no behavioral changes).
+
 If you want deeper traceability, use `git diff 5271498..HEAD` for exact code deltas.

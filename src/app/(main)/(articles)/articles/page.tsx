@@ -58,6 +58,8 @@ const TabContent: React.FC<TabContentProps> = ({
   setSearch,
   page,
   setPage,
+  // NOTE(bsureshkrishna, 2026-02-09): accessToken is required for authenticated queries.
+  // This fixes a missing destructure that caused TS errors and unauthenticated requests.
   accessToken,
   isActive,
   viewType,
