@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
@@ -74,7 +74,7 @@ const TabContent: React.FC<TabContentProps> = ({
   setGridCount,
   headerTabs,
   router,
-  pathname,
+  pathname: _pathname,
   selectedPreviewArticle,
   setSelectedPreviewArticle,
 }) => {
@@ -217,7 +217,7 @@ const TabContent: React.FC<TabContentProps> = ({
         />
       </div>
     ),
-    [viewType, selectedPreviewArticle]
+    [viewType, selectedPreviewArticle, setSelectedPreviewArticle]
   );
   const renderSkeleton = useCallback(() => <ArticleCardSkeleton />, []);
 
@@ -346,7 +346,7 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
   setGridCount,
   headerTabs,
   router,
-  pathname,
+  pathname: _pathname,
   selectedPreviewArticle,
   setSelectedPreviewArticle,
 }) => {
@@ -483,7 +483,7 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
         />
       </div>
     ),
-    [viewType, selectedPreviewArticle]
+    [viewType, selectedPreviewArticle, setSelectedPreviewArticle]
   );
   const renderSkeleton = useCallback(() => <ArticleCardSkeleton />, []);
 
