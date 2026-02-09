@@ -1,9 +1,10 @@
 'use client';
 
 // Client component for displaying article page
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 
 import { MDXEditorMethods } from '@mdxeditor/editor';
 import { BookOpen, FileText, X } from 'lucide-react';
@@ -47,7 +48,8 @@ interface Props {
   params: { slug: string };
 }
 
-function ArticleDisplayPageClient({ params }: Props) {
+function ArticleDisplayPageClientInner({ params }: Props) {
+  const searchParams = useSearchParams();
   const accessToken = useAuthStore((state) => state.accessToken);
   const axiosConfig = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {};
   const [submitReview, setSubmitReview] = useState(false);
@@ -125,6 +127,17 @@ function ArticleDisplayPageClient({ params }: Props) {
       setSelectedPdfUrl(data.data.article_pdf_urls[0]);
     }
   }, [data?.data.article_pdf_urls, selectedPdfUrl]);
+
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Clicking "View PDF" from sidebar required second click on article page
+     Solution: Detect openPdfViewer=true URL parameter and auto-open PDF viewer
+     Result: PDF viewer opens automatically when navigating from sidebar */
+  useEffect(() => {
+    const openPdfParam = searchParams?.get('openPdfViewer');
+    if (openPdfParam === 'true' && data && isPdfEnabled && !showPdfViewer) {
+      setShowPdfViewer(true);
+    }
+  }, [searchParams, data, isPdfEnabled, showPdfViewer]);
 
   const hasUserReviewed = reviewsData?.data.items.some((review) => review.is_author) || false;
 
@@ -355,6 +368,14 @@ function ArticleDisplayPageClient({ params }: Props) {
 
   // Default view (mobile or when PDF viewer is closed)
   return <div className="container w-full py-4">{renderArticleContent()}</div>;
+}
+
+function ArticleDisplayPageClient({ params }: Props) {
+  return (
+    <Suspense fallback={<div className="container w-full py-4">Loading...</div>}>
+      <ArticleDisplayPageClientInner params={params} />
+    </Suspense>
+  );
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment

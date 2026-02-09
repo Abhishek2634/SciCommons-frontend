@@ -45,14 +45,15 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
      Problem: Clicking article and navigating to PDF viewer should return to community page with same article selected
-     Solution: Navigate to article page with returnTo=community parameter
-     Result: Browser back naturally returns with preserved article selection */
+     Solution: Navigate to article page with returnTo=community parameter and openPdfViewer=true to auto-open PDF
+     Result: Browser back naturally returns with preserved article selection, PDF opens automatically */
   const handleOpenPdfViewer = () => {
     if (selectedPreviewArticle && pathname) {
       const params = new URLSearchParams();
       params.set('returnTo', 'community');
       params.set('communityName', communityName);
       params.set('articleId', selectedPreviewArticle.id.toString());
+      params.set('openPdfViewer', 'true');
       router.push(`/article/${selectedPreviewArticle.slug}?${params.toString()}`);
     }
   };

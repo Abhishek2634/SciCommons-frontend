@@ -78,6 +78,7 @@ const TabContent: React.FC<TabContentProps> = ({
   selectedPreviewArticle,
   setSelectedPreviewArticle,
 }) => {
+  const searchParams = useSearchParams();
   const { displayedItems, setItems, appendItems, setFilter, activeFilter, reset } =
     useFilteredList<ArticlesListOut>({
       filters: {
@@ -94,16 +95,32 @@ const TabContent: React.FC<TabContentProps> = ({
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
      Problem: Clicking article and navigating to PDF viewer should return to articles page with same article selected
-     Solution: Navigate to article page with returnTo=articles parameter
-     Result: Browser back naturally returns with preserved article selection */
+     Solution: Navigate to article page with returnTo=articles parameter and openPdfViewer=true to auto-open PDF
+     Result: Browser back naturally returns with preserved article selection, PDF opens automatically */
   const handleOpenPdfViewer = () => {
     if (selectedPreviewArticle) {
       const params = new URLSearchParams();
       params.set('returnTo', 'articles');
       params.set('articleId', selectedPreviewArticle.id.toString());
+      params.set('openPdfViewer', 'true');
       router.push(`/article/${selectedPreviewArticle.slug}?${params.toString()}`);
     }
   };
+
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Back button doesn't restore article selection in articles page
+     Solution: Detect articleId from URL params and auto-select when data loads
+     Result: Selected article restored when navigating back from article page */
+  useEffect(() => {
+    const articleIdParam = searchParams?.get('articleId');
+    if (articleIdParam && displayedItems.length > 0 && !selectedPreviewArticle && isActive) {
+      const articleId = parseInt(articleIdParam, 10);
+      const article = displayedItems.find((a) => a.id === articleId);
+      if (article) {
+        setSelectedPreviewArticle(article);
+      }
+    }
+  }, [displayedItems, searchParams, selectedPreviewArticle, setSelectedPreviewArticle, isActive]);
 
   useKeyboardNavigation({
     items: displayedItems,
@@ -352,6 +369,7 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
   selectedPreviewArticle,
   setSelectedPreviewArticle,
 }) => {
+  const searchParams = useSearchParams();
   const { displayedItems, setItems, appendItems, setFilter, activeFilter, reset } =
     useFilteredList<ArticlesListOut>({
       filters: {
@@ -366,14 +384,34 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
   const loadingType = LoadingType.INFINITE_SCROLL;
   const isDesktop = useMediaQuery(`(min-width: ${SCREEN_WIDTH_SM}px)`);
 
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Clicking "View PDF" requires second click on article page
+     Solution: Add openPdfViewer=true parameter to auto-open PDF viewer on article page
+     Result: PDF viewer opens automatically without second click */
   const handleOpenPdfViewer = () => {
     if (selectedPreviewArticle) {
       const params = new URLSearchParams();
       params.set('returnTo', 'articles');
       params.set('articleId', selectedPreviewArticle.id.toString());
+      params.set('openPdfViewer', 'true');
       router.push(`/article/${selectedPreviewArticle.slug}?${params.toString()}`);
     }
   };
+
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Back button doesn't restore article selection in my articles tab
+     Solution: Detect articleId from URL params and auto-select when data loads
+     Result: Selected article restored when navigating back from article page */
+  useEffect(() => {
+    const articleIdParam = searchParams?.get('articleId');
+    if (articleIdParam && displayedItems.length > 0 && !selectedPreviewArticle && isActive) {
+      const articleId = parseInt(articleIdParam, 10);
+      const article = displayedItems.find((a) => a.id === articleId);
+      if (article) {
+        setSelectedPreviewArticle(article);
+      }
+    }
+  }, [displayedItems, searchParams, selectedPreviewArticle, setSelectedPreviewArticle, isActive]);
 
   useKeyboardNavigation({
     items: displayedItems,
