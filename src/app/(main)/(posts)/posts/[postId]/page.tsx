@@ -70,7 +70,7 @@ const PostDetailPage = ({ params }: { params: { postId: number } }) => {
     },
   });
 
-  const { mutate: toggleBookmark } = useUsersCommonApiToggleBookmark({
+  const { mutate: _toggleBookmark } = useUsersCommonApiToggleBookmark({
     request: requestConfig,
     mutation: {
       onSuccess: (data) => {

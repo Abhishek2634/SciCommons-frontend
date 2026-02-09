@@ -54,7 +54,7 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
   const [sortBy, setSortBy] = useState<'date' | 'page'>('date');
 
   const {
-    annotations,
+    annotations: _annotations,
     getAnnotationsForArticle,
     getAnnotationsForPdf,
     updateAnnotation,
@@ -76,7 +76,7 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
       }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [articleSlug, pdfUrl, annotations, sortBy, getAnnotationsForArticle, getAnnotationsForPdf]);
+  }, [articleSlug, pdfUrl, sortBy, getAnnotationsForArticle, getAnnotationsForPdf]);
 
   const handleToggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);

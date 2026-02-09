@@ -38,7 +38,7 @@ type RealtimeEvent = {
         username: string;
       };
       topic?: string;
-      [key: string]: any;
+      [key: string]: unknown;
     };
     comment?: {
       id?: number;
@@ -46,7 +46,7 @@ type RealtimeEvent = {
         username: string;
       };
       content?: string;
-      [key: string]: any;
+      [key: string]: unknown;
     };
   };
   community_ids: number[];
@@ -107,9 +107,9 @@ export function useRealtime() {
   const {
     activeArticleId,
     activeCommunityId,
-    activeDiscussionId,
-    isViewingDiscussions,
-    isViewingComments,
+    activeDiscussionId: _activeDiscussionId,
+    isViewingDiscussions: _isViewingDiscussions,
+    isViewingComments: _isViewingComments,
     isContextFresh,
   } = useRealtimeContextStore();
 
@@ -253,24 +253,32 @@ export function useRealtime() {
             );
           },
         },
-        (oldData: any) => {
-          if (!oldData?.data?.items) return oldData;
+        (oldData: unknown) => {
+          if (!oldData || typeof oldData !== 'object' || !('data' in oldData)) return oldData;
+          const data = oldData.data as { items?: unknown[] };
+          if (!data?.items) return oldData;
 
           const discussion = event.data.discussion;
           if (!discussion?.id) return oldData;
 
-          const items = oldData.data.items;
+          const items = data.items;
 
           switch (event.type) {
             case 'new_discussion': {
               // Check if discussion already exists to prevent duplicates
-              const exists = items.some((item: any) => item.id === discussion.id);
+              const exists = items.some(
+                (item: unknown) =>
+                  typeof item === 'object' &&
+                  item !== null &&
+                  'id' in item &&
+                  item.id === discussion.id
+              );
               if (exists) return oldData;
 
               return {
                 ...oldData,
                 data: {
-                  ...oldData.data,
+                  ...data,
                   items: [{ ...discussion, comments_count: 0, replies: [] }, ...items],
                 },
               };
@@ -280,9 +288,14 @@ export function useRealtime() {
               return {
                 ...oldData,
                 data: {
-                  ...oldData.data,
-                  items: items.map((item: any) =>
-                    item.id === discussion.id ? { ...item, ...discussion } : item
+                  ...data,
+                  items: items.map((item: unknown) =>
+                    typeof item === 'object' &&
+                    item !== null &&
+                    'id' in item &&
+                    item.id === discussion.id
+                      ? { ...item, ...discussion }
+                      : item
                   ),
                 },
               };
@@ -292,8 +305,16 @@ export function useRealtime() {
               return {
                 ...oldData,
                 data: {
-                  ...oldData.data,
-                  items: items.filter((item: any) => item.id !== discussion.id),
+                  ...data,
+                  items: items.filter(
+                    (item: unknown) =>
+                      !(
+                        typeof item === 'object' &&
+                        item !== null &&
+                        'id' in item &&
+                        item.id === discussion.id
+                      )
+                  ),
                 },
               };
             }
@@ -322,35 +343,43 @@ export function useRealtime() {
             return matchesQueryKey(key, `/api/articles/discussions/${discussionId}/comments/`);
           },
         },
-        (oldData: any) => {
-          if (!Array.isArray(oldData?.data)) return oldData;
+        (oldData: unknown) => {
+          if (!oldData || typeof oldData !== 'object' || !('data' in oldData)) return oldData;
+          if (!Array.isArray((oldData as { data?: unknown }).data)) return oldData;
 
           const comment = event.data.comment;
           if (!comment?.id) return oldData;
 
           const parentId = event.data.parent_id;
 
-          const updateCommentsArray = (comments: any[]): any[] => {
+          const updateCommentsArray = (comments: unknown[]): unknown[] => {
             if (!Array.isArray(comments)) return [];
 
             switch (event.type) {
               case 'new_comment': {
                 if (!parentId) {
                   // Top-level comment
-                  const exists = comments.some((c: any) => c.id === comment.id);
+                  const exists = comments.some(
+                    (c: unknown) =>
+                      typeof c === 'object' && c !== null && 'id' in c && c.id === comment.id
+                  );
                   if (exists) return comments;
 
                   return [...comments, { ...comment, replies: [] }];
                 } else {
                   // Reply to existing comment
-                  return comments.map((c: any) => {
+                  return comments.map((c: unknown) => {
+                    if (typeof c !== 'object' || c === null || !('id' in c)) return c;
                     if (c.id === parentId) {
-                      const replies = Array.isArray(c.replies) ? c.replies : [];
-                      const exists = replies.some((r: any) => r.id === comment.id);
+                      const replies = 'replies' in c && Array.isArray(c.replies) ? c.replies : [];
+                      const exists = replies.some(
+                        (r: unknown) =>
+                          typeof r === 'object' && r !== null && 'id' in r && r.id === comment.id
+                      );
                       if (exists) return c;
 
                       return { ...c, replies: [...replies, { ...comment, replies: [] }] };
-                    } else if (Array.isArray(c.replies)) {
+                    } else if ('replies' in c && Array.isArray(c.replies)) {
                       // Recursively check nested replies
                       return { ...c, replies: updateCommentsArray(c.replies) };
                     }
@@ -360,10 +389,11 @@ export function useRealtime() {
               }
 
               case 'updated_comment': {
-                return comments.map((c: any) => {
+                return comments.map((c: unknown) => {
+                  if (typeof c !== 'object' || c === null || !('id' in c)) return c;
                   if (c.id === comment.id) {
                     return { ...c, ...comment };
-                  } else if (Array.isArray(c.replies)) {
+                  } else if ('replies' in c && Array.isArray(c.replies)) {
                     return { ...c, replies: updateCommentsArray(c.replies) };
                   }
                   return c;
@@ -371,9 +401,14 @@ export function useRealtime() {
               }
 
               case 'deleted_comment': {
-                const filtered = comments.filter((c: any) => c.id !== comment.id);
-                return filtered.map((c: any) =>
-                  Array.isArray(c.replies) ? { ...c, replies: updateCommentsArray(c.replies) } : c
+                const filtered = comments.filter(
+                  (c: unknown) =>
+                    !(typeof c === 'object' && c !== null && 'id' in c && c.id === comment.id)
+                );
+                return filtered.map((c: unknown) =>
+                  typeof c === 'object' && c !== null && 'replies' in c && Array.isArray(c.replies)
+                    ? { ...c, replies: updateCommentsArray(c.replies) }
+                    : c
                 );
               }
 
@@ -382,7 +417,14 @@ export function useRealtime() {
             }
           };
 
-          return { ...oldData, data: updateCommentsArray(oldData.data) };
+          return {
+            ...oldData,
+            data: updateCommentsArray(
+              Array.isArray((oldData as { data?: unknown }).data)
+                ? (oldData as { data: unknown[] }).data
+                : []
+            ),
+          };
         }
       );
 
@@ -401,18 +443,27 @@ export function useRealtime() {
               );
             },
           },
-          (oldData: any) => {
-            if (!oldData?.data?.items) return oldData;
+          (oldData: unknown) => {
+            if (!oldData || typeof oldData !== 'object' || !('data' in oldData)) return oldData;
+            const data = oldData.data as { items?: unknown[] };
+            if (!data?.items) return oldData;
 
             return {
               ...oldData,
               data: {
-                ...oldData.data,
-                items: oldData.data.items.map((item: any) =>
-                  item.id === discussionId
-                    ? { ...item, comments_count: (item.comments_count || 0) + 1 }
-                    : item
-                ),
+                ...data,
+                items: data.items.map((item: unknown) => {
+                  if (typeof item !== 'object' || item === null || !('id' in item)) return item;
+                  return item.id === discussionId
+                    ? {
+                        ...item,
+                        comments_count:
+                          ('comments_count' in item && typeof item.comments_count === 'number'
+                            ? item.comments_count
+                            : 0) + 1,
+                      }
+                    : item;
+                }),
               },
             };
           }
@@ -596,9 +647,6 @@ export function useRealtime() {
       queryClient,
       activeArticleId,
       activeCommunityId,
-      activeDiscussionId,
-      isViewingDiscussions,
-      isViewingComments,
       isContextFresh,
       updateDiscussionsCache,
       updateCommentsCache,
@@ -720,9 +768,19 @@ export function useRealtime() {
           backoffRef.current = Math.min(backoffRef.current * 2, 10_000);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Check for authentication errors first (401/403)
-      const httpStatus = err?.response?.status || err?.status;
+      const httpStatus =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        err.response &&
+        typeof err.response === 'object' &&
+        'status' in err.response
+          ? err.response.status
+          : err && typeof err === 'object' && 'status' in err
+            ? err.status
+            : undefined;
       if (httpStatus === 401 || httpStatus === 403) {
         queueIdRef.current = null;
         lastEventIdRef.current = null;
@@ -731,9 +789,14 @@ export function useRealtime() {
         return;
       }
 
-      if (err?.name === 'AbortError') {
+      if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') {
         // ignore aborts
-      } else if (err?.message === 'No queue_id') {
+      } else if (
+        err &&
+        typeof err === 'object' &&
+        'message' in err &&
+        err.message === 'No queue_id'
+      ) {
         // No queue_id means we're not properly registered, likely not authenticated
         if (!isAuthenticated || !accessToken) {
           setStatus('disabled');
@@ -748,7 +811,12 @@ export function useRealtime() {
         }
         await new Promise((r) => setTimeout(r, backoffRef.current));
         backoffRef.current = Math.min(backoffRef.current * 2, 10_000);
-      } else if (err?.message === 'queue_not_found') {
+      } else if (
+        err &&
+        typeof err === 'object' &&
+        'message' in err &&
+        err.message === 'queue_not_found'
+      ) {
         setStatus('reconnecting');
         let registered = false;
         if (registerQueueRef.current) {
@@ -819,9 +887,19 @@ export function useRealtime() {
         { queue_id: queueIdRef.current },
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Check for auth errors
-      const status = e?.response?.status || e?.status;
+      const status =
+        e &&
+        typeof e === 'object' &&
+        'response' in e &&
+        e.response &&
+        typeof e.response === 'object' &&
+        'status' in e.response
+          ? e.response.status
+          : e && typeof e === 'object' && 'status' in e
+            ? e.status
+            : undefined;
       if (status === 401 || status === 403) {
         stoppedRef.current = true;
         setStatus('disabled');
@@ -865,9 +943,19 @@ export function useRealtime() {
         });
         setStatus('connected');
         return true;
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Check for authentication errors (401)
-        const status = err?.response?.status || err?.status;
+        const status =
+          err &&
+          typeof err === 'object' &&
+          'response' in err &&
+          err.response &&
+          typeof err.response === 'object' &&
+          'status' in err.response
+            ? err.response.status
+            : err && typeof err === 'object' && 'status' in err
+              ? err.status
+              : undefined;
         if (status === 401 || status === 403) {
           // Auth failed - clear queue state and stop
           queueIdRef.current = null;

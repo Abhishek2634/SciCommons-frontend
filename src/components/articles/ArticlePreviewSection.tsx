@@ -62,7 +62,7 @@ const ArticlePreviewSection = ({
         clearTimeout(timer);
       };
     }
-  }, [article?.id, showReviews]);
+  }, [article, showReviews]);
 
   const communityId = article?.community_article?.community.id
     ? Number(article.community_article.community.id)

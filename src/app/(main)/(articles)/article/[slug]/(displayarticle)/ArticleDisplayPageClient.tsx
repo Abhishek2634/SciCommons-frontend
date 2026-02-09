@@ -72,7 +72,7 @@ function ArticleDisplayPageClient({ params }: Props) {
   const isPdfEnabled = useMediaQuery(`(min-width: ${SCREEN_WIDTH_LG}px)`);
 
   // Reference for the review editor
-  const reviewEditorRef = useRef<MDXEditorMethods>(null);
+  const _reviewEditorRef = useRef<MDXEditorMethods>(null);
 
   const { data, error, isPending } = useArticlesApiGetArticle(
     params.slug,

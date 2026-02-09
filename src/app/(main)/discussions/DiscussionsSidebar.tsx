@@ -68,10 +68,9 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
       },
     });
 
-  const communities = subscriptionsData?.data?.communities || [];
-
   // Flatten the data: each article becomes its own item with community info
   const flattenedArticles = useMemo<FlattenedArticle[]>(() => {
+    const communities = subscriptionsData?.data?.communities || [];
     return communities.flatMap((community) =>
       community.articles.map((article) => ({
         articleId: article.article_id,
@@ -84,7 +83,7 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
         isAdmin: community.is_admin || false,
       }))
     );
-  }, [communities]);
+  }, [subscriptionsData?.data?.communities]);
 
   // Merge with unread state and sort by activity
   const sortedArticles = useMemo<FlattenedArticleWithUnread[]>(() => {

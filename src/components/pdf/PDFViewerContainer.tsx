@@ -49,10 +49,10 @@ const PageHighlights: React.FC<PageHighlightsProps> = ({
   pageIndex,
   articleSlug,
   pdfUrl,
-  scale,
-  rotation,
+  scale: _scale,
+  rotation: _rotation,
 }) => {
-  const { annotations, getAnnotationsForPdf } = usePdfAnnotationsStore();
+  const { getAnnotationsForPdf } = usePdfAnnotationsStore();
 
   // Get annotations for this page
   const pageAnnotations = useMemo(() => {
@@ -60,7 +60,7 @@ const PageHighlights: React.FC<PageHighlightsProps> = ({
     return allAnnotations.filter((annotation) =>
       annotation.highlightAreas.some((area) => area.pageIndex === pageIndex)
     );
-  }, [articleSlug, pdfUrl, pageIndex, annotations, getAnnotationsForPdf]);
+  }, [articleSlug, pdfUrl, pageIndex, getAnnotationsForPdf]);
 
   if (pageAnnotations.length === 0) {
     return null;

@@ -132,7 +132,7 @@ const Comment: React.FC<CommentProps> = ({
 
   // Find the article context for this comment
   const findArticleContext = useCallback(() => {
-    for (const [key, article] of Object.entries(articleUnreads)) {
+    for (const [_key, article] of Object.entries(articleUnreads)) {
       const hasItem = article.items.some(
         (item) => item.id === Number(id) && (item.type === 'comment' || item.type === 'reply')
       );
