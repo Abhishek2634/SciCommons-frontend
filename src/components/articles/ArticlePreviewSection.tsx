@@ -15,6 +15,8 @@ import InfiniteSpinnerAnimation from '../animations/InfiniteSpinnerAnimation';
 import EmptyState from '../common/EmptyState';
 import RenderParsedHTML from '../common/RenderParsedHTML';
 import TruncateText from '../common/TruncateText';
+import TabNavigation from '../ui/tab-navigation';
+import DiscussionForum from './DiscussionForum';
 import ReviewCard, { ReviewCardSkeleton } from './ReviewCard';
 
 const ArticlePreviewSection = ({
@@ -179,25 +181,52 @@ const ArticlePreviewSection = ({
             <div className="w-5">
               <InfiniteSpinnerAnimation color="#737373" strokeWidth={16} />
             </div>
-            <span className="text-xs text-text-secondary">Loading Reviews</span>
+            <span className="text-xs text-text-secondary">Loading</span>
           </div>
         </div>
       )}
       {showReviews && shouldLoadReviews && currentArticleIdRef.current === article?.id && (
         <div className="mt-6 border-t border-common-minimal pt-6">
-          <h3 className="mb-4 text-sm font-semibold text-text-secondary">Reviews</h3>
-          {reviewsIsPending && (
-            <div className="flex flex-col gap-2">
-              {[...Array(3)].map((_, i) => (
-                <ReviewCardSkeleton key={i} />
-              ))}
-            </div>
-          )}
-          {!reviewsIsPending && reviewsData?.data.items.length === 0 && (
-            <EmptyState content="No reviews yet" subcontent="Be the first to review this article" />
-          )}
-          {!reviewsIsPending &&
-            reviewsData?.data.items.map((review) => <ReviewCard key={review.id} review={review} />)}
+          <TabNavigation
+            tabs={[
+              {
+                title: 'Reviews',
+                content: (
+                  <div className="flex flex-col gap-2">
+                    {reviewsIsPending && (
+                      <div className="flex flex-col gap-2">
+                        {[...Array(3)].map((_, i) => (
+                          <ReviewCardSkeleton key={i} />
+                        ))}
+                      </div>
+                    )}
+                    {!reviewsIsPending && reviewsData?.data.items.length === 0 && (
+                      <EmptyState
+                        content="No reviews yet"
+                        subcontent="Be the first to review this article"
+                      />
+                    )}
+                    {!reviewsIsPending &&
+                      reviewsData?.data.items.map((review) => (
+                        <ReviewCard key={review.id} review={review} />
+                      ))}
+                  </div>
+                ),
+              },
+              {
+                title: 'Discussions',
+                content: (
+                  <DiscussionForum
+                    articleId={article.id}
+                    communityId={communityId}
+                    communityArticleId={article.community_article?.id}
+                    showSubscribeButton={false}
+                    isAdmin={false}
+                  />
+                ),
+              },
+            ]}
+          />
         </div>
       )}
     </div>
