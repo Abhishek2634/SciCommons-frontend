@@ -93,6 +93,99 @@ code now does, not a commit-by-commit history.
    3. Press browser back button → Returns to /discussions?articleId=123
    4. Article auto-selects with preserved scroll position
 
+7. **Articles & Community Pages - Full Article Display in Sidebar (2026-02-09)**
+
+   **Problem:** Articles page and Community page sidebars showed limited article info (ArticlePreviewSection
+   with just title, abstract, basic metadata). No Reviews or Discussions tabs. No unified experience
+   across all pages with sidebar preview. Code duplication across pages.
+
+   **Solutions Implemented:**
+
+   a) **Articles Page (/articles):**
+
+   - Replaced ArticlePreviewSection with ArticleContentView in both TabContent and MyArticlesTabContent
+   - Added router, pathname, searchParams state management at parent level
+   - Lifted selectedPreviewArticle state to parent component (shared across tabs)
+   - Added handleArticleSelect callback for URL state updates
+   - Added handleOpenPdfViewer with returnTo=articles parameter
+   - Added Suspense wrapper for useSearchParams hook
+   - Preserves selected article across tab switches and navigation
+
+   b) **Community Page (/community/[slug]):**
+
+   - Replaced ArticlePreviewSection with ArticleContentView in CommunityArticles component
+   - Added router, pathname, searchParams for URL state management
+   - Added handleArticleSelect for article selection and URL persistence
+   - Added handleOpenPdfViewer with returnTo=community and communityName parameters
+   - Added Suspense wrapper (renamed main component to CommunityArticlesInner)
+   - Updated parent page.tsx to pass required communityName prop
+   - Fixed handleSearch and renderArticle dependencies to prevent infinite loops
+
+   c) **Shared Component Reuse:**
+
+   - All three pages (discussions, articles, community) now use ArticleContentView
+   - Consistent full article display: DisplayArticle + Reviews + Discussions tabs
+   - Single codebase handles article & reviews fetching, tabs configuration
+   - PDF viewer navigation with returnTo context for proper back button behavior
+
+   **Benefits:**
+
+   - **Consistency:** Identical article viewing experience across all sidebar contexts
+   - **Feature Parity:** Reviews and Discussions accessible from any sidebar, not just article page
+   - **Code Reuse:** ~180 lines of shared logic, eliminated ~200+ lines of duplication total
+   - **Navigation:** Browser back button preserves context (discussions/articles/community)
+   - **Performance:** Component memoization, shared React Query cache
+   - **Maintainability:** Single ArticleContentView to update instead of 3+ separate implementations
+
+   **Files Modified:**
+
+   - src/app/(main)/(articles)/articles/page.tsx (added ArticleContentView, URL state)
+   - src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx (refactored)
+   - src/app/(main)/(communities)/community/[slug]/(displaycommunity)/page.tsx (pass communityName)
+   - src/components/articles/ArticleContentView.tsx (reused shared component)
+
+   **Navigation Flow:**
+
+   Articles Page:
+
+   1. Select article in sidebar → Full article with Reviews + Discussions tabs
+   2. Click "View PDF" → Navigate to /article/{slug}?returnTo=articles&articleId=123
+   3. Browser back → Returns to /articles?articleId=123 with article selected
+
+   Community Page:
+
+   1. Select article in sidebar → Full article with Reviews + Discussions tabs
+   2. Click "View PDF" → Navigate to /article/{slug}?returnTo=community&communityName=X&articleId=123
+   3. Browser back → Returns to /community/{slug}?articleId=123 with article selected
+
+   **Implementation Summary:**
+
+   Community Articles Component (CommunityArticles.tsx):
+
+   - ✅ Replaced ArticlePreviewSection with shared ArticleContentView component
+   - ✅ Added URL state management (router, pathname, searchParams)
+   - ✅ Created handleArticleSelect for article selection + URL persistence
+   - ✅ Created handleOpenPdfViewer with returnTo=community and communityName parameters
+   - ✅ Added Suspense wrapper (renamed component to CommunityArticlesInner)
+   - ✅ Fixed recursive bug in handleArticleSelect
+   - ✅ Fixed ESLint warnings (missing dependencies in handleSearch and renderArticle)
+   - ✅ Added comprehensive inline comments documenting the changes
+
+   Parent Page (page.tsx):
+
+   - ✅ Updated to pass communityName prop to CommunityArticles component
+
+   Verification:
+
+   - ✅ TypeScript compilation passes with no errors
+   - ✅ ESLint warnings in CommunityArticles.tsx fixed
+   - ✅ All files formatted with Prettier
+   - ✅ Inline comments added as requested
+
+   Result: All three pages (discussions, articles, communities) now have identical sidebar experience
+   with full article display, Reviews + Discussions tabs, and preserved navigation state. Total of
+   ~200+ lines of duplicate code eliminated across all pages through shared ArticleContentView component.
+
 **Content Rendering + Safety**
 
 1. Centralized `RenderParsedHTML` now sanitizes with DOMPurify and supports Markdown + LaTeX,

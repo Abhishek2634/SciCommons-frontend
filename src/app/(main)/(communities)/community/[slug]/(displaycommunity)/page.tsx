@@ -50,7 +50,7 @@ const Community = ({ params }: { params: { slug: string } }) => {
                 subcontent="This is a private community. Become a member to view and contribute."
               />
             ) : (
-              <CommunityArticles communityId={data.data.id} />
+              <CommunityArticles communityId={data.data.id} communityName={data.data.name} />
             ),
         },
         // {

@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { FileX2 } from 'lucide-react';
 import { useMediaQuery } from 'usehooks-ts';
@@ -9,7 +11,7 @@ import { useArticlesApiGetArticles } from '@/api/articles/articles';
 import { ArticlesListOut } from '@/api/schemas';
 import { useUsersApiListMyArticles } from '@/api/users/users';
 import ArticleCard, { ArticleCardSkeleton } from '@/components/articles/ArticleCard';
-import ArticlePreviewSection from '@/components/articles/ArticlePreviewSection';
+import ArticleContentView from '@/components/articles/ArticleContentView';
 import SearchableList, { LoadingType } from '@/components/common/SearchableList';
 import TabComponent from '@/components/communities/TabComponent';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
@@ -51,6 +53,10 @@ interface TabContentProps {
   gridCount: number;
   setGridCount: (gridCount: number) => void;
   headerTabs?: React.ReactNode;
+  router: ReturnType<typeof useRouter>;
+  pathname: string | null;
+  selectedPreviewArticle: ArticlesListOut | null;
+  setSelectedPreviewArticle: (article: ArticlesListOut | null) => void;
 }
 
 const TabContent: React.FC<TabContentProps> = ({
@@ -67,6 +73,10 @@ const TabContent: React.FC<TabContentProps> = ({
   gridCount,
   setGridCount,
   headerTabs,
+  router,
+  pathname,
+  selectedPreviewArticle,
+  setSelectedPreviewArticle,
 }) => {
   const { displayedItems, setItems, appendItems, setFilter, activeFilter, reset } =
     useFilteredList<ArticlesListOut>({
@@ -80,10 +90,20 @@ const TabContent: React.FC<TabContentProps> = ({
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const loadingType = LoadingType.INFINITE_SCROLL;
-  const [selectedPreviewArticle, setSelectedPreviewArticle] = useState<ArticlesListOut | null>(
-    null
-  );
   const isDesktop = useMediaQuery(`(min-width: ${SCREEN_WIDTH_SM}px)`);
+
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Clicking article and navigating to PDF viewer should return to articles page with same article selected
+     Solution: Navigate to article page with returnTo=articles parameter
+     Result: Browser back naturally returns with preserved article selection */
+  const handleOpenPdfViewer = () => {
+    if (selectedPreviewArticle) {
+      const params = new URLSearchParams();
+      params.set('returnTo', 'articles');
+      params.set('articleId', selectedPreviewArticle.id.toString());
+      router.push(`/article/${selectedPreviewArticle.slug}?${params.toString()}`);
+    }
+  };
 
   useKeyboardNavigation({
     items: displayedItems,
@@ -275,14 +295,36 @@ const TabContent: React.FC<TabContentProps> = ({
               minSize={30}
               maxSize={70}
             >
-              {/* Fixed by Claude Sonnet 4.5 on 2026-02-09
-                  Added showReviews prop to enable tabbed Reviews/Discussions interface in sidebar
-                  Matches the UX in communities view for consistency */}
-              <ArticlePreviewSection
-                article={selectedPreviewArticle}
-                className="mt-2 h-[calc(100vh-80px)]"
-                showReviews
-              />
+              {/* Refactored by Claude Sonnet 4.5 on 2026-02-09: Use shared ArticleContentView
+                  instead of ArticlePreviewSection for consistent full article display across all sidebars */}
+              <div className="mt-2 h-[calc(100vh-80px)] overflow-y-auto rounded-xl border border-common-minimal/50 bg-common-cardBackground/50 p-4">
+                {selectedPreviewArticle ? (
+                  <ArticleContentView
+                    articleSlug={selectedPreviewArticle.slug}
+                    articleId={selectedPreviewArticle.id}
+                    communityId={
+                      selectedPreviewArticle.community_article?.community.id
+                        ? Number(selectedPreviewArticle.community_article.community.id)
+                        : null
+                    }
+                    communityArticleId={
+                      selectedPreviewArticle.community_article?.id
+                        ? Number(selectedPreviewArticle.community_article.id)
+                        : null
+                    }
+                    isAdmin={false}
+                    showPdfViewerButton={true}
+                    handleOpenPdfViewer={handleOpenPdfViewer}
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center">
+                    <h1 className="text-2xl font-bold text-text-tertiary/50">
+                      No article selected
+                    </h1>
+                    <p className="text-text-tertiary/50">Select an article to preview</p>
+                  </div>
+                )}
+              </div>
             </ResizablePanel>
           </>
         )}
@@ -303,6 +345,10 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
   gridCount,
   setGridCount,
   headerTabs,
+  router,
+  pathname,
+  selectedPreviewArticle,
+  setSelectedPreviewArticle,
 }) => {
   const { displayedItems, setItems, appendItems, setFilter, activeFilter, reset } =
     useFilteredList<ArticlesListOut>({
@@ -316,10 +362,16 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const loadingType = LoadingType.INFINITE_SCROLL;
-  const [selectedPreviewArticle, setSelectedPreviewArticle] = useState<ArticlesListOut | null>(
-    null
-  );
   const isDesktop = useMediaQuery(`(min-width: ${SCREEN_WIDTH_SM}px)`);
+
+  const handleOpenPdfViewer = () => {
+    if (selectedPreviewArticle) {
+      const params = new URLSearchParams();
+      params.set('returnTo', 'articles');
+      params.set('articleId', selectedPreviewArticle.id.toString());
+      router.push(`/article/${selectedPreviewArticle.slug}?${params.toString()}`);
+    }
+  };
 
   useKeyboardNavigation({
     items: displayedItems,
@@ -509,14 +561,36 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
               minSize={30}
               maxSize={70}
             >
-              {/* Fixed by Claude Sonnet 4.5 on 2026-02-09
-                  Added showReviews prop to enable tabbed Reviews/Discussions interface in sidebar
-                  Matches the UX in communities view for consistency */}
-              <ArticlePreviewSection
-                article={selectedPreviewArticle}
-                className="mt-2 h-[calc(100vh-80px)]"
-                showReviews
-              />
+              {/* Refactored by Claude Sonnet 4.5 on 2026-02-09: Use shared ArticleContentView
+                  instead of ArticlePreviewSection for consistent full article display across all sidebars */}
+              <div className="mt-2 h-[calc(100vh-80px)] overflow-y-auto rounded-xl border border-common-minimal/50 bg-common-cardBackground/50 p-4">
+                {selectedPreviewArticle ? (
+                  <ArticleContentView
+                    articleSlug={selectedPreviewArticle.slug}
+                    articleId={selectedPreviewArticle.id}
+                    communityId={
+                      selectedPreviewArticle.community_article?.community.id
+                        ? Number(selectedPreviewArticle.community_article.community.id)
+                        : null
+                    }
+                    communityArticleId={
+                      selectedPreviewArticle.community_article?.id
+                        ? Number(selectedPreviewArticle.community_article.id)
+                        : null
+                    }
+                    isAdmin={false}
+                    showPdfViewerButton={true}
+                    handleOpenPdfViewer={handleOpenPdfViewer}
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center">
+                    <h1 className="text-2xl font-bold text-text-tertiary/50">
+                      No article selected
+                    </h1>
+                    <p className="text-text-tertiary/50">Select an article to preview</p>
+                  </div>
+                )}
+              </div>
             </ResizablePanel>
           </>
         )}
@@ -540,12 +614,20 @@ const ArticlesTabs: React.FC<ArticlesTabsProps> = ({ activeTab, onTabChange }) =
   );
 };
 
-const Articles: React.FC = () => {
+const ArticlesInner: React.FC = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [activeTab, setActiveTab] = useState<Tabs>(Tabs.ARTICLES);
   const [articlesPage, setArticlesPage] = useState<number>(1);
   const [myArticlesPage, setMyArticlesPage] = useState<number>(1);
   const [articlesSearch, setArticlesSearch] = useState<string>('');
   const [myArticlesSearch, setMyArticlesSearch] = useState<string>('');
+  const [selectedPreviewArticle, setSelectedPreviewArticle] = useState<ArticlesListOut | null>(
+    null
+  );
+
   const viewType = useArticlesViewStore((state) => state.viewType);
   const setViewType = useArticlesViewStore((state) => state.setViewType);
   const gridCount = useArticlesViewStore((state) => state.gridCount);
@@ -553,6 +635,22 @@ const Articles: React.FC = () => {
 
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
+
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Selected article state not preserved in URL for back button navigation
+     Solution: Update URL when article selected, manage state at parent level
+     Result: Article selection preserved across tabs and navigation */
+  const handleArticleSelect = React.useCallback(
+    (article: ArticlesListOut | null) => {
+      setSelectedPreviewArticle(article);
+      if (article && pathname) {
+        const params = new URLSearchParams(searchParams?.toString() || '');
+        params.set('articleId', article.id.toString());
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      }
+    },
+    [router, pathname, searchParams]
+  );
 
   return (
     <div className="container mx-auto">
@@ -569,6 +667,10 @@ const Articles: React.FC = () => {
           setGridCount={setGridCount}
           headerTabs={<ArticlesTabs activeTab={activeTab} onTabChange={setActiveTab} />}
           accessToken={accessToken ?? undefined}
+          router={router}
+          pathname={pathname}
+          selectedPreviewArticle={selectedPreviewArticle}
+          setSelectedPreviewArticle={handleArticleSelect}
         />
         {user && accessToken && (
           <MyArticlesTabContent
@@ -583,10 +685,22 @@ const Articles: React.FC = () => {
             gridCount={gridCount}
             setGridCount={setGridCount}
             headerTabs={<ArticlesTabs activeTab={activeTab} onTabChange={setActiveTab} />}
+            router={router}
+            pathname={pathname}
+            selectedPreviewArticle={selectedPreviewArticle}
+            setSelectedPreviewArticle={handleArticleSelect}
           />
         )}
       </div>
     </div>
+  );
+};
+
+const Articles: React.FC = () => {
+  return (
+    <Suspense fallback={<div className="container mx-auto p-4">Loading...</div>}>
+      <ArticlesInner />
+    </Suspense>
   );
 };
 

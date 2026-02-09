@@ -1,4 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
+
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { FileX2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -7,7 +9,7 @@ import { useMediaQuery } from 'usehooks-ts';
 import { useArticlesApiGetArticles } from '@/api/articles/articles';
 import { ArticlesListOut } from '@/api/schemas';
 import ArticleCard, { ArticleCardSkeleton } from '@/components/articles/ArticleCard';
-import ArticlePreviewSection from '@/components/articles/ArticlePreviewSection';
+import ArticleContentView from '@/components/articles/ArticleContentView';
 import SearchableList, { LoadingType } from '@/components/common/SearchableList';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { FIVE_MINUTES_IN_MS, SCREEN_WIDTH_SM } from '@/constants/common.constants';
@@ -18,9 +20,16 @@ import { useAuthStore } from '@/stores/authStore';
 
 interface CommunityArticlesProps {
   communityId: number;
+  communityName: string;
 }
 
-const CommunityArticles: React.FC<CommunityArticlesProps> = ({ communityId }) => {
+const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
+  communityId,
+  communityName,
+}) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const accessToken = useAuthStore((state) => state.accessToken);
   const [page, setPage] = useState<number>(1);
   const [search, setSearch] = useState<string>('');
@@ -33,6 +42,36 @@ const CommunityArticles: React.FC<CommunityArticlesProps> = ({ communityId }) =>
     null
   );
   const isDesktop = useMediaQuery(`(min-width: ${SCREEN_WIDTH_SM}px)`);
+
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Clicking article and navigating to PDF viewer should return to community page with same article selected
+     Solution: Navigate to article page with returnTo=community parameter
+     Result: Browser back naturally returns with preserved article selection */
+  const handleOpenPdfViewer = () => {
+    if (selectedPreviewArticle && pathname) {
+      const params = new URLSearchParams();
+      params.set('returnTo', 'community');
+      params.set('communityName', communityName);
+      params.set('articleId', selectedPreviewArticle.id.toString());
+      router.push(`/article/${selectedPreviewArticle.slug}?${params.toString()}`);
+    }
+  };
+
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Selected article resets to top when navigating back from article page
+     Solution: Persist selected article ID in URL params using router.replace
+     Result: Article selection preserved across navigation with browser back button */
+  const handleArticleSelect = React.useCallback(
+    (article: ArticlesListOut | null) => {
+      setSelectedPreviewArticle(article);
+      if (article && pathname) {
+        const params = new URLSearchParams(searchParams?.toString() || '');
+        params.set('articleId', article.id.toString());
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      }
+    },
+    [router, pathname, searchParams]
+  );
 
   useEffect(() => {
     if (!isDesktop && viewType === 'preview') {
@@ -70,9 +109,9 @@ const CommunityArticles: React.FC<CommunityArticlesProps> = ({ communityId }) =>
       setSearch(term);
       setPage(1);
       setArticles([]);
-      setSelectedPreviewArticle(null);
+      handleArticleSelect(null);
     },
-    [setSearch, setPage, setArticles, setSelectedPreviewArticle]
+    [handleArticleSelect]
   );
 
   const handleLoadMore = useCallback((newPage: number) => {
@@ -82,7 +121,7 @@ const CommunityArticles: React.FC<CommunityArticlesProps> = ({ communityId }) =>
   useKeyboardNavigation<ArticlesListOut>({
     items: articles,
     selectedItem: selectedPreviewArticle,
-    setSelectedItem: setSelectedPreviewArticle,
+    setSelectedItem: handleArticleSelect,
     isEnabled: viewType === 'preview',
     getItemId: (article) => article.id,
     autoSelectFirst: true,
@@ -93,7 +132,7 @@ const CommunityArticles: React.FC<CommunityArticlesProps> = ({ communityId }) =>
 
   const renderArticle = useCallback(
     (article: ArticlesListOut) => (
-      <div data-article-id={String(article.id)} onClick={() => setSelectedPreviewArticle(article)}>
+      <div data-article-id={String(article.id)} onClick={() => handleArticleSelect(article)}>
         <ArticleCard
           article={article}
           forCommunity
@@ -104,11 +143,11 @@ const CommunityArticles: React.FC<CommunityArticlesProps> = ({ communityId }) =>
               selectedPreviewArticle?.id === article.id &&
               'border-functional-green/50 bg-functional-green/10'
           )}
-          handleArticlePreview={() => setSelectedPreviewArticle(article)}
+          handleArticlePreview={() => handleArticleSelect(article)}
         />
       </div>
     ),
-    [viewType, selectedPreviewArticle]
+    [viewType, selectedPreviewArticle, handleArticleSelect]
   );
 
   const renderSkeleton = useCallback(() => <ArticleCardSkeleton />, []);
@@ -171,16 +210,45 @@ const CommunityArticles: React.FC<CommunityArticlesProps> = ({ communityId }) =>
               minSize={30}
               maxSize={70}
             >
-              <ArticlePreviewSection
-                article={selectedPreviewArticle}
-                className="h-[calc(100vh-90px)]"
-                showReviews
-              />
+              {/* Refactored by Claude Sonnet 4.5 on 2026-02-09: Use shared ArticleContentView
+                  instead of ArticlePreviewSection for consistent full article display across all sidebars */}
+              <div className="h-[calc(100vh-90px)] overflow-y-auto rounded-xl border border-common-minimal/50 bg-common-cardBackground/50 p-4">
+                {selectedPreviewArticle ? (
+                  <ArticleContentView
+                    articleSlug={selectedPreviewArticle.slug}
+                    articleId={selectedPreviewArticle.id}
+                    communityId={communityId}
+                    communityArticleId={
+                      selectedPreviewArticle.community_article?.id
+                        ? Number(selectedPreviewArticle.community_article.id)
+                        : null
+                    }
+                    isAdmin={false}
+                    showPdfViewerButton={true}
+                    handleOpenPdfViewer={handleOpenPdfViewer}
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center">
+                    <h1 className="text-2xl font-bold text-text-tertiary/50">
+                      No article selected
+                    </h1>
+                    <p className="text-text-tertiary/50">Select an article to preview</p>
+                  </div>
+                )}
+              </div>
             </ResizablePanel>
           </>
         )}
       </ResizablePanelGroup>
     </div>
+  );
+};
+
+const CommunityArticles: React.FC<CommunityArticlesProps> = (props) => {
+  return (
+    <Suspense fallback={<div className="p-4">Loading...</div>}>
+      <CommunityArticlesInner {...props} />
+    </Suspense>
   );
 };
 
