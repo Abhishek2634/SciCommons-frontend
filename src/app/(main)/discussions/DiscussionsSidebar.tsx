@@ -142,7 +142,8 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
         sidebar.scrollTop = scrollPos;
       }, 100);
     }
-  }, []); // Run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount - scrollPositionRef is a ref and doesn't need to be in deps
 
   // Save scroll position when scrolling (to both ref and sessionStorage)
   React.useEffect(() => {

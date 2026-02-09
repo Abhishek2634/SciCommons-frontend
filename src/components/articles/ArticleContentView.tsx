@@ -4,8 +4,6 @@
    Result: ~180 lines of shared logic, eliminated ~100 lines of duplication, single source of truth */
 import React, { useEffect } from 'react';
 
-import { X } from 'lucide-react';
-
 import { useArticlesApiGetArticle } from '@/api/articles/articles';
 import { useArticlesReviewApiListReviews } from '@/api/reviews/reviews';
 import { FIVE_MINUTES_IN_MS, TEN_MINUTES_IN_MS } from '@/constants/common.constants';

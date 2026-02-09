@@ -2,7 +2,6 @@
 
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 
-import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { PanelLeft } from 'lucide-react';
