@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Image from 'next/image';
 
@@ -130,11 +130,14 @@ const Comment: React.FC<CommentProps> = ({
   // Get the function to mark items as read - we need to find which article this belongs to
   const articleUnreads = useUnreadNotificationsStore((state) => state.articleUnreads);
 
-  // Find the article context for this comment
-  const findArticleContext = useCallback(() => {
+  // Fixed by Claude Sonnet 4.5 on 2026-02-08
+  // Issue 8: Replace callback with useMemo to prevent N×M iterations on every render
+  // Only recompute when articleUnreads or id changes
+  const articleContext = useMemo(() => {
+    const itemId = Number(id);
     for (const [_key, article] of Object.entries(articleUnreads)) {
       const hasItem = article.items.some(
-        (item) => item.id === Number(id) && (item.type === 'comment' || item.type === 'reply')
+        (item) => item.id === itemId && (item.type === 'comment' || item.type === 'reply')
       );
       if (hasItem) {
         return { communityId: article.communityId, articleId: article.articleId };
@@ -147,16 +150,17 @@ const Comment: React.FC<CommentProps> = ({
 
   // Mark as read when visible for 2 seconds
   const handleMarkRead = useCallback(() => {
-    const context = findArticleContext();
-    if (context) {
+    // Fixed by Claude Sonnet 4.5 on 2026-02-08
+    // Issue 8: Use pre-computed articleContext instead of calling function
+    if (articleContext) {
       markItemRead(
-        context.communityId,
-        context.articleId,
+        articleContext.communityId,
+        articleContext.articleId,
         Number(id),
         depth === 0 ? 'comment' : 'reply'
       );
     }
-  }, [findArticleContext, markItemRead, id, depth]);
+  }, [articleContext, markItemRead, id, depth]);
 
   useMarkAsReadOnViewSimple(commentRef, {
     itemId: Number(id),

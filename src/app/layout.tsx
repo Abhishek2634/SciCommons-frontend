@@ -8,6 +8,7 @@ import { SessionExpirationDialog } from '@/HOCs/CheckSessionExpiration';
 import PathTracker from '@/HOCs/withPathTracker';
 import { ReactQueryClientProvider } from '@/api/ReactQueryClientProvider';
 import BottomBar from '@/components/common/BottomBar';
+import { GlobalErrorHandler } from '@/components/common/GlobalErrorHandler';
 import RealtimeStatus from '@/components/common/RealtimeStatus';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -51,6 +52,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={cn(inter.className, 'relative bg-common-background')}>
         <ReactQueryClientProvider>
+          <GlobalErrorHandler />
           <NextTopLoader showSpinner={false} color="#64e466" shadow={false} />
           <SessionExpirationDialog />
           <PathTracker />

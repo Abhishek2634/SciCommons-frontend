@@ -130,6 +130,18 @@ export function useRealtime() {
   // Track processed event IDs to prevent duplicate processing
   const processedEventIdsRef = useRef<Set<number>>(new Set());
 
+  // Fixed by Claude Sonnet 4.5 on 2026-02-08
+  // Issue 4: Track event sequences to ensure ordering
+  // Map key format: "communityId:articleId" -> last processed event_id
+  const eventSequenceRef = useRef<Map<string, number>>(new Map());
+  // Queue for out-of-order events that arrived too early
+  // Map key format: "communityId:articleId" -> array of pending events
+  const pendingEventsRef = useRef<Map<string, RealtimeEvent[]>>(new Map());
+
+  // Fixed by Claude Sonnet 4.5 on 2026-02-08
+  // Issue 6: Track poll timeout to prevent zombie polls after unmount
+  const pollTimeoutRef = useRef<number | null>(null);
+
   const writeLeaderHeartbeat = useCallback((tabId: string) => {
     const payload = { tabId, ts: Date.now() };
     try {
@@ -513,8 +525,12 @@ export function useRealtime() {
     (events: RealtimeEvent[], fromBroadcast = false) => {
       if (!events?.length) return;
 
+      // Fixed by Claude Sonnet 4.5 on 2026-02-08
+      // Issue 4: Sort events by event_id before processing to ensure correct order
+      const sortedEvents = [...events].sort((a, b) => a.event_id - b.event_id);
+
       // Filter out already processed events to prevent duplicates
-      const newEvents = events.filter((event) => {
+      const newEvents = sortedEvents.filter((event) => {
         if (processedEventIdsRef.current.has(event.event_id)) {
           return false;
         }
@@ -523,10 +539,11 @@ export function useRealtime() {
         return true;
       });
 
-      // Clean up old event IDs (keep only last 1000 to prevent memory leak)
-      if (processedEventIdsRef.current.size > 1000) {
+      // Fixed by Claude Sonnet 4.5 on 2026-02-08
+      // Issue 5: More aggressive cleanup - reduced threshold from 1000→500, keep only 250
+      if (processedEventIdsRef.current.size > 500) {
         const idsArray = Array.from(processedEventIdsRef.current);
-        processedEventIdsRef.current = new Set(idsArray.slice(-500));
+        processedEventIdsRef.current = new Set(idsArray.slice(-250));
       }
 
       if (!newEvents.length) return;
@@ -536,7 +553,77 @@ export function useRealtime() {
         bc?.postMessage({ type: 'realtime:events', payload: newEvents, senderId: TAB_ID });
       }
 
+      // Fixed by Claude Sonnet 4.5 on 2026-02-08
+      // Issue 4: Process events in sequence, queue out-of-order events
+      const eventsToProcess: RealtimeEvent[] = [];
+      const eventsToQueue: RealtimeEvent[] = [];
+
       for (const event of newEvents) {
+        const { article_id: articleId, community_id: communityId } = event.data;
+        const contextKey = `${communityId}:${articleId}`;
+        const lastSeq = eventSequenceRef.current.get(contextKey) ?? 0;
+
+        // Check if this event is in sequence
+        if (event.event_id === lastSeq + 1 || lastSeq === 0) {
+          // In sequence - process immediately
+          eventsToProcess.push(event);
+          eventSequenceRef.current.set(contextKey, event.event_id);
+        } else if (event.event_id > lastSeq + 1) {
+          // Out of order - queue for later
+          eventsToQueue.push(event);
+        }
+        // If event.event_id <= lastSeq, it's already processed (skip)
+      }
+
+      // Queue out-of-order events
+      for (const event of eventsToQueue) {
+        const { article_id: articleId, community_id: communityId } = event.data;
+        const contextKey = `${communityId}:${articleId}`;
+        const pending = pendingEventsRef.current.get(contextKey) ?? [];
+        pending.push(event);
+        pendingEventsRef.current.set(contextKey, pending);
+      }
+
+      // Helper to process pending events that are now ready
+      const processPendingEvents = (contextKey: string) => {
+        const pending = pendingEventsRef.current.get(contextKey);
+        if (!pending?.length) return;
+
+        const lastSeq = eventSequenceRef.current.get(contextKey) ?? 0;
+        const readyEvents: RealtimeEvent[] = [];
+        const stillPending: RealtimeEvent[] = [];
+
+        for (const event of pending) {
+          if (event.event_id === lastSeq + 1) {
+            readyEvents.push(event);
+          } else {
+            stillPending.push(event);
+          }
+        }
+
+        if (readyEvents.length > 0) {
+          // Sort ready events by event_id
+          readyEvents.sort((a, b) => a.event_id - b.event_id);
+
+          // Update sequence tracker
+          for (const event of readyEvents) {
+            eventSequenceRef.current.set(contextKey, event.event_id);
+          }
+
+          // Update pending queue
+          if (stillPending.length > 0) {
+            pendingEventsRef.current.set(contextKey, stillPending);
+          } else {
+            pendingEventsRef.current.delete(contextKey);
+          }
+
+          // Recursively process newly ready events
+          eventsToProcess.push(...readyEvents);
+          processPendingEvents(contextKey);
+        }
+      };
+
+      for (const event of eventsToProcess) {
         const { article_id: articleId, community_id: communityId } = event.data;
 
         // Check if this event is relevant to current context
@@ -641,6 +728,11 @@ export function useRealtime() {
             playNotification();
           }
         }
+
+        // Fixed by Claude Sonnet 4.5 on 2026-02-08
+        // Issue 4: After processing each event, check if any queued events are now ready
+        const contextKey = `${communityId}:${articleId}`;
+        processPendingEvents(contextKey);
       }
     },
     [
@@ -863,7 +955,13 @@ export function useRealtime() {
       isPollingRef.current = false;
       // Only continue polling if authenticated and not stopped
       if (!stoppedRef.current && isLeader && isAuthenticated && accessToken) {
-        window.setTimeout(() => {
+        // Fixed by Claude Sonnet 4.5 on 2026-02-08
+        // Issue 6: Clear any existing timeout before setting new one
+        if (pollTimeoutRef.current !== null) {
+          clearTimeout(pollTimeoutRef.current);
+        }
+        // Store timeout ID for cleanup on unmount
+        pollTimeoutRef.current = window.setTimeout(() => {
           void pollLoop();
         }, 0);
       } else {
@@ -931,49 +1029,76 @@ export function useRealtime() {
       if (!force && queueIdRef.current && lastEventIdRef.current !== null) {
         return true;
       }
-      setStatus('connecting');
-      try {
-        const { data } = await myappRealtimeApiRegisterQueue({
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        saveQueueState(data.queue_id, data.last_event_id);
-        bc?.postMessage({
-          type: 'realtime:status',
-          payload: 'connected' satisfies ConnectionStatus,
-        });
-        setStatus('connected');
-        return true;
-      } catch (err: unknown) {
-        // Check for authentication errors (401)
-        const status =
-          err &&
-          typeof err === 'object' &&
-          'response' in err &&
-          err.response &&
-          typeof err.response === 'object' &&
-          'status' in err.response
-            ? err.response.status
-            : err && typeof err === 'object' && 'status' in err
-              ? err.status
-              : undefined;
-        if (status === 401 || status === 403) {
-          // Auth failed - clear queue state and stop
-          queueIdRef.current = null;
-          lastEventIdRef.current = null;
-          try {
-            localStorage.removeItem(STORAGE_KEYS.QUEUE_ID);
-            localStorage.removeItem(STORAGE_KEYS.LAST_EVENT_ID);
-          } catch {
-            // ignore storage errors
-          }
-          stoppedRef.current = true;
-          setStatus('disabled');
-          return false;
-        }
 
-        setStatus('error');
-        return false;
+      // Fixed by Claude Sonnet 4.5 on 2026-02-08
+      // Issue 7: Retry queue registration up to 3 times with exponential backoff
+      const MAX_REGISTER_RETRIES = 3;
+      let retries = 0;
+      let backoff = 1000; // Start with 1 second
+
+      while (retries < MAX_REGISTER_RETRIES) {
+        setStatus('connecting');
+        try {
+          const { data } = await myappRealtimeApiRegisterQueue({
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          saveQueueState(data.queue_id, data.last_event_id);
+          bc?.postMessage({
+            type: 'realtime:status',
+            payload: 'connected' satisfies ConnectionStatus,
+          });
+          setStatus('connected');
+          return true;
+        } catch (err: unknown) {
+          // Check for authentication errors (401/403)
+          const status =
+            err &&
+            typeof err === 'object' &&
+            'response' in err &&
+            err.response &&
+            typeof err.response === 'object' &&
+            'status' in err.response
+              ? err.response.status
+              : err && typeof err === 'object' && 'status' in err
+                ? err.status
+                : undefined;
+
+          // Fixed by Claude Sonnet 4.5 on 2026-02-08
+          // Issue 7: Don't retry on auth errors, only on network errors
+          if (status === 401 || status === 403) {
+            // Auth failed - clear queue state and stop immediately (no retry)
+            queueIdRef.current = null;
+            lastEventIdRef.current = null;
+            try {
+              localStorage.removeItem(STORAGE_KEYS.QUEUE_ID);
+              localStorage.removeItem(STORAGE_KEYS.LAST_EVENT_ID);
+            } catch {
+              // ignore storage errors
+            }
+            stoppedRef.current = true;
+            setStatus('disabled');
+            return false;
+          }
+
+          // Network error or other error - retry with backoff
+          retries++;
+          if (retries < MAX_REGISTER_RETRIES) {
+            console.warn(
+              `[Realtime] Queue registration failed, retrying (${retries}/${MAX_REGISTER_RETRIES})...`
+            );
+            await new Promise((resolve) => setTimeout(resolve, backoff));
+            backoff = Math.min(backoff * 2, 5000); // Exponential backoff, max 5s
+          } else {
+            // Max retries reached - set error state but don't disable completely
+            console.error('[Realtime] Queue registration failed after max retries');
+            setStatus('error');
+            return false;
+          }
+        }
       }
+
+      setStatus('error');
+      return false;
     },
     [accessToken, isAuthenticated, loadQueueState, saveQueueState]
   );
@@ -1058,6 +1183,59 @@ export function useRealtime() {
     }, LEADER_TTL_MS);
     return () => clearInterval(id);
   }, [isLeader, tryBecomeLeader, isAuthenticated, accessToken]);
+
+  // Fixed by Claude Sonnet 4.5 on 2026-02-08
+  // Issue 5: Periodic cleanup of event tracking structures to prevent memory leaks
+  useEffect(() => {
+    const CLEANUP_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+    const SEQUENCE_TRACKER_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour
+
+    const cleanupTimestamp = new Map<string, number>();
+
+    const id = window.setInterval(() => {
+      const now = Date.now();
+
+      // Clean processed event IDs aggressively
+      if (processedEventIdsRef.current.size > 250) {
+        const idsArray = Array.from(processedEventIdsRef.current);
+        processedEventIdsRef.current = new Set(idsArray.slice(-250));
+      }
+
+      // Clean old sequence trackers (contexts not seen in 1 hour)
+      const sequenceKeysToDelete: string[] = [];
+      for (const key of eventSequenceRef.current.keys()) {
+        const lastSeen = cleanupTimestamp.get(key) ?? now;
+        if (now - lastSeen > SEQUENCE_TRACKER_MAX_AGE_MS) {
+          sequenceKeysToDelete.push(key);
+        }
+      }
+      for (const key of sequenceKeysToDelete) {
+        eventSequenceRef.current.delete(key);
+        pendingEventsRef.current.delete(key);
+        cleanupTimestamp.delete(key);
+      }
+
+      // Update cleanup timestamps for active keys
+      for (const key of eventSequenceRef.current.keys()) {
+        if (!cleanupTimestamp.has(key)) {
+          cleanupTimestamp.set(key, now);
+        }
+      }
+    }, CLEANUP_INTERVAL_MS);
+
+    return () => clearInterval(id);
+  }, []);
+
+  // Fixed by Claude Sonnet 4.5 on 2026-02-08
+  // Issue 6: Cleanup poll timeout on unmount to prevent zombie polls
+  useEffect(() => {
+    return () => {
+      if (pollTimeoutRef.current !== null) {
+        clearTimeout(pollTimeoutRef.current);
+        pollTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // React-query aware status for consumers
   return useMemo(

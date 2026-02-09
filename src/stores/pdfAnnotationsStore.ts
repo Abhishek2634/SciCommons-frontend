@@ -75,6 +75,79 @@ const generateId = (): string => {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
+// Fixed by Claude Sonnet 4.5 on 2026-02-08
+// Issue 12: Validate annotation structure before importing to prevent malformed data
+const validateHighlightArea = (obj: unknown): obj is HighlightArea => {
+  if (!obj || typeof obj !== 'object') return false;
+  const area = obj as Record<string, unknown>;
+  return (
+    typeof area.height === 'number' &&
+    typeof area.left === 'number' &&
+    typeof area.pageIndex === 'number' &&
+    typeof area.top === 'number' &&
+    typeof area.width === 'number' &&
+    area.height >= 0 &&
+    area.width >= 0 &&
+    Number.isInteger(area.pageIndex) &&
+    area.pageIndex >= 0
+  );
+};
+
+const validateAnnotation = (obj: unknown): obj is PDFAnnotation => {
+  if (!obj || typeof obj !== 'object') return false;
+  const ann = obj as Record<string, unknown>;
+
+  // Check required string fields
+  if (
+    typeof ann.id !== 'string' ||
+    typeof ann.articleSlug !== 'string' ||
+    typeof ann.pdfUrl !== 'string' ||
+    typeof ann.selectedText !== 'string' ||
+    typeof ann.note !== 'string' ||
+    typeof ann.color !== 'string' ||
+    typeof ann.createdAt !== 'string' ||
+    typeof ann.updatedAt !== 'string'
+  ) {
+    return false;
+  }
+
+  // Check pageIndex is a valid non-negative integer
+  if (typeof ann.pageIndex !== 'number' || !Number.isInteger(ann.pageIndex) || ann.pageIndex < 0) {
+    return false;
+  }
+
+  // Check color is valid AnnotationColor
+  const validColors = ['red', 'orange', 'yellow', 'teal', 'blue', 'purple', 'pink', 'gray'];
+  if (!validColors.includes(ann.color as string)) {
+    return false;
+  }
+
+  // Validate highlightAreas array
+  if (!Array.isArray(ann.highlightAreas) || ann.highlightAreas.length === 0) {
+    return false;
+  }
+
+  // Validate each highlight area
+  for (const area of ann.highlightAreas) {
+    if (!validateHighlightArea(area)) {
+      return false;
+    }
+  }
+
+  // Validate date strings
+  try {
+    const createdDate = new Date(ann.createdAt as string);
+    const updatedDate = new Date(ann.updatedAt as string);
+    if (isNaN(createdDate.getTime()) || isNaN(updatedDate.getTime())) {
+      return false;
+    }
+  } catch {
+    return false;
+  }
+
+  return true;
+};
+
 export const usePdfAnnotationsStore = create<PDFAnnotationsState>()(
   persist(
     (set, get) => ({
@@ -144,21 +217,52 @@ export const usePdfAnnotationsStore = create<PDFAnnotationsState>()(
 
       importAnnotations: (jsonData) => {
         try {
-          const imported: PDFAnnotation[] = JSON.parse(jsonData);
+          const imported: unknown = JSON.parse(jsonData);
           if (!Array.isArray(imported)) {
-            throw new Error('Invalid annotation data format');
+            throw new Error('Invalid annotation data format: expected array');
+          }
+
+          // Fixed by Claude Sonnet 4.5 on 2026-02-08
+          // Issue 12: Validate each annotation before importing
+          const validAnnotations: PDFAnnotation[] = [];
+          const errors: string[] = [];
+
+          for (let i = 0; i < imported.length; i++) {
+            const item = imported[i];
+            if (validateAnnotation(item)) {
+              validAnnotations.push(item);
+            } else {
+              errors.push(`Invalid annotation at index ${i}`);
+            }
+          }
+
+          // Log validation results
+          if (errors.length > 0) {
+            console.warn(
+              `[PDF Annotations] Import validation: ${errors.length} invalid items skipped`
+            );
+            errors.forEach((err) => console.warn(`[PDF Annotations] ${err}`));
+          }
+
+          if (validAnnotations.length === 0) {
+            throw new Error('No valid annotations found in import data');
           }
 
           set((state) => {
             // Merge imported annotations, avoiding duplicates by ID
             const existingIds = new Set(state.annotations.map((a) => a.id));
-            const newAnnotations = imported.filter((a) => !existingIds.has(a.id));
+            const newAnnotations = validAnnotations.filter((a) => !existingIds.has(a.id));
+
+            console.log(
+              `[PDF Annotations] Imported ${newAnnotations.length} annotations (${validAnnotations.length - newAnnotations.length} duplicates skipped)`
+            );
+
             return {
               annotations: [...state.annotations, ...newAnnotations],
             };
           });
         } catch (error) {
-          console.error('Failed to import annotations:', error);
+          console.error('[PDF Annotations] Failed to import:', error);
           throw error;
         }
       },

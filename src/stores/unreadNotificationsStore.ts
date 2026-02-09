@@ -254,39 +254,70 @@ let broadcastChannel: BroadcastChannel | null = null;
 // applying remote sync payloads.
 let isApplyingRemoteSync = false;
 
+// Fixed by Claude Sonnet 4.5 on 2026-02-08
+// Issue 10: Track broadcast timestamps to prevent ping-pong between tabs
+let lastBroadcastTimestamp = 0;
+const MIN_BROADCAST_INTERVAL_MS = 100; // Ignore broadcasts within 100ms window
+
 if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
   broadcastChannel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
 
   // Listen for updates from other tabs
   broadcastChannel.onmessage = (event) => {
-    const { type, payload, senderId } = event.data ?? {};
+    const { type, payload, senderId, timestamp } = event.data ?? {};
     if (senderId && senderId === BROADCAST_SENDER_ID) return;
 
     if (type === 'sync') {
+      // Fixed by Claude Sonnet 4.5 on 2026-02-08
+      // Issue 10: Ignore duplicate broadcasts within 100ms window to prevent loops
+      if (timestamp && Math.abs(timestamp - lastBroadcastTimestamp) < MIN_BROADCAST_INTERVAL_MS) {
+        return;
+      }
+
       // Sync the entire state from another tab without rebroadcasting.
       isApplyingRemoteSync = true;
       useUnreadNotificationsStore.setState({ articleUnreads: payload });
       isApplyingRemoteSync = false;
+
+      // Update timestamp after applying remote sync
+      if (timestamp) {
+        lastBroadcastTimestamp = timestamp;
+      }
     }
   };
 
   // Subscribe to store changes and broadcast to other tabs
   useUnreadNotificationsStore.subscribe((state) => {
     if (isApplyingRemoteSync) return;
+
+    // Fixed by Claude Sonnet 4.5 on 2026-02-08
+    // Issue 10: Don't broadcast if we just received a broadcast (within 100ms)
+    const now = Date.now();
+    if (now - lastBroadcastTimestamp < MIN_BROADCAST_INTERVAL_MS) {
+      return;
+    }
+
+    lastBroadcastTimestamp = now;
     broadcastChannel?.postMessage({
       type: 'sync',
       payload: state.articleUnreads,
       senderId: BROADCAST_SENDER_ID,
+      timestamp: now, // Include timestamp in message
     });
   });
 }
 
 // Export helper for external sync trigger
 export const syncUnreadNotifications = () => {
+  // Fixed by Claude Sonnet 4.5 on 2026-02-08
+  // Issue 10: Include timestamp in external sync broadcasts
+  const now = Date.now();
+  lastBroadcastTimestamp = now;
   const state = useUnreadNotificationsStore.getState();
   broadcastChannel?.postMessage({
     type: 'sync',
     payload: state.articleUnreads,
     senderId: BROADCAST_SENDER_ID,
+    timestamp: now,
   });
 };
