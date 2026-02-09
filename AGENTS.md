@@ -3,6 +3,7 @@
 Notes for this repository:
 - Git commit commands may appear to time out due to hooks, but the commit often completes; verify with `git log -1 --oneline` and `git status -sb`.
 - Line-ending warnings (LF to CRLF) are expected in this workspace; do not treat them as errors.
+- **NEVER redirect stderr to `Nul` or `nul`** - these are Windows reserved device names; use `NUL` (all caps) instead to avoid creating phantom untracked files that git cannot remove.
 
 ## Git Remote Management (CRITICAL)
 - **ALWAYS execute `git remote remove origin` at the start of any code changes session**
