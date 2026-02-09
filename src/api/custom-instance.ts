@@ -39,9 +39,13 @@ AXIOS_INSTANCE.interceptors.request.use((config) => {
   return config;
 });
 
-// Fixed by Claude Sonnet 4.5 on 2026-02-08
-// Issue 11: Global 401/403 handler - Intercepts auth errors, logs out user, and redirects
-// Prevents auth errors from being silently ignored across the application
+/* Fixed by Claude Sonnet 4.5 on 2026-02-09
+   Problem: Global 403 handler was too aggressive - logged out users on permission errors
+   Original: Caught 401 AND 403, logged out on both
+   Issue: 403 means "no permission" not "not authenticated" - shouldn't logout!
+   Examples: Private community access, admin-only actions, etc.
+   Solution: Only logout on 401 (session expired), let components handle 403 gracefully
+   Result: Users stay logged in when accessing restricted resources */
 let isHandlingAuthFailure = false; // Prevent logout loops
 
 AXIOS_INSTANCE.interceptors.response.use(
@@ -49,8 +53,9 @@ AXIOS_INSTANCE.interceptors.response.use(
   async (error: AxiosError) => {
     const status = error.response?.status;
 
-    // Handle authentication/authorization failures globally
-    if ((status === 401 || status === 403) && !isHandlingAuthFailure) {
+    // ONLY handle 401 (Unauthorized - session expired) globally
+    // 403 (Forbidden - no permission) should be handled by individual components
+    if (status === 401 && !isHandlingAuthFailure) {
       isHandlingAuthFailure = true;
 
       try {
@@ -59,12 +64,7 @@ AXIOS_INSTANCE.interceptors.response.use(
         const { useAuthStore } = await import('@/stores/authStore');
 
         // Show user-friendly message
-        const message =
-          status === 401
-            ? 'Your session has expired. Please log in again.'
-            : 'You do not have permission to perform this action.';
-
-        toast.error(message);
+        toast.error('Your session has expired. Please log in again.');
 
         // Log out user and clear state
         const logout = useAuthStore.getState().logout;
@@ -88,7 +88,7 @@ AXIOS_INSTANCE.interceptors.response.use(
       }
     }
 
-    // Re-throw error for local error handlers
+    // Re-throw error for local error handlers (including 403 for components to handle)
     return Promise.reject(error);
   }
 );
