@@ -347,6 +347,22 @@ Fixed by Codex on 2026-02-09
 
 ---
 
+## Article List Refresh After Create (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: Newly created articles were not visible in list views until a manual refresh.
+**Root Cause**: The create flow redirected without invalidating list queries, and lists used long stale times.
+**Solution**: Invalidate the articles and my-articles query keys on successful create.
+**Result**: Lists refetch promptly and include the new article without a full reload.
+**Alternatives Considered (Not Implemented)**:
+- Optimistically insert the new article into existing caches.
+- Force a refetch when navigating back to list pages.
+**Files Modified**:
+- `src/app/(main)/(articles)/submitarticle/page.tsx`
+
+---
+
 ## Jest Haste Map Collision Fix (2026-02-09)
 
 Fixed by Codex on 2026-02-09

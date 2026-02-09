@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -34,6 +35,7 @@ const ArticleForm: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'upload' | 'search'>('upload');
   const accessToken = useAuthStore((state) => state.accessToken);
   const [isInitialized, setIsInitialized] = useState(false);
+  const queryClient = useQueryClient();
 
   const { mutate: submitArticle, isPending } = useArticlesApiCreateArticle({
     request: {
@@ -43,6 +45,14 @@ const ArticleForm: React.FC = () => {
     },
     mutation: {
       onSuccess: (data) => {
+        /* Fixed by Codex on 2026-02-09
+           Problem: Newly created articles did not appear in list views until a hard refresh.
+           Solution: Invalidate article list queries on successful create.
+           Result: Articles/My Articles lists refetch and show the new entry promptly.
+           Alternatives (not implemented): (1) Optimistically insert the new item into caches,
+           (2) Force a refetch on the list page when users navigate back. */
+        queryClient.invalidateQueries({ queryKey: ['articles'] });
+        queryClient.invalidateQueries({ queryKey: ['my_articles'] });
         toast.success('Article submitted successfully! Redirecting....');
         router.push(`/article/${data.data.slug}`);
         localStorage.removeItem(STORAGE_KEY);
