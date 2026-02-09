@@ -332,4 +332,31 @@ Fixed by Codex on 2026-02-09
 
 ---
 
+## Bookmarks Nav Shortcut (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: Bookmarks were only reachable via Profile → Contributions → Bookmarks tab, which was too many clicks.
+**Root Cause**: The top navbar lacked a direct bookmarks entry and the contributions page didn’t support tab deep-linking.
+**Solution**: Added a “Bookmarks” nav link for authenticated users and wired the contributions page to honor a `tab=bookmarks` query param. Follow-up: normalized the tab param to avoid undefined values in TypeScript.
+**Result**: Clicking “Bookmarks” in the navbar opens the bookmarks tab immediately and the page compiles cleanly.
+**Files Modified**:
+- `src/components/common/NavBar.tsx`
+- `src/app/(main)/(users)/mycontributions/page.tsx`
+
+---
+
+## Jest Haste Map Collision Fix (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: `yarn test` reported a haste-map naming collision because `.next/standalone/package.json` shared the same package name as the root.
+**Root Cause**: Jest scanned Next.js build output under `.next/`, causing duplicate module names.
+**Solution**: Ignore `.next/` in Jest module resolution via `modulePathIgnorePatterns`.
+**Result**: Tests run without haste-map naming collision warnings.
+**Files Modified**:
+- `jest.config.ts`
+
+---
+
 If you want deeper traceability, use `git diff 5271498..HEAD` for exact code deltas.

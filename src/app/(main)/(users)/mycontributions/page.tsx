@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 
+import { useRouter, useSearchParams } from 'next/navigation';
+
 import { Award, Bookmark, FileText, MessageCircle, MessageSquare, Star, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,8 +31,12 @@ import TabButton from './TabButton';
 // Tab configuration for cleaner code
 const TABS = ['articles', 'communities', 'favorites', 'bookmarks'] as const;
 type TabType = (typeof TABS)[number];
+const isValidTab = (value: string | null): value is TabType =>
+  !!value && (TABS as readonly string[]).includes(value);
 
 const ContributionsPage: React.FC = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const accessToken = useAuthStore((state) => state.accessToken);
   const requestConfig = { headers: { Authorization: `Bearer ${accessToken}` } };
   const imageData = useIdenticon(50);
@@ -135,7 +141,12 @@ const ContributionsPage: React.FC = () => {
     }
   );
 
-  const [activeTab, setActiveTab] = useState<TabType>('articles');
+  const tabParam = searchParams?.get('tab') ?? null;
+  /* Fixed by Codex on 2026-02-09
+     What: Allow direct linking to a specific contributions tab
+     Why: NavBar "Bookmarks" should open the bookmarks tab immediately
+     How: Initialize from the tab query param and keep it in sync on changes */
+  const [activeTab, setActiveTab] = useState<TabType>(isValidTab(tabParam) ? tabParam : 'articles');
 
   // Profile data - derived from stats and user details
   const profileData = statsData
@@ -247,6 +258,9 @@ const ContributionsPage: React.FC = () => {
 
   // Show errors as toasts - each error is shown independently
   useEffect(() => {
+    if (isValidTab(tabParam) && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
     const errors = [
       statsError,
       userDetailsError,
@@ -262,6 +276,8 @@ const ContributionsPage: React.FC = () => {
       toast.error(errorMessage);
     }
   }, [
+    tabParam,
+    activeTab,
     statsError,
     userDetailsError,
     articlesDataError,
@@ -272,6 +288,12 @@ const ContributionsPage: React.FC = () => {
   ]);
 
   const isProfilePending = isStatsPending || isUserDetailsPending;
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
+    params.set('tab', tab);
+    router.replace(`/mycontributions?${params.toString()}`);
+  };
   const { content: activeTabContent, isPending: isActiveTabPending } = tabConfig[activeTab];
 
   return (
@@ -317,7 +339,7 @@ const ContributionsPage: React.FC = () => {
         <div className="mt-8">
           <div className="scrollbar-hide flex overflow-x-auto">
             {TABS.map((tab) => (
-              <TabButton key={tab} active={activeTab === tab} onClick={() => setActiveTab(tab)}>
+              <TabButton key={tab} active={activeTab === tab} onClick={() => handleTabChange(tab)}>
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </TabButton>
             ))}

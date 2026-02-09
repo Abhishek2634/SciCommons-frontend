@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import {
   Bell,
@@ -45,6 +45,7 @@ const NavBar: React.FC = () => {
   const isAuthenticated = useStore(useAuthStore, (state) => state.isAuthenticated);
   const user = useStore(useAuthStore, (state) => state.user);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   // Get total unread count for discussions badge
   const totalUnread = useUnreadNotificationsStore((state) => state.getTotalUnreadCount());
@@ -54,11 +55,32 @@ const NavBar: React.FC = () => {
 
   const isAshokaUser = user?.email?.endsWith('ashoka.edu.in') ?? false;
   const router = useRouter();
-  const navLinks = [
+  type NavLink = {
+    href: string;
+    label: string;
+    altHref?: string;
+    matchPath?: string;
+    matchTab?: string;
+  };
+  /* Fixed by Codex on 2026-02-09
+     What: Add a Bookmarks nav link for authenticated users
+     Why: Bookmarks were buried under Contributions and took too many clicks
+     How: Link to the contributions page with the bookmarks tab preselected */
+  const navLinks: NavLink[] = [
     { href: '/', label: 'Home' },
     { href: '/articles', label: 'Articles', altHref: '/article' },
     { href: '/communities', label: 'Communities', altHref: '/community' },
     { href: '/discussions', label: 'Discussions', altHref: '/discussion' },
+    ...(isAuthenticated
+      ? [
+          {
+            href: '/mycontributions?tab=bookmarks',
+            label: 'Bookmarks',
+            matchPath: '/mycontributions',
+            matchTab: 'bookmarks',
+          },
+        ]
+      : []),
     // { href: '/posts', label: 'Posts' },
     // { href: '/about', label: 'About' },
   ];
@@ -94,8 +116,9 @@ const NavBar: React.FC = () => {
         <ul className="mx-auto hidden items-center space-x-1 md:absolute md:left-1/2 md:flex md:-translate-x-1/2">
           {navLinks?.map((link) => {
             // Check if current path matches this nav link
-            const isActive =
-              link.href === pathname || (link.altHref && pathname?.startsWith(link.altHref));
+            const isActive = link.matchTab
+              ? pathname === link.matchPath && searchParams?.get('tab') === link.matchTab
+              : link.href === pathname || (link.altHref && pathname?.startsWith(link.altHref));
 
             return (
               <li
