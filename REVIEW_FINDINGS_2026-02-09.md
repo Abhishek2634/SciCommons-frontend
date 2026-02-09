@@ -28,4 +28,5 @@ Prepared by Codex for bsureshkrishna on 2026-02-09.
 3. Mobile navigation rendering (lazy drawer components with `Suspense` or dynamic fallback).
 
 ## Follow-up
-1. If desired, implement fixes for High/Medium findings in a single pass.
+1. High/Medium fixes implemented in commit `f87d14c` (auth gating, realtime/unread fixes, documentation).
+2. Low-severity fixes implemented in commit `8e1cdbf` (clipboard error handling, keyboard nav guard, PDF worker override).
