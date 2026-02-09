@@ -186,6 +186,78 @@ code now does, not a commit-by-commit history.
    with full article display, Reviews + Discussions tabs, and preserved navigation state. Total of
    ~200+ lines of duplicate code eliminated across all pages through shared ArticleContentView component.
 
+8. **PDF Viewer Auto-Open & Article Selection Restoration (2026-02-09)**
+
+   **Both Issues Fixed:**
+
+   **Issue 1: Auto-Open PDF Viewer (No More Double-Click!)**
+
+   **Problem:** Clicking "View PDF with Annotations" in sidebar (articles/community) navigated to article
+   page where user had to click the button again to actually open the PDF viewer. Required two clicks
+   instead of one.
+
+   **Solution:**
+
+   - Articles Page: Added `openPdfViewer=true` parameter when navigating to article page from sidebar
+   - Community Page: Added same parameter for consistent behavior
+   - ArticleDisplayPageClient: Added useEffect to detect `openPdfViewer=true` and automatically open PDF viewer
+   - Added Suspense wrapper to ArticleDisplayPageClient for useSearchParams
+
+   **Result:** Clicking "View PDF with Annotations" in sidebar now directly opens the PDF viewer on the
+   article page - no second click needed!
+
+   **Issue 2: Restore Article Selection on Back Button**
+
+   **Problem:** When navigating to article page from sidebar and using back button, the articles/community
+   page would not re-select the article that was previously selected. User had to find and select it again.
+
+   **Solution:**
+
+   - TabContent (Articles tab): Added useSearchParams and useEffect to detect `articleId` from URL and
+     auto-select that article when data loads
+   - MyArticlesTabContent: Same restoration logic for "My Articles" tab
+   - Articles are auto-selected only when returning from navigation (isActive check prevents conflicts)
+
+   **Result:** When navigating back from article page, the articles page now automatically re-selects
+   the article you came from!
+
+   **How It Works:**
+
+   Forward Navigation (Sidebar → Article):
+
+   1. Sidebar: Click "View PDF"
+   2. Navigate to `/article/{slug}?returnTo=articles&articleId=123&openPdfViewer=true`
+   3. Article page detects `openPdfViewer=true` parameter
+   4. PDF viewer opens automatically
+
+   Back Navigation (Article → Sidebar):
+
+   1. Article page: Press browser back button
+   2. Return to `/articles?articleId=123`
+   3. Articles page detects `articleId=123` in URL
+   4. Auto-selects that article in sidebar
+
+   **Files Modified:**
+
+   - src/app/(main)/(articles)/articles/page.tsx (added openPdfViewer param, restoration useEffect)
+   - src/app/(main)/(articles)/article/[slug]/(displayarticle)/ArticleDisplayPageClient.tsx (auto-open PDF)
+   - src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx (openPdfViewer param)
+
+   **Dependency Array Fixes (Infinite Loop Prevention):**
+
+   - Removed `searchParams` from handleArticleSelect dependency array to prevent infinite re-render loop
+   - Removed `setSelectedPreviewArticle` and `handleArticleSelect` from renderArticle callbacks
+   - Added eslint-disable comments explaining stable callbacks
+
+   **Verification:**
+
+   - ✅ TypeScript compilation passes successfully
+   - ✅ All files formatted with Prettier
+   - ✅ Suspense wrappers added for useSearchParams
+   - ✅ No infinite scroll/flashing issues
+   - ✅ Article selection restoration working
+   - ✅ PDF viewer auto-opens without second click
+
 **Content Rendering + Safety**
 
 1. Centralized `RenderParsedHTML` now sanitizes with DOMPurify and supports Markdown + LaTeX,
