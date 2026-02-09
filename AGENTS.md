@@ -1,6 +1,7 @@
 # AGENTS.md
 
 Notes for this repository:
+- Git commit WILL take time due to commit hooks. WAIT FOR COMMIT HOOKS TO FINISH AND COMMIT COMMAND TO RETURN. DO NOT TRY TO TIME OUT AND MOVE ON.. YOU WILL THEN END UP WITH COMMIT ISSUES. CODEX, ESPECIALLY YOU !
 - Git commit commands may appear to time out due to hooks, but the commit often completes; verify with `git log -1 --oneline` and `git status -sb`.
 - Line-ending warnings (LF to CRLF) are expected in this workspace; do not treat them as errors.
 - If `git status` shows a file as modified but `git diff` is empty and the LF/CRLF warning appears, treat it as line-ending noise; do not loop trying to resolve it.
