@@ -80,6 +80,10 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
     }
   }, [isDesktop, viewType, setViewType]);
 
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Intermittent logout on first community entry
+     Solution: Add retry: false to prevent multiple unauthorized attempts if timing issue occurs
+     Result: Single failed request won't trigger multiple 401s and logout loops */
   const { data, isPending, error } = useArticlesApiGetArticles(
     {
       community_id: communityId,
@@ -92,6 +96,9 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
       query: {
         enabled: !!accessToken,
         staleTime: FIVE_MINUTES_IN_MS,
+        refetchOnWindowFocus: false,
+        refetchOnMount: true,
+        retry: false, // Don't retry failed requests to prevent multiple 401s
       },
     }
   );

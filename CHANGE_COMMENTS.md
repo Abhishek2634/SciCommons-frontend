@@ -380,6 +380,78 @@ code now does, not a commit-by-commit history.
    - ✅ No unexpected logouts
    - ✅ Proper error states displayed
 
+   **Problem 3: Intermittent Logout on First Community Entry**
+
+   **Issue:** After fixing the 403 logout issue, some users still reported: "still an issue sometimes
+   on first entry into group.. getting logged out"
+
+   **Diagnosis:** Intermittent nature suggests timing issue:
+   - Most of the time: accessToken ready before CommunityArticles query runs → works fine
+   - Rarely: Hydration timing causes brief moment where query config set up → potential 401
+
+   **Additional Safeguard Added:**
+
+   Added `retry: false` to CommunityArticles query configuration to prevent multiple unauthorized
+   attempts if timing issue occurs:
+
+   ```typescript
+   // src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx
+   const { data, isPending, error } = useArticlesApiGetArticles(
+     { /* ... */ },
+     {
+       request: { headers: { Authorization: `Bearer ${accessToken}` } },
+       query: {
+         enabled: !!accessToken,
+         staleTime: FIVE_MINUTES_IN_MS,
+         refetchOnWindowFocus: false,
+         refetchOnMount: true,
+         retry: false,  // ← Added: Don't retry failed requests to prevent multiple 401s
+       },
+     }
+   );
+   ```
+
+   **Why This Helps:**
+   - If a timing issue causes one unauthorized request, it won't retry 3x (default retry count)
+   - Prevents potential "logout loop" from multiple 401 responses
+   - Matches pattern used in parent page.tsx component (which works reliably)
+
+   **Files Modified:**
+   - src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx
+
+10. **Fixed Grid View Navigation in Community Articles (2026-02-09)**
+
+   **Problem:** In community page, clicking on articles in grid view would not navigate to the article
+   page. Clicks appeared to do nothing.
+
+   **Root Cause:** The onClick wrapper on the article card container was intercepting ALL clicks,
+   preventing ArticleCard's built-in navigation from working in grid mode:
+
+   ```typescript
+   // BEFORE (broken):
+   <div onClick={() => handleArticleSelect(article)}>
+     <ArticleCard article={article} /* ... */ />
+   </div>
+   ```
+
+   **Solution:** Only intercept clicks in preview mode, let ArticleCard handle navigation in grid mode:
+
+   ```typescript
+   // AFTER (working):
+   <div
+     onClick={viewType === 'preview' ? () => handleArticleSelect(article) : undefined}
+   >
+     <ArticleCard article={article} /* ... */ />
+   </div>
+   ```
+
+   **Result:**
+   - Grid view: Clicking article navigates to article page (ArticleCard's navigation works)
+   - Preview mode: Clicking article selects it for sidebar display (our custom handler works)
+
+   **Files Modified:**
+   - src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx
+
 **Content Rendering + Safety**
 
 1. Centralized `RenderParsedHTML` now sanitizes with DOMPurify and supports Markdown + LaTeX,
