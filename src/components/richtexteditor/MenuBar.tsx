@@ -26,11 +26,8 @@ const MenuBar = ({ editor }: Props) => {
     return null;
   }
   return (
-    <div
-      className="flex w-full flex-wrap items-start justify-between gap-5 rounded-tl-md
-    rounded-tr-md border border-gray-700 px-4 py-3"
-    >
-      <div className="flex w-full flex-wrap items-center justify-start gap-5 lg:w-10/12 ">
+    <div className="flex w-full flex-wrap items-start justify-between gap-5 rounded-tl-md rounded-tr-md border border-gray-700 px-4 py-3">
+      <div className="flex w-full flex-wrap items-center justify-start gap-5 lg:w-10/12">
         <button
           onClick={(e) => {
             e.preventDefault();

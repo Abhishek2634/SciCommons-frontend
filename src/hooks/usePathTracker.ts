@@ -7,6 +7,8 @@ import { usePathname } from 'next/navigation';
 
 // hooks/usePathTracker.ts
 
+// hooks/usePathTracker.ts
+
 export function usePathTracker() {
   const pathname = usePathname();
 

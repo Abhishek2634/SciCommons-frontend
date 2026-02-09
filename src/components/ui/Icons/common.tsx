@@ -29,9 +29,7 @@ export function IconComponent(Icon: React.ComponentType<IconProps>): React.FC<Ic
     className,
     strokeWidth = defaultStrokeWidth,
     ...props
-  }) => (
-    <Icon className={cn(defaultClasses, className)} strokeWidth={strokeWidth} {...props} />
-  );
+  }) => <Icon className={cn(defaultClasses, className)} strokeWidth={strokeWidth} {...props} />;
 
   WrappedIcon.displayName = `IconComponent(${Icon.displayName || Icon.name || 'Icon'})`;
   return WrappedIcon;
