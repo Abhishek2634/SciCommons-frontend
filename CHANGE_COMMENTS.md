@@ -297,43 +297,46 @@ code now does, not a commit-by-commit history.
    // 403 errors are re-thrown for components to handle
    ```
 
-   **Problem 2: Community Page Hydration Race Condition**
+   **Problem 2: Community Page Loading State**
 
-   **Issue:** Even for communities where user IS a member, page would load briefly ("lasts a frame")
-   then show 404 and log out. Worked fine on old code.
+   **Issue:** Brief "flash" when accessing communities - The real issue was the aggressive 403 logout
+   from Problem 1, NOT a hydration race.
 
-   **Root Cause:** Query enablement check racing with hydration:
+   **Initial (Incorrect) Attempted Fix:**
+
+   Tried removing `enabled: !!accessToken` check thinking it caused hydration race.
+
+   **Why That Was Wrong:**
 
    ```typescript
-   // BEFORE:
+   // Removing enabled check caused WORSE problem:
    query: {
-     enabled: !!accessToken,  // Disabled during hydration
+     // enabled: !!accessToken,  // REMOVED (BAD!)
    }
    ```
 
-   **What was happening:**
+   **What broke:**
 
-   1. Page loads (SSR/hydration) - `accessToken` undefined initially
-   2. Query disabled, page renders with no data
-   3. `accessToken` becomes available after hydration
-   4. Query suddenly enables, starts fetching
-   5. Brief window where error states could render incorrectly
-   6. Creates "flash" effect then incorrect error handling
+   1. Query runs before `accessToken` available during hydration
+   2. Sends request WITHOUT Authorization header
+   3. Backend returns 401
+   4. Interceptor logs user out
+   5. **Everything broke - even working communities failed!**
 
-   **Why This Was Wrong:**
-
-   - `withAuthRedirect` HOC already ensures user is authenticated before component renders
-   - Query enablement check was redundant AND caused hydration race
-   - Old code didn't have this check, which is why it worked
-
-   **Solution:** Removed query enablement check + improved error state guard:
+   **Correct Solution:** Keep `enabled` check + add loading state:
 
    ```typescript
-   // AFTER:
+   // CORRECT:
    query: {
-     // Don't disable query - withAuthRedirect already ensures auth
+     enabled: !!accessToken,  // MUST wait for auth token!
      refetchOnWindowFocus: false,
      refetchOnMount: true,
+     retry: false,  // Don't retry failed requests
+   }
+
+   // Show loading while waiting for auth:
+   if (!accessToken) {
+     return <DisplayCommunitySkeleton />;
    }
 
    // Stricter error check:
@@ -342,10 +345,14 @@ code now does, not a commit-by-commit history.
    }
    ```
 
+   **Key Insight:** The "flash" and logout issue was ONLY caused by the aggressive 403 logout
+   in Problem 1. Removing that fixed the actual problem. The query enablement check is correct
+   and necessary to prevent unauthorized requests.
+
    **Files Modified:**
 
-   - src/api/custom-instance.ts (removed 403 from logout condition)
-   - src/app/(main)/(communities)/community/[slug]/(displaycommunity)/page.tsx (removed query enablement, stricter error check)
+   - src/api/custom-instance.ts (removed 403 from logout condition) ← **This was the real fix**
+   - src/app/(main)/(communities)/community/[slug]/(displaycommunity)/page.tsx (added loading state, stricter error check)
 
    **Impact:**
 

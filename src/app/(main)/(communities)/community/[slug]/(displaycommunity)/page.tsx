@@ -23,17 +23,17 @@ const Community = ({ params }: { params: { slug: string } }) => {
   const axiosConfig = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {};
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
-     Problem: Query disabled during hydration caused "flash" then 404/logout for member communities
-     Root cause: enabled: !!accessToken races with withAuthRedirect - query disabled, then enabled, causes issues
-     Solution: Remove enabled check - withAuthRedirect already ensures auth, query should always run
-     Result: No hydration race, page loads correctly for member communities */
+     Problem: Brief flash then logout when accessing communities
+     Root cause: Query running before accessToken available sends unauthenticated request → 401 → logout
+     Solution: Keep enabled check to prevent query until auth ready, but also handle loading state properly
+     Result: Wait for auth before querying, no unauthorized requests */
   const communityQuery = useCommunitiesApiGetCommunity(params.slug, {
     request: axiosConfig,
     query: {
-      // Don't disable query - withAuthRedirect already ensures user is authenticated
-      // Disabling causes hydration race conditions and brief 404 flashes
+      enabled: !!accessToken, // CRITICAL: Don't query until we have auth token!
       refetchOnWindowFocus: false,
       refetchOnMount: true,
+      retry: false, // Don't retry failed requests to prevent multiple 401s
     },
   });
 
@@ -122,6 +122,15 @@ const Community = ({ params }: { params: { slug: string } }) => {
             }
           />
         </div>
+      </div>
+    );
+  }
+
+  // Show loading state while waiting for auth to initialize
+  if (!accessToken) {
+    return (
+      <div className="container h-fit p-4">
+        <DisplayCommunitySkeleton />
       </div>
     );
   }
