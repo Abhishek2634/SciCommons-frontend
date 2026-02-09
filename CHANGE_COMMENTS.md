@@ -237,4 +237,43 @@ Fixed by Codex on 2026-02-09
 
 ---
 
+## Login Success Toast Removed (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: A "Logged in successfully" toast appeared after every successful login, even though the redirect already communicated success.
+**Root Cause**: The login success handler explicitly triggered a success toast on sign-in.
+**Solution**: Commented out the success toast call (and its import) while keeping a documented inline comment for the change.
+**Result**: Login now transitions directly to the redirect without an extra toast.
+**Files Modified**:
+- `src/app/(authentication)/auth/login/page.tsx`
+
+---
+
+## AuthStore Invalid Expiry Test Fix (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: `authStore` test expected cookie removal on invalid expiry, but the updated auth flow now probes the server and keeps sessions on network/unknown errors.
+**Root Cause**: The test did not provide a deterministic auth failure response after the 2026-02-08 auth hardening changes.
+**Solution**: Mocked `NEXT_PUBLIC_BACKEND_URL` and `fetch` to return a 401 so the logout/clear-cookies path is exercised.
+**Result**: The test now aligns with the intended behavior and passes reliably.
+**Files Modified**:
+- `src/tests/__tests__/authStore.test.ts`
+
+---
+
+## AuthStore Offline Tolerance Test (2026-02-09)
+
+Fixed by Codex on 2026-02-09
+
+**Problem**: The offline-tolerance branch (network failure during invalid expiry) was untested after the auth hardening changes.
+**Root Cause**: Existing tests only validated the 401/403 cleanup path, not the keep-session behavior.
+**Solution**: Added a test that mocks a backend URL and a rejected `fetch` to exercise the network-error branch.
+**Result**: The test suite now covers the keep-session behavior without clearing cookies.
+**Files Modified**:
+- `src/tests/__tests__/authStore.test.ts`
+
+---
+
 If you want deeper traceability, use `git diff 5271498..HEAD` for exact code deltas.

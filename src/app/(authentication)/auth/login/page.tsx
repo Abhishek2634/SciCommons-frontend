@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
+// import { toast } from 'sonner';
 
 import { withAuthRedirect } from '@/HOCs/withAuthRedirect';
 import { useUsersApiAuthLoginUser } from '@/api/users-auth/users-auth';
@@ -41,7 +41,11 @@ const LoginForm: React.FC = () => {
   const { isPending, mutate: logInUser } = useUsersApiAuthLoginUser({
     mutation: {
       onSuccess: (data) => {
-        toast.success('Logged in successfully');
+        /* Fixed by Codex on 2026-02-09
+           Problem: The login success toast fired on every successful sign-in, creating redundant noise.
+           Solution: Commented out the success toast so login transitions directly to navigation.
+           Result: Users are redirected after login without an extra toast. */
+        // toast.success('Logged in successfully');
         setAccessToken(
           data.data.token,
           data.data.user || {

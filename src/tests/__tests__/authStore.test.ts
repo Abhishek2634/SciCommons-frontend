@@ -33,10 +33,31 @@ describe('authStore', () => {
   });
 
   it('clears auth state when cookie expiry is invalid', async () => {
+    /* Fixed by Codex on 2026-02-09
+       Problem: initializeAuth now probes the server on invalid expiry, so the test needs a deterministic auth failure.
+       Solution: Mock backend URL + fetch to return 401 so cookie clearing is exercised.
+       Result: The test validates the intended logout path instead of falling into offline tolerance. */
+    const originalBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+    process.env.NEXT_PUBLIC_BACKEND_URL = 'http://example.com';
+    const originalFetch = (global as typeof globalThis).fetch;
+    (global as typeof globalThis).fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+    } as Response);
+
     mockedGet.mockReturnValueOnce('token-2');
     mockedGet.mockReturnValueOnce('not-a-number');
 
-    await useAuthStore.getState().initializeAuth();
+    try {
+      await useAuthStore.getState().initializeAuth();
+    } finally {
+      process.env.NEXT_PUBLIC_BACKEND_URL = originalBackendUrl;
+      if (originalFetch) {
+        (global as typeof globalThis).fetch = originalFetch;
+      } else {
+        delete (global as typeof globalThis).fetch;
+      }
+    }
 
     expect(mockedCookies.remove).toHaveBeenCalledWith('auth_token', {
       sameSite: 'strict',
@@ -47,5 +68,37 @@ describe('authStore', () => {
       secure: false,
     });
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
+  });
+
+  it('keeps session when expiry is invalid but server is unreachable', async () => {
+    /* Fixed by Codex on 2026-02-09
+       Problem: The offline-tolerance branch had no test coverage when expiry is invalid.
+       Solution: Mock backend URL + fetch rejection to trigger the network-error path.
+       Result: Auth remains active and cookies are not cleared. */
+    const originalBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+    process.env.NEXT_PUBLIC_BACKEND_URL = 'http://example.com';
+    const originalFetch = (global as typeof globalThis).fetch;
+    (global as typeof globalThis).fetch = jest.fn().mockRejectedValue(new Error('network down'));
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+
+    mockedGet.mockReturnValueOnce('token-3');
+    mockedGet.mockReturnValueOnce('not-a-number');
+
+    try {
+      await useAuthStore.getState().initializeAuth();
+    } finally {
+      process.env.NEXT_PUBLIC_BACKEND_URL = originalBackendUrl;
+      if (originalFetch) {
+        (global as typeof globalThis).fetch = originalFetch;
+      } else {
+        delete (global as typeof globalThis).fetch;
+      }
+      nowSpy.mockRestore();
+    }
+
+    expect(mockedCookies.remove).not.toHaveBeenCalled();
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    expect(useAuthStore.getState().accessToken).toBe('token-3');
+    expect(useAuthStore.getState().expiresAt).not.toBeNull();
   });
 });

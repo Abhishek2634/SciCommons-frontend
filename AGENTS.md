@@ -7,7 +7,7 @@ Notes for this repository:
 - **NEVER redirect stderr to `Nul` or `nul`** - these are Windows reserved device names; use `NUL` (all caps) instead to avoid creating phantom untracked files that git cannot remove.
 
 ## Git Remote Management (CRITICAL)
-- **ALWAYS execute `git remote remove origin` at the start of any code changes session**
+- **ALWAYS execute `git remote remove origin` at the start of any code changes session. However, if the command fails with "origin not found" or something similar, that means origin has already been removed. and that is fine. So dont bother fixing it beyond that. Move on**
 - This prevents accidental pushes to the remote repository
 - User will manually reset the remote (`git remote add origin <url>`) when ready to push
 - Verify remote is removed with: `git remote -v` (should show no output)
