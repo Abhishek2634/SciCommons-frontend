@@ -258,6 +258,121 @@ code now does, not a commit-by-commit history.
    - ✅ Article selection restoration working
    - ✅ PDF viewer auto-opens without second click
 
+9. **CRITICAL: Fixed Aggressive Logout & Community Access Issues (2026-02-09)**
+
+   **Problem 1: Global 403 Interceptor Logging Users Out**
+
+   **Issue:** Users were being logged out when accessing ANY resource that returned 403 (Forbidden),
+   even when they were properly authenticated. This included:
+
+   - Accessing private communities (even as members)
+   - Attempting admin actions without permissions
+   - Any permission-based restrictions
+   - Result: Horrible UX - rapid 404 and logout, page "flashes" briefly then user logged out
+
+   **Root Cause:** Global axios interceptor in `custom-instance.ts` was treating 403 the same as 401:
+
+   ```typescript
+   // BEFORE (TOO AGGRESSIVE):
+   if ((status === 401 || status === 403) && !isHandlingAuthFailure) {
+     logout(); // Logged out on BOTH 401 AND 403!
+     window.location.href = '/login';
+   }
+   ```
+
+   **Key Distinction:**
+
+   - **401 (Unauthorized):** Session expired, invalid token → Logout is correct ✅
+   - **403 (Forbidden):** Authenticated but no permission → Should stay logged in ✅
+
+   **Solution:** Only logout on 401 (session expired), let components handle 403 gracefully:
+
+   ```typescript
+   // AFTER (CORRECT):
+   if (status === 401 && !isHandlingAuthFailure) {
+     // Only logout on 401 (session expired)
+     logout();
+     window.location.href = '/login';
+   }
+   // 403 errors are re-thrown for components to handle
+   ```
+
+   **Problem 2: Community Page Hydration Race Condition**
+
+   **Issue:** Even for communities where user IS a member, page would load briefly ("lasts a frame")
+   then show 404 and log out. Worked fine on old code.
+
+   **Root Cause:** Query enablement check racing with hydration:
+
+   ```typescript
+   // BEFORE:
+   query: {
+     enabled: !!accessToken,  // Disabled during hydration
+   }
+   ```
+
+   **What was happening:**
+
+   1. Page loads (SSR/hydration) - `accessToken` undefined initially
+   2. Query disabled, page renders with no data
+   3. `accessToken` becomes available after hydration
+   4. Query suddenly enables, starts fetching
+   5. Brief window where error states could render incorrectly
+   6. Creates "flash" effect then incorrect error handling
+
+   **Why This Was Wrong:**
+
+   - `withAuthRedirect` HOC already ensures user is authenticated before component renders
+   - Query enablement check was redundant AND caused hydration race
+   - Old code didn't have this check, which is why it worked
+
+   **Solution:** Removed query enablement check + improved error state guard:
+
+   ```typescript
+   // AFTER:
+   query: {
+     // Don't disable query - withAuthRedirect already ensures auth
+     refetchOnWindowFocus: false,
+     refetchOnMount: true,
+   }
+
+   // Stricter error check:
+   if (error && !isPending && error.response?.status) {
+     // Only show error for real HTTP errors, not transient states
+   }
+   ```
+
+   **Files Modified:**
+
+   - src/api/custom-instance.ts (removed 403 from logout condition)
+   - src/app/(main)/(communities)/community/[slug]/(displaycommunity)/page.tsx (removed query enablement, stricter error check)
+
+   **Impact:**
+
+   - ✅ Users stay logged in when accessing restricted resources
+   - ✅ Proper error messages shown instead of logout
+   - ✅ No hydration race conditions
+   - ✅ No page "flashing" then logout
+   - ✅ Member communities load correctly
+   - ✅ Matches old code behavior (which worked correctly)
+
+   **Why This Was Critical:**
+
+   This was a **critical bug** that made communities nearly unusable:
+
+   - Users couldn't access communities they were members of
+   - Getting logged out randomly when navigating
+   - Terrible user experience
+   - Old code didn't have aggressive interceptor, which is why it worked there
+
+   **Verification:**
+
+   - ✅ TypeScript compilation passes
+   - ✅ All files formatted with Prettier
+   - ✅ Tested with member and non-member communities
+   - ✅ No unexpected logouts
+   - ✅ Proper error states displayed
+
 **Content Rendering + Safety**
 
 1. Centralized `RenderParsedHTML` now sanitizes with DOMPurify and supports Markdown + LaTeX,
