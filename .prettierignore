@@ -2,5 +2,4 @@
 # These files have formatting issues that prettier can't fix
 
 # ReactQuill components (todo: remove these components later)
-src/app/(main)/(articles)/article/[slug]/(displayarticle)/ReactQuill.tsx
-src/app/(main)/(communities)/community/[slug]/articles/[articleSlug]/ReactQuill.tsx
+**/ReactQuill.tsx
