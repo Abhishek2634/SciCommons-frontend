@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -73,6 +74,7 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
   } = useArticlesApiUpdateArticle({ request: axiosConfig });
 
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const onSubmit = (formData: FormValues) => {
     const dataToSend: ArticleUpdateSchema = {
@@ -107,13 +109,21 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
 
   useEffect(() => {
     if (isSuccess) {
+      /* Fixed by Codex on 2026-02-09
+         Problem: Edited articles could remain stale in list views until a manual refresh.
+         Solution: Invalidate articles/my-articles list queries on successful update.
+         Result: Lists refetch and show edits promptly.
+         Alternatives (not implemented): (1) Optimistically update cached list items,
+         (2) Force a refetch when returning to the list pages. */
+      queryClient.invalidateQueries({ queryKey: ['articles'] });
+      queryClient.invalidateQueries({ queryKey: ['my_articles'] });
       toast.success('Article details updated successfully');
       router.push(`/article/${articleSlug}`);
     }
     if (updateError) {
       toast.error(`${updateError.response?.data.message}`);
     }
-  }, [updateError, isSuccess, router, articleSlug]);
+  }, [updateError, isSuccess, router, articleSlug, queryClient]);
 
   return (
     /* Fixed by Codex on 2026-02-09
