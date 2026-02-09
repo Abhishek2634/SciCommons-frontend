@@ -653,7 +653,9 @@ const ArticlesInner: React.FC = () => {
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       }
     },
-    [router, pathname, searchParams]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [router, pathname]
+    // searchParams omitted to prevent infinite loop - we read current value but don't depend on it
   );
 
   return (
