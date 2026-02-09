@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { ChevronsDown, PanelLeft } from 'lucide-react';
 
@@ -35,11 +36,19 @@ interface SelectedArticle {
   communityName: string;
 }
 
-const DiscussionsPageClient: React.FC = () => {
+const DiscussionsPageClientInner: React.FC = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedArticle, setSelectedArticle] = useState<SelectedArticle | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const sidebarScrollPositionRef = useRef<number>(0);
+
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: When navigating to article page and using back button, sidebar resets to top article
+     Solution: Store selected article ID in URL params and restore scroll position
+     Result: Selected article and scroll position preserved across navigation */
 
   // Check if screen is mobile size
   useEffect(() => {
@@ -55,11 +64,51 @@ const DiscussionsPageClient: React.FC = () => {
 
   const handleArticleSelect = (article: SelectedArticle) => {
     setSelectedArticle(article);
+    // Update URL with selected article ID
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    params.set('articleId', article.id.toString());
+    router.push(`?${params.toString()}`, { scroll: false });
+
     // Close mobile sidebar when article is selected
     if (isMobile) {
       setIsMobileSidebarOpen(false);
     }
   };
+
+  // Handle articles loaded - restore selected article from URL
+  const handleArticlesLoaded = React.useCallback(
+    (
+      articles: Array<{
+        articleId: number;
+        articleTitle: string;
+        articleSlug: string;
+        articleAbstract: string;
+        communityArticleId: number | null;
+        communityId: number;
+        communityName: string;
+        isAdmin: boolean;
+      }>
+    ) => {
+      const articleIdParam = searchParams?.get('articleId');
+      if (articleIdParam && !selectedArticle) {
+        const articleId = parseInt(articleIdParam, 10);
+        const article = articles.find((a) => a.articleId === articleId);
+        if (article) {
+          setSelectedArticle({
+            id: article.articleId,
+            title: article.articleTitle,
+            slug: article.articleSlug,
+            abstract: article.articleAbstract,
+            communityId: article.communityId,
+            communityArticleId: article.communityArticleId,
+            isAdmin: article.isAdmin,
+            communityName: article.communityName,
+          });
+        }
+      }
+    },
+    [searchParams, selectedArticle]
+  );
 
   // Mobile Layout
   if (isMobile) {
@@ -79,6 +128,8 @@ const DiscussionsPageClient: React.FC = () => {
               <DiscussionsSidebar
                 onArticleSelect={handleArticleSelect}
                 selectedArticle={selectedArticle}
+                onArticlesLoaded={handleArticlesLoaded}
+                scrollPositionRef={sidebarScrollPositionRef}
               />
             </SheetContent>
           </Sheet>
@@ -152,6 +203,8 @@ const DiscussionsPageClient: React.FC = () => {
             <DiscussionsSidebar
               onArticleSelect={handleArticleSelect}
               selectedArticle={selectedArticle}
+              onArticlesLoaded={handleArticlesLoaded}
+              scrollPositionRef={sidebarScrollPositionRef}
             />
           </div>
         </ResizablePanel>
@@ -246,6 +299,23 @@ const DiscussionsPageClient: React.FC = () => {
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
+  );
+};
+
+const DiscussionsPageClient: React.FC = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-[calc(100vh-4rem)] w-full items-center justify-center">
+          <EmptyState
+            content="Loading discussions..."
+            subcontent="Please wait while we load your subscriptions"
+          />
+        </div>
+      }
+    >
+      <DiscussionsPageClientInner />
+    </Suspense>
   );
 };
 

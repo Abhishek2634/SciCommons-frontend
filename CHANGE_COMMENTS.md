@@ -37,6 +37,9 @@ code now does, not a commit-by-commit history.
    for admins/authors.
 3. A new discussion summary flow lets admins create/edit/delete collapsible summaries.
 4. Subscriptions sidebar merges unread activity with user subscriptions and sorts by recency.
+5. Discussions page now preserves selected article and scroll position across navigation via URL
+   state (query params) and scroll position tracking, preventing sidebar reset when using browser
+   back button from article pages.
 
 **Content Rendering + Safety**
 

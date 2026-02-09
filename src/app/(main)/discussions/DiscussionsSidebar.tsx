@@ -45,13 +45,18 @@ interface FlattenedArticleWithUnread extends FlattenedArticle {
 interface DiscussionsSidebarProps {
   onArticleSelect: (article: SelectedArticle) => void;
   selectedArticle: SelectedArticle | null;
+  onArticlesLoaded?: (articles: FlattenedArticleWithUnread[]) => void;
+  scrollPositionRef?: React.MutableRefObject<number>;
 }
 
 const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
   onArticleSelect,
   selectedArticle,
+  onArticlesLoaded,
+  scrollPositionRef,
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
 
   // Get unread state from store
   const articleUnreads = useUnreadNotificationsStore((state) => state.articleUnreads);
@@ -107,6 +112,41 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
       });
   }, [flattenedArticles, articleUnreads, getUnreadCount]);
 
+  // Notify parent when articles are loaded
+  React.useEffect(() => {
+    if (sortedArticles.length > 0 && onArticlesLoaded) {
+      onArticlesLoaded(sortedArticles);
+    }
+  }, [sortedArticles, onArticlesLoaded]);
+
+  // Save scroll position when scrolling
+  React.useEffect(() => {
+    const sidebar = sidebarRef.current;
+    if (!sidebar || !scrollPositionRef) return;
+
+    const handleScroll = () => {
+      if (scrollPositionRef) {
+        scrollPositionRef.current = sidebar.scrollTop;
+      }
+    };
+
+    sidebar.addEventListener('scroll', handleScroll);
+    return () => sidebar.removeEventListener('scroll', handleScroll);
+  }, [scrollPositionRef]);
+
+  // Restore scroll position when selected article changes
+  React.useEffect(() => {
+    const sidebar = sidebarRef.current;
+    if (!sidebar || !scrollPositionRef || !selectedArticle) return;
+
+    // Small delay to ensure DOM is updated
+    const timeout = setTimeout(() => {
+      sidebar.scrollTop = scrollPositionRef.current;
+    }, 50);
+
+    return () => clearTimeout(timeout);
+  }, [selectedArticle, scrollPositionRef]);
+
   // Handle article selection - don't mark as read here, let individual items be marked as read via Intersection Observer
   const handleArticleSelect = (article: FlattenedArticleWithUnread) => {
     onArticleSelect({
@@ -122,7 +162,7 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
   };
 
   return (
-    <div className="h-full overflow-y-auto p-4">
+    <div ref={sidebarRef} className="h-full overflow-y-auto p-4">
       <div className="mb-4">
         <h2 className="flex items-center gap-2 text-lg font-bold text-text-primary">Discussions</h2>
       </div>
