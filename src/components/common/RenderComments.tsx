@@ -11,7 +11,6 @@ interface RenderCommentsProps {
   onUpdateComment: (id: number, content: string) => void;
   onDeleteComment: (id: number) => void;
   contentType: ContentTypeEnum;
-  mentionableUsers?: Array<{ id: number; username: string }>;
 }
 
 const RenderComments: React.FC<RenderCommentsProps> = ({
@@ -23,7 +22,6 @@ const RenderComments: React.FC<RenderCommentsProps> = ({
   onUpdateComment,
   onDeleteComment,
   contentType,
-  mentionableUsers,
 }) => {
   return comments.map((comment, index) => (
     <div className="relative" key={`${comment.id}_${index}`}>
@@ -39,7 +37,6 @@ const RenderComments: React.FC<RenderCommentsProps> = ({
         onUpdateComment={onUpdateComment}
         onDeleteComment={onDeleteComment}
         contentType={contentType}
-        mentionableUsers={mentionableUsers}
       />
     </div>
   ));

@@ -22,7 +22,6 @@ import {
 } from '@/api/users-common-api/users-common-api';
 import { TEN_MINUTES_IN_MS } from '@/constants/common.constants';
 import { useMarkAsReadOnViewSimple } from '@/hooks/useMarkAsReadOnView';
-import { highlightMentions } from '@/lib/mentionHelpers';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useUnreadNotificationsStore } from '@/stores/unreadNotificationsStore';
@@ -62,7 +61,6 @@ export interface CommentProps extends CommentData {
   onUpdateComment: (id: number, content: string, rating?: number) => void;
   onDeleteComment: (id: number) => void;
   contentType: ContentTypeEnum;
-  mentionableUsers?: Array<{ id: number; username: string }>;
 }
 
 type Reaction = 'upvote' | 'downvote' | 'award';
@@ -86,7 +84,6 @@ const Comment: React.FC<CommentProps> = ({
   onDeleteComment,
   isNew,
   contentType,
-  mentionableUsers,
 }) => {
   dayjs.extend(relativeTime);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -284,18 +281,17 @@ const Comment: React.FC<CommentProps> = ({
           <div className="mt-2 pl-2">
             <CommentInput
               onSubmit={handleUpdateComment}
-              placeholder="Edit your comment... (use @username to mention)"
+              placeholder="Edit your comment..."
               buttonText="Update"
               initialContent={content}
               initialRating={rating}
               isReview={isReview}
-              mentionableUsers={mentionableUsers}
             />
           </div>
         ) : (
           <div className="pl-2">
             <RenderParsedHTML
-              rawContent={highlightMentions(content)}
+              rawContent={content}
               isShrinked={true}
               supportMarkdown={true}
               supportLatex={true}
@@ -390,11 +386,10 @@ const Comment: React.FC<CommentProps> = ({
           <div className="mt-4">
             <CommentInput
               onSubmit={handleAddReply}
-              placeholder="Write your reply... (use @username to mention)"
+              placeholder="Write your reply..."
               buttonText="Post Reply"
               isReview={isReview}
               isReply
-              mentionableUsers={mentionableUsers}
             />
           </div>
         )}
@@ -409,7 +404,6 @@ const Comment: React.FC<CommentProps> = ({
               onUpdateComment={onUpdateComment}
               onDeleteComment={onDeleteComment}
               contentType={contentType}
-              mentionableUsers={mentionableUsers}
             />
           </div>
         )}
