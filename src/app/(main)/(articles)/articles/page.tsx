@@ -338,6 +338,7 @@ const TabContent: React.FC<TabContentProps> = ({
                         ? Number(selectedPreviewArticle.community_article.id)
                         : null
                     }
+                    communityName={selectedPreviewArticle.community_article?.community.name || null}
                     isAdmin={false}
                     showPdfViewerButton={true}
                     handleOpenPdfViewer={handleOpenPdfViewer}
@@ -634,6 +635,7 @@ const MyArticlesTabContent: React.FC<TabContentProps> = ({
                         ? Number(selectedPreviewArticle.community_article.id)
                         : null
                     }
+                    communityName={selectedPreviewArticle.community_article?.community.name || null}
                     isAdmin={false}
                     showPdfViewerButton={true}
                     handleOpenPdfViewer={handleOpenPdfViewer}

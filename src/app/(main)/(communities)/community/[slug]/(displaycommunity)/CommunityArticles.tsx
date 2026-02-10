@@ -243,6 +243,7 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
                         ? Number(selectedPreviewArticle.community_article.id)
                         : null
                     }
+                    communityName={communityName}
                     isAdmin={false}
                     showPdfViewerButton={true}
                     handleOpenPdfViewer={handleOpenPdfViewer}

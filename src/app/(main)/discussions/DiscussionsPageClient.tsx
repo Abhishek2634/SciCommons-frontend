@@ -154,6 +154,7 @@ const DiscussionsPageClientInner: React.FC = () => {
                 articleId={selectedArticle.id}
                 communityId={selectedArticle.communityId}
                 communityArticleId={selectedArticle.communityArticleId}
+                communityName={selectedArticle.communityName}
                 isAdmin={selectedArticle.isAdmin}
                 showPdfViewerButton={true}
                 handleOpenPdfViewer={handleOpenPdfViewer}
@@ -202,6 +203,7 @@ const DiscussionsPageClientInner: React.FC = () => {
                   articleId={selectedArticle.id}
                   communityId={selectedArticle.communityId}
                   communityArticleId={selectedArticle.communityArticleId}
+                  communityName={selectedArticle.communityName}
                   isAdmin={selectedArticle.isAdmin}
                   showPdfViewerButton={true}
                   handleOpenPdfViewer={handleOpenPdfViewer}

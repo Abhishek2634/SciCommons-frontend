@@ -21,6 +21,7 @@ interface ArticleContentViewProps {
   articleId?: number;
   communityId?: number | null;
   communityArticleId?: number | null;
+  communityName?: string | null;
   isAdmin?: boolean;
   showPdfViewerButton?: boolean;
   handleOpenPdfViewer?: () => void;
@@ -47,6 +48,7 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
   articleId: externalArticleId,
   communityId,
   communityArticleId,
+  communityName,
   isAdmin,
   showPdfViewerButton = false,
   handleOpenPdfViewer,
@@ -56,17 +58,24 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
   const accessToken = useAuthStore((state) => state.accessToken);
 
   // Fetch full article data
+  const isQueryEnabled = !!articleSlug && !!accessToken;
+
+  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
+     Problem: Sidebar shows 403 error for community articles while article page works
+     Root cause: Community articles require community_name parameter, sidebar wasn't sending it
+     Solution: Pass community_name when available (for community articles)
+     Result: Sidebar now works for both regular and community articles */
   const {
     data: articleData,
     error: articleError,
     isPending: articleIsPending,
   } = useArticlesApiGetArticle(
     articleSlug,
-    {},
+    communityName ? { community_name: communityName } : {},
     {
       request: accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {},
       query: {
-        enabled: !!articleSlug && !!accessToken,
+        enabled: isQueryEnabled,
         staleTime: TEN_MINUTES_IN_MS,
         refetchOnMount: true,
         refetchOnWindowFocus: true,

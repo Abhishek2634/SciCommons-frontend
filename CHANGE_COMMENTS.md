@@ -1604,3 +1604,134 @@ Click back to Article A (cached):
 - Cache behavior unchanged (still 15min)
 
 **Result**: Reviews now load **instantly** when cached (from ~1 second to <1ms) and update immediately after mutations. The artificial 1-second delay is gone, allowing React Query's caching to work as intended. Users experience dramatically faster article switching while maintaining efficient server resource usage.
+
+---
+
+## Community Article Sidebar 403 Error Fix (2026-02-09)
+
+Fixed by Claude Sonnet 4.5 on 2026-02-09
+
+**Problem**: When viewing private community articles in sidebar preview mode (articles page, community page, discussions page), the sidebar displayed "you don't have access to this article" error (HTTP 403 Forbidden) with a red toast. Meanwhile, clicking the article title in grid view to navigate to the full article page worked perfectly and showed all article content. This created a confusing inconsistency where the same article was accessible in one view but not another, even though the user was properly authenticated and a member of the community.
+
+**Root Cause**: The `ArticleContentView` component calls `useArticlesApiGetArticle(articleSlug, params, ...)` to fetch full article data for the sidebar. For community articles, the backend requires a `community_name` query parameter to determine access permissions. The component was calling the API with an empty object `{}` instead of passing `{ community_name: communityName }`, causing the backend to reject the request as unauthorized (403) even though the user had proper permissions.
+
+**Why Article Page Worked**: The article detail page (`/community/{slug}/articles/{articleSlug}/page.tsx`) correctly passed `{ community_name: params?.slug }` to the API call, which is why clicking the article title showed full article content without errors.
+
+**Key Discovery Process**:
+
+1. Network tab comparison revealed article page included `?community_name=GSoC%202026` parameter
+2. Sidebar API call used empty params object
+3. Grid view worked because it displays data from the articles LIST endpoint (which already had community context)
+4. Sidebar failed because it fetches individual article via DETAIL endpoint (which needs community_name)
+
+**Solution**:
+
+### Part 1: Updated ArticleContentView Component
+
+**Added `communityName` prop** to interface:
+
+```typescript
+interface ArticleContentViewProps {
+  // ... existing props
+  communityName?: string | null;  // ← Added
+}
+```
+
+**Updated API call** to conditionally pass community_name:
+
+```typescript
+const { data: articleData, error, isPending } = useArticlesApiGetArticle(
+  articleSlug,
+  communityName ? { community_name: communityName } : {},  // ← Fixed
+  { request: ..., query: ... }
+);
+```
+
+**Comment added**: "Fixed by Claude Sonnet 4.5 on 2026-02-09 - Community articles require community_name parameter, sidebar wasn't sending it"
+
+### Part 2: Updated All Call Sites
+
+**CommunityArticles.tsx** (line ~249):
+
+```typescript
+<ArticleContentView
+  articleSlug={selectedPreviewArticle.slug}
+  articleId={selectedPreviewArticle.id}
+  communityId={communityId}
+  communityArticleId={selectedPreviewArticle.community_article?.id}
+  communityName={communityName}  // ← Added
+  isAdmin={false}
+  showPdfViewerButton={true}
+  handleOpenPdfViewer={handleOpenPdfViewer}
+/>
+```
+
+**articles/page.tsx** - Both TabContent and MyArticlesTabContent:
+
+```typescript
+<ArticleContentView
+  articleSlug={selectedPreviewArticle.slug}
+  articleId={selectedPreviewArticle.id}
+  communityId={selectedPreviewArticle.community_article?.community.id || null}
+  communityArticleId={selectedPreviewArticle.community_article?.id || null}
+  communityName={selectedPreviewArticle.community_article?.community.name || null}  // ← Added
+  showPdfViewerButton={true}
+  handleOpenPdfViewer={handleOpenPdfViewer}
+/>
+```
+
+**DiscussionsPageClient.tsx** - Both mobile and desktop layouts:
+
+```typescript
+<ArticleContentView
+  articleSlug={selectedArticle.slug}
+  articleId={selectedArticle.id}
+  communityId={selectedArticle.communityId}
+  communityArticleId={selectedArticle.communityArticleId}
+  communityName={selectedArticle.communityName}  // ← Added
+  isAdmin={selectedArticle.isAdmin}
+  showPdfViewerButton={true}
+  handleOpenPdfViewer={handleOpenPdfViewer}
+/>
+```
+
+### Part 3: Cleanup
+
+**Removed diagnostic logging**:
+
+- Removed console.log statements added during debugging
+- Removed useEffect that logged query state
+- Kept production code clean
+
+**Files Modified**:
+
+- `src/components/articles/ArticleContentView.tsx` (lines 57, 74-91)
+- `src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx` (line ~249)
+- `src/app/(main)/(articles)/articles/page.tsx` (TabContent and MyArticlesTabContent)
+- `src/app/(main)/discussions/DiscussionsPageClient.tsx` (lines 157, 207)
+
+**Impact**:
+
+- ✅ **Sidebar now works for community articles**: No more 403 errors
+- ✅ **Consistent behavior**: Grid view, sidebar, and article page all work identically
+- ✅ **Proper permissions**: Backend correctly validates access with community context
+- ✅ **No breaking changes**: Regular (non-community) articles continue to work
+- ✅ **Type-safe**: TypeScript compilation passes with no errors
+- ✅ **Backward compatible**: `communityName` is optional, defaults to null
+
+**How It Works**:
+
+**Regular Articles (no community):**
+
+- `communityName` prop is `null` or `undefined`
+- API called with empty params: `useArticlesApiGetArticle(articleSlug, {}, ...)`
+- Backend returns article if user has access (public or submission owner)
+
+**Community Articles:**
+
+- `communityName` prop contains community name (e.g., "GSoC 2026")
+- API called with community_name: `useArticlesApiGetArticle(articleSlug, { community_name: "GSoC 2026" }, ...)`
+- Backend checks if user is community member and returns article
+- Without community_name parameter, backend rejects as unauthorized (403)
+
+**Result**: Community articles now display correctly in all sidebar contexts (articles page, community page, discussions page). The 403 "you don't have access to this article" error is eliminated. Users can preview community articles in the sidebar without errors, while the backend properly validates community membership permissions.
