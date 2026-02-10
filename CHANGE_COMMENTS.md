@@ -5,6 +5,45 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Home Hero Title Normalization (2026-02-10)**
+
+**Problem:** The homepage "Welcome to SciCommons" title used a typewriter animation with a cursor
+line, giving an unwanted movie-style effect.
+
+**Root Cause:** The hero heading was rendered via the `TypewriterEffectSmooth` component instead of
+static text.
+
+**Solution:** Commented out the typewriter component and its words array, replacing it with a
+static heading that preserves the existing color treatment (green "SciCommons").
+
+**Result:** The hero title is now a normal static heading with the same colors and no cursor line.
+
+**Files Modified:** `src/app/(home)/page.tsx`
+
+**Home Hero Content Offset (2026-02-10)**
+
+**Problem:** The hero heading cluster overlapped the navbar after the layout adjustments.
+
+**Root Cause:** The hero content wrapper lacked top padding while the parent used a negative top margin.
+
+**Solution:** Added responsive top padding to the hero content wrapper to push the text and CTAs down.
+
+**Result:** The hero content clears the navbar without changing the rest of the layout.
+
+**Files Modified:** `src/app/(home)/page.tsx`
+
+**Home Hero Bottom Hug (2026-02-10)**
+
+**Problem:** The hero section left a blank tail below the "Our Supporters" row.
+
+**Root Cause:** The hero container enforced a minimum height (`min-h-[400px]`) regardless of content.
+
+**Solution:** Removed the forced min-height so the hero height is driven by its contents.
+
+**Result:** The hero now hugs the supporters row with no extra blank space below.
+
+**Files Modified:** `src/app/(home)/page.tsx`
+
 **Home Hero Spacer Tightening (2026-02-10)**
 
 **Problem:** The home hero section showed a large shaded gap below "Our Supporters," making the

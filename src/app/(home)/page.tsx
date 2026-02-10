@@ -12,31 +12,35 @@ import NavBar from '@/components/common/NavBar';
 //   AccordionTrigger,
 // } from '@/components/ui/accordian';
 import { Button, ButtonTitle } from '@/components/ui/button';
-import { TypewriterEffectSmooth } from '@/components/ui/typewriter-effect';
+// import { TypewriterEffectSmooth } from '@/components/ui/typewriter-effect';
 
 // import { faqs } from '@/constants/common.constants';
 
 // import FeaturesSection from './FeaturesSection';
 
 const Home = () => {
-  const words = [
-    {
-      text: 'Welcome',
-    },
-    {
-      text: 'to',
-    },
-    {
-      text: 'SciCommons.',
-      className: 'text-functional-green',
-    },
-  ];
+  // const words = [
+  //   {
+  //     text: 'Welcome',
+  //   },
+  //   {
+  //     text: 'to',
+  //   },
+  //   {
+  //     text: 'SciCommons.',
+  //     className: 'text-functional-green',
+  //   },
+  // ];
 
   return (
     <div className="relative bg-common-background">
       <NavBar />
       {/* <Banner /> */}
-      <div className="relative inset-0 z-0 -mt-6 flex min-h-[400px] flex-col items-center justify-center overflow-hidden rounded-t-3xl bg-common-background">
+      {/* Fixed by Codex on 2026-02-10
+          Problem: The hero container enforced extra empty space below the supporters row.
+          Solution: Removed the forced minimum height so the hero hugs its content.
+          Result: The hero now ends right after "Our Supporters" without a blank tail. */}
+      <div className="relative inset-0 z-0 -mt-6 flex flex-col items-center justify-center overflow-hidden rounded-t-3xl bg-common-background">
         <Image
           src={'/images/assets/gradient.webp'}
           fill
@@ -44,18 +48,30 @@ const Home = () => {
           className="z-0 opacity-10 invert dark:invert-0"
           quality={10}
         />
-        <div className="z-10 -mt-6 flex w-full flex-col items-center justify-center backdrop-blur-xl">
+        {/* Fixed by Codex on 2026-02-10
+            Problem: The hero content was sitting too high and overlapping the navbar.
+            Solution: Added top padding to the hero content wrapper to push the group down.
+            Result: The title and CTAs clear the navbar without changing layout elsewhere. */}
+        <div className="z-10 -mt-6 flex w-full flex-col items-center justify-center backdrop-blur-xl pt-14 sm:pt-20">
           <div className="flex w-full flex-col items-center justify-center pb-0">
-            <span className="mb-1 text-3xl font-bold text-text-primary sm:text-4xl md:hidden">
-              Welcome to
-            </span>
-            <TypewriterEffectSmooth words={words} />
+            {/* Fixed by Codex on 2026-02-10
+                Problem: The hero title used a typewriter animation with a cursor line that felt like a movie-style effect.
+                Solution: Commented out the animated component and replaced it with a static heading using the same colors.
+                Result: "Welcome to SciCommons" renders normally without the green cursor line. */}
+            <h1 className="mb-1 text-center text-3xl font-bold text-text-primary sm:text-4xl md:text-5xl">
+              Welcome to <span className="text-functional-green">SciCommons.</span>
+            </h1>
+            {/* <TypewriterEffectSmooth words={words} /> */}
             {/* Moved to about page */}
             {/* <p className="mb-6 max-w-3xl px-4 text-center text-xs text-text-secondary sm:text-sm">
               Be part of the change. Join our open platform to review, rate, and access research
               freely. Improve research quality and accessibility with community-driven peer review.
             </p> */}
-            <div className="flex flex-row items-center space-x-4">
+            {/* Fixed by Codex on 2026-02-10
+                Problem: Primary CTA buttons sat too close to the hero title.
+                Solution: Added top margin to the CTA row to increase vertical spacing.
+                Result: Clearer separation between the title and action buttons. */}
+            <div className="mt-6 flex flex-row items-center space-x-4">
               <Link href="/articles">
                 <Button variant={'gray'} className="w-40 bg-black text-white dark:text-white">
                   <ButtonTitle>Explore Articles</ButtonTitle>
