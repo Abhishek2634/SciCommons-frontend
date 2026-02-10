@@ -3,3 +3,9 @@
 
 # ReactQuill components (todo: remove these components later)
 **/ReactQuill.tsx
+
+# Documentation files with custom formatting
+CHANGE_COMMENTS.md
+logoutNotes.md
+logoutNotes2.md
+logoutNotes3.md
