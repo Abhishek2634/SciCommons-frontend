@@ -36,7 +36,7 @@ const Home = () => {
     <div className="relative bg-common-background">
       <NavBar />
       {/* <Banner /> */}
-      <div className="relative inset-0 z-0 -mt-12 flex h-[calc(100vh-180px)] flex-col items-center justify-center overflow-hidden rounded-t-3xl bg-common-background md:h-[calc(100vh-220px)]">
+      <div className="relative inset-0 z-0 -mt-6 flex min-h-[400px] flex-col items-center justify-center overflow-hidden rounded-t-3xl bg-common-background pb-2">
         <Image
           src={'/images/assets/gradient.webp'}
           fill
@@ -44,16 +44,17 @@ const Home = () => {
           className="z-0 opacity-10 invert dark:invert-0"
           quality={10}
         />
-        <div className="z-10 -mt-6 flex h-full w-full flex-col items-center justify-center backdrop-blur-xl">
-          <div className="flex h-full w-full flex-col items-center justify-center">
+        <div className="z-10 -mt-6 flex w-full flex-col items-center justify-center pb-4 backdrop-blur-xl">
+          <div className="flex w-full flex-col items-center justify-center pb-0">
             <span className="mb-1 text-3xl font-bold text-text-primary sm:text-4xl md:hidden">
               Welcome to
             </span>
             <TypewriterEffectSmooth words={words} />
-            <p className="mb-6 max-w-3xl px-4 text-center text-xs text-text-secondary sm:text-sm">
+            {/* Moved to about page */}
+            {/* <p className="mb-6 max-w-3xl px-4 text-center text-xs text-text-secondary sm:text-sm">
               Be part of the change. Join our open platform to review, rate, and access research
               freely. Improve research quality and accessibility with community-driven peer review.
-            </p>
+            </p> */}
             <div className="flex flex-row items-center space-x-4">
               <Link href="/articles">
                 <Button variant={'gray'} className="w-40 bg-black text-white dark:text-white">
@@ -66,48 +67,48 @@ const Home = () => {
                 </Button>
               </Link>
             </div>
-          </div>
-          <div className="relative z-20 rounded-t-3xl pb-20">
-            <p className="w-full pb-8 text-center text-sm font-bold text-text-secondary md:text-base">
-              Our Supporters
-            </p>
-            <div className="flex w-full flex-col items-center justify-center gap-8 sm:flex-row">
-              {/* KCDHA Logo - CSS-based theme switching */}
-              <Image
-                width={160}
-                height={40}
-                src="/images/KCDHA-White.png"
-                alt="KCDHA"
-                className="hidden dark:block"
-              />
-              <Image
-                width={160}
-                height={40}
-                src="/images/KCDHA-Black.png"
-                alt="KCDHA"
-                className="block dark:hidden"
-              />
-              {/* GSoC Logo - CSS-based theme switching */}
-              <Image
-                width={280}
-                height={40}
-                src="/images/GSoC-White.png"
-                alt="GSoC"
-                className="hidden dark:block"
-              />
-              <Image
-                width={280}
-                height={40}
-                src="/images/GSoC-Black.png"
-                alt="GSoC"
-                className="block dark:hidden"
-              />
+            <div className="mt-7 flex w-full flex-col items-center justify-center gap-6 sm:flex-row sm:gap-8">
+              <p className="text-sm font-bold text-text-secondary md:text-base">
+                Our Supporters
+              </p>
+              <div className="flex flex-col items-center justify-center gap-8 sm:flex-row">
+                {/* KCDHA Logo - CSS-based theme switching */}
+                <Image
+                  width={160}
+                  height={40}
+                  src="/images/KCDHA-White.png"
+                  alt="KCDHA"
+                  className="hidden dark:block"
+                />
+                <Image
+                  width={160}
+                  height={40}
+                  src="/images/KCDHA-Black.png"
+                  alt="KCDHA"
+                  className="block dark:hidden"
+                />
+                {/* GSoC Logo - CSS-based theme switching */}
+                <Image
+                  width={280}
+                  height={40}
+                  src="/images/GSoC-White.png"
+                  alt="GSoC"
+                  className="hidden dark:block"
+                />
+                <Image
+                  width={280}
+                  height={40}
+                  src="/images/GSoC-Black.png"
+                  alt="GSoC"
+                  className="block dark:hidden"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <div className="relative z-20 -mt-8 rounded-t-3xl bg-common-background p-12 pb-20">
-        <p className="w-full pb-8 text-center text-sm font-bold text-text-secondary md:text-base">
+      <div className="relative z-20 -mt-16 rounded-t-3xl bg-common-background px-12 pb-20 pt-1">
+        <p className="w-full pb-3 text-center text-sm font-bold text-text-secondary md:text-base">
           Featured Video
         </p>
         <div className="flex w-full flex-col items-center justify-center">

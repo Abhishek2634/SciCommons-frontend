@@ -129,6 +129,10 @@ const AboutPage = () => {
               Revolutionizing scientific publishing and peer review through community-driven
               collaboration
             </p>
+            <p className="mx-auto max-w-3xl text-center text-sm text-text-secondary">
+              Be part of the change. Join our open platform to review, rate, and access research
+              freely. Improve research quality and accessibility with community-driven peer review.
+            </p>
           </div>
         </div>
       </div>
