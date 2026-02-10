@@ -380,6 +380,29 @@ code now does, not a commit-by-commit history.
    - ✅ No unexpected logouts
    - ✅ Proper error states displayed
 
+10. **Auth Guard Revalidation Fix (2026-02-09)**
+
+   **Problem:** Users were intermittently logged out when navigating to communities, even though their
+   session was still valid.
+
+   **Root Cause:** `isTokenExpired()` surfaced a stale server-validation interval as "expired", and the
+   auth guard treated that as a hard logout signal without performing revalidation.
+
+   **Solution:**
+
+   - Added `forceServerValidation` support to `initializeAuth` so guards can trigger a real server probe
+     when validation is due (without mutating valid token expiry).
+   - Updated `withAuthRedirect` to revalidate on `isTokenExpired()` and only logout if revalidation fails.
+   - Removed the expired-session dialog flow from the guard to avoid false-positive logout prompts.
+
+   **Result:** Community navigation no longer logs users out after the validation interval; users remain
+   authenticated unless the server confirms the session is invalid.
+
+   **Files Modified:**
+
+   - `src/stores/authStore.ts`
+   - `src/HOCs/withAuthRedirect.tsx`
+
 **Content Rendering + Safety**
 
 1. Centralized `RenderParsedHTML` now sanitizes with DOMPurify and supports Markdown + LaTeX,

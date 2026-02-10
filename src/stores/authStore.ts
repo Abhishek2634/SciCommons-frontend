@@ -26,7 +26,7 @@ interface AuthState {
   user: AuthenticatedUserType | null;
   setAccessToken: (token: string, user: AuthenticatedUserType) => void;
   logout: () => void;
-  initializeAuth: () => Promise<void>;
+  initializeAuth: (options?: InitializeAuthOptions) => Promise<void>;
   isTokenExpired: () => boolean;
   getUser: () => AuthenticatedUserType | null;
 }
@@ -70,6 +70,10 @@ type MeResponse = {
     last_name?: string;
     username?: string;
   };
+};
+
+type InitializeAuthOptions = {
+  forceServerValidation?: boolean;
 };
 
 const normalizeUser = (candidate: unknown): AuthenticatedUserType | null => {
@@ -211,7 +215,7 @@ export const useAuthStore = create<AuthState>()(
           user: null,
         }));
       },
-      initializeAuth: async () => {
+      initializeAuth: async (options?: InitializeAuthOptions) => {
         // Fixed by Claude Sonnet 4.5 on 2026-02-08
         // Issue 1: Check if initialization is already in progress
         // If another call is running, return the existing promise to prevent race conditions
@@ -263,8 +267,18 @@ export const useAuthStore = create<AuthState>()(
               expiresAt = getExpiresAtFromToken(token) ?? NaN;
             }
 
-            // For invalid/expired local expiry, let server decide once.
-            if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
+            /* Fixed by Codex on 2026-02-09
+               Problem: Stale server-validation flagged tokens as expired, but init logic skipped revalidation,
+               causing auth guards to logout users without a real session check.
+               Solution: Allow initializeAuth to force a server probe when validation is due, while preserving
+               valid token expiry when only revalidating.
+               Result: Revalidation refreshes server validation without logging users out unnecessarily. */
+            const forceServerValidation = options?.forceServerValidation ?? false;
+            const isExpired = !Number.isFinite(expiresAt) || Date.now() >= expiresAt;
+            const shouldProbe = forceServerValidation || isExpired || !user;
+
+            // For invalid/expired local expiry or forced validation, let server decide once.
+            if (shouldProbe) {
               const session = await probeServerSession();
 
               // Fixed by Claude Sonnet 4.5 on 2026-02-08
@@ -272,7 +286,9 @@ export const useAuthStore = create<AuthState>()(
               if (!session.ok) {
                 // Network error - keep session for offline tolerance
                 if (session.isNetworkError) {
-                  expiresAt = Date.now() + SERVER_SESSION_FALLBACK_TTL_MS;
+                  if (isExpired) {
+                    expiresAt = Date.now() + SERVER_SESSION_FALLBACK_TTL_MS;
+                  }
                   // Continue with existing token, don't logout
                 } else if (session.statusCode === 401 || session.statusCode === 403) {
                   // Auth failure - clear session
@@ -285,21 +301,17 @@ export const useAuthStore = create<AuthState>()(
                     user: null,
                   });
                   return;
-                } else {
+                } else if (isExpired) {
                   // Other server error - keep session but extend expiry minimally
                   expiresAt = Date.now() + SERVER_SESSION_FALLBACK_TTL_MS;
                 }
               } else {
                 // Session is valid
-                expiresAt = Date.now() + SERVER_SESSION_FALLBACK_TTL_MS;
-                Cookies.set('expiresAt', String(expiresAt), getCookieOptions());
+                if (isExpired) {
+                  expiresAt = Date.now() + SERVER_SESSION_FALLBACK_TTL_MS;
+                  Cookies.set('expiresAt', String(expiresAt), getCookieOptions());
+                }
                 user = session.user ?? user ?? null;
-              }
-            } else if (!user) {
-              // If auth looks valid but user is missing, try to hydrate once.
-              const session = await probeServerSession();
-              if (session.ok && session.user) {
-                user = session.user;
               }
             }
 
