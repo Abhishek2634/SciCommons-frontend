@@ -25,7 +25,7 @@ import type {
   RealtimeStatusOut,
 } from '.././schemas';
 
-type SecondParameter<T> = T extends (...args: infer P) => unknown ? P[1] : never;
+type SecondParameter<T extends (...args: any) => any> = Parameters<T>[1];
 
 /**
  * Register a new queue for real-time updates
