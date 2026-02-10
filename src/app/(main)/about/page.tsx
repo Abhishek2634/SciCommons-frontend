@@ -83,7 +83,11 @@ const AboutPage = () => {
     },
   ];
 
-  const otherContributors = ['Jyothi Swaroop Bommareddy', 'Dinakar Chennupati', 'Raju Bugude'];
+  const otherContributors = [
+    { name: 'Jyothi Swaroop Bommareddy', role: 'GSoC 2023, original architect' },
+    { name: 'Dinakar Chennupati', role: 'GSoC 2024, front-end architect' },
+    { name: 'Raju Bugude', role: 'Volunteer contributor, site-testing' },
+  ];
 
   const features = [
     {
@@ -241,16 +245,16 @@ const AboutPage = () => {
           ))}
         </div>
 
-        <div className="mt-8 text-center text-sm text-text-secondary">
-          <p className="mb-1">Also contributed by:</p>
-          <p>
-            {otherContributors.map((name, idx) => (
-              <span key={idx} className="mr-1 inline">
-                {name}
-                {idx < otherContributors.length - 1 ? ',' : ''}
-              </span>
+        <div className="mt-12 text-center">
+          <h3 className="mb-6 text-2xl font-bold text-text-primary">Previous Contributors</h3>
+          <div className="mx-auto max-w-2xl space-y-3">
+            {otherContributors.map((contributor, idx) => (
+              <p key={idx} className="text-text-secondary">
+                <span className="font-semibold text-text-primary">{contributor.name}</span>
+                <span className="text-sm"> ({contributor.role})</span>
+              </p>
             ))}
-          </p>
+          </div>
         </div>
       </div>
 
