@@ -34,6 +34,19 @@ footer, ready for feed insertion.
 
 **Files Modified:** `src/app/(home)/page.tsx`
 
+**Realtime Status Badge Hidden (2026-02-10)**
+
+**Problem:** The realtime status badge was visible in the UI and showing "Disabled," which was
+confusing for users.
+
+**Root Cause:** The global layout rendered the RealtimeStatus HUD unconditionally.
+
+**Solution:** Removed the RealtimeStatus component from the root layout render.
+
+**Result:** The status badge no longer appears while realtime logic remains active.
+
+**Files Modified:** `src/app/layout.tsx`
+
 **ESLint Configuration for Auto-Generated Files (2026-02-09)**
 
 1. Added ESLint override to suppress `@typescript-eslint/no-explicit-any` warnings for auto-generated

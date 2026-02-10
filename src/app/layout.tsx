@@ -9,7 +9,6 @@ import PathTracker from '@/HOCs/withPathTracker';
 import { ReactQueryClientProvider } from '@/api/ReactQueryClientProvider';
 import BottomBar from '@/components/common/BottomBar';
 import { GlobalErrorHandler } from '@/components/common/GlobalErrorHandler';
-import RealtimeStatus from '@/components/common/RealtimeStatus';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -61,7 +60,10 @@ export default function RootLayout({
               <main className="flex-grow">{children}</main>
             </TooltipProvider>
           </ThemeProvider>
-          <RealtimeStatus className="fixed left-1/2 top-4 z-[1000] -translate-x-1/2 bg-common-cardBackground md:bottom-4 md:left-auto md:right-2 md:top-auto md:translate-x-0" />
+          {/* Fixed by Codex on 2026-02-10
+              Problem: The realtime status badge showed "Disabled" and distracted users.
+              Solution: Removed the RealtimeStatus HUD from the global layout render.
+              Result: The indicator no longer appears while realtime continues in the background. */}
           <BottomBar />
           <SonnerToaster
             richColors
