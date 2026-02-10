@@ -72,6 +72,7 @@ const NavBar: React.FC = () => {
           },
         ]
       : []),
+    { href: '/help', label: 'Help', bold: true },
     // { href: '/posts', label: 'Posts' },
     // { href: '/about', label: 'About' },
   ];
@@ -117,6 +118,7 @@ const NavBar: React.FC = () => {
                   'relative rounded-full px-3 py-1 text-sm text-text-primary hover:bg-functional-green/10',
                   {
                     'bg-functional-green/10 font-bold text-functional-green': isActive,
+                    'font-bold': link.bold && !isActive,
                   }
                 )}
               >

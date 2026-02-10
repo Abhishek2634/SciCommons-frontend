@@ -36,7 +36,7 @@ const Home = () => {
     <div className="relative bg-common-background">
       <NavBar />
       {/* <Banner /> */}
-      <div className="relative inset-0 z-0 -mt-6 flex min-h-[400px] flex-col items-center justify-center overflow-hidden rounded-t-3xl bg-common-background pb-2">
+      <div className="relative inset-0 z-0 -mt-6 flex min-h-[400px] flex-col items-center justify-center overflow-hidden rounded-t-3xl bg-common-background">
         <Image
           src={'/images/assets/gradient.webp'}
           fill
@@ -44,7 +44,7 @@ const Home = () => {
           className="z-0 opacity-10 invert dark:invert-0"
           quality={10}
         />
-        <div className="z-10 -mt-6 flex w-full flex-col items-center justify-center pb-4 backdrop-blur-xl">
+        <div className="z-10 -mt-6 flex w-full flex-col items-center justify-center backdrop-blur-xl">
           <div className="flex w-full flex-col items-center justify-center pb-0">
             <span className="mb-1 text-3xl font-bold text-text-primary sm:text-4xl md:hidden">
               Welcome to
@@ -67,7 +67,7 @@ const Home = () => {
                 </Button>
               </Link>
             </div>
-            <div className="mt-7 flex w-full flex-col items-center justify-center gap-6 sm:flex-row sm:gap-8">
+            <div className="mt-10 flex w-full flex-col items-center justify-center gap-6 sm:flex-row sm:gap-8">
               <p className="text-sm font-bold text-text-secondary md:text-base">
                 Our Supporters
               </p>
@@ -107,7 +107,10 @@ const Home = () => {
           </div>
         </div>
       </div>
-      <div className="relative z-20 -mt-16 rounded-t-3xl bg-common-background px-12 pb-20 pt-1">
+      {/* Spacer to push footer down - replaces video section space */}
+      <div className="relative z-20 h-[400px] bg-common-background"></div>
+      {/* Featured Video section moved to /help page */}
+      {/* <div className="relative z-20 -mt-16 rounded-t-3xl bg-common-background px-12 pb-20 pt-1">
         <p className="w-full pb-3 text-center text-sm font-bold text-text-secondary md:text-base">
           Featured Video
         </p>
@@ -125,7 +128,7 @@ const Home = () => {
             ></iframe>
           </div>
         </div>
-      </div>
+      </div> */}
       {/*
         Features section commented out for now — keep markup for future re-enable
 
