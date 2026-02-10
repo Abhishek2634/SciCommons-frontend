@@ -5,6 +5,17 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**ESLint Configuration for Auto-Generated Files (2026-02-09)**
+
+1. Added ESLint override to suppress `@typescript-eslint/no-explicit-any` warnings for auto-generated
+   API files in `src/api/**/*.{ts,tsx}`.
+2. Manually maintained files (`custom-instance.ts`, `ReactQueryClientProvider.tsx`,
+   `queryClientRegistry.ts`) remain subject to the rule.
+3. **Rationale:** Auto-generated files from Orval should not be manually edited and may contain `any`
+   types from the backend OpenAPI spec. Suppressing these warnings prevents noise in linting output
+   while maintaining strict typing for hand-written code.
+4. **Files Modified:** `.eslintrc` (added overrides section)
+
 **Auth, Session, and Security Hardening**
 
 1. Auth initialization now migrates persisted auth into cookies, validates expiry, probes the
