@@ -58,7 +58,8 @@ const Footer: React.FC = () => {
               </>
             )}
           </div>
-          <div className="flex gap-8 md:order-2">
+          {/* Commented out social media icons - dead links */}
+          {/* <div className="flex gap-8 md:order-2">
             <a href="#" className="text-functional-green">
               <span className="sr-only">Facebook</span>
               <FacebookIconFilled fontSize={24} strokeWidth={0} />
@@ -75,7 +76,7 @@ const Footer: React.FC = () => {
               <span className="sr-only">Twitter</span>
               <TwitterIconFilled fontSize={24} strokeWidth={0} />
             </a>
-          </div>
+          </div> */}
         </div>
 
         <div className="flex gap-6 text-xs font-semibold leading-6 text-functional-green sm:gap-14">
@@ -97,7 +98,8 @@ const Footer: React.FC = () => {
       </div>
       <div className="flex w-full flex-wrap items-center bg-functional-green p-4 text-xs font-semibold text-white dark:text-black sm:justify-center">
         <span className="mr-2 sm:mr-4">© 2024 SciCommons. All rights reserved.</span>
-        <span className="mr-2 sm:mr-4">
+        {/* Commented out dead links */}
+        {/* <span className="mr-2 sm:mr-4">
           <span className="mr-2 sm:mr-4">|</span>
           <Link href="/terms-and-conditions" className="hover:underline">
             Terms and Conditions
@@ -108,7 +110,7 @@ const Footer: React.FC = () => {
           <Link href="/privacy-policy" className="hover:underline">
             Privacy Policy
           </Link>
-        </span>
+        </span> */}
       </div>
     </footer>
   );
