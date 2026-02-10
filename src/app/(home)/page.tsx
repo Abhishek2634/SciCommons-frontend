@@ -107,8 +107,15 @@ const Home = () => {
           </div>
         </div>
       </div>
-      {/* Spacer to push footer down - replaces video section space */}
-      <div className="relative z-20 h-[400px] bg-common-background"></div>
+      {/* Fixed by Codex on 2026-02-10
+          Problem: Need a dedicated area between the hero and footer for future feed content.
+          Solution: Inserted a placeholder section outside the hero to reserve layout space.
+          Result: Supporters stay in the hero while a new blank container separates hero and footer. */}
+      <section className="relative z-20 bg-common-background">
+        <div className="mx-auto w-full max-w-6xl px-6 py-12 sm:px-10 md:px-12">
+          <div className="h-[220px] rounded-2xl border border-common-contrast/20 bg-common-background/60" />
+        </div>
+      </section>
       {/* Featured Video section moved to /help page */}
       {/* <div className="relative z-20 -mt-16 rounded-t-3xl bg-common-background px-12 pb-20 pt-1">
         <p className="w-full pb-3 text-center text-sm font-bold text-text-secondary md:text-base">

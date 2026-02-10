@@ -5,6 +5,35 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Home Hero Spacer Tightening (2026-02-10)**
+
+**Problem:** The home hero section showed a large shaded gap below "Our Supporters," making the
+section feel taller than its content.
+
+**Root Cause:** A placeholder spacer div (`h-[400px]`) was kept after the hero to simulate removed
+video section space.
+
+**Solution:** Removed the spacer block so the hero height is driven by its actual content.
+
+**Result:** The hero area now wraps tightly around the supporters row with no extra shaded gap.
+
+**Files Modified:** `src/app/(home)/page.tsx`
+
+**Home Feed Placeholder Section (2026-02-10)**
+
+**Problem:** A future feed needs layout space between the hero and the footer without expanding the
+hero area.
+
+**Root Cause:** After tightening the hero, there was no dedicated section reserved for new content.
+
+**Solution:** Added a placeholder section after the hero to reserve vertical space for the upcoming
+feed and keep the hero unchanged.
+
+**Result:** The hero remains tight around its content while a blank container separates it from the
+footer, ready for feed insertion.
+
+**Files Modified:** `src/app/(home)/page.tsx`
+
 **ESLint Configuration for Auto-Generated Files (2026-02-09)**
 
 1. Added ESLint override to suppress `@typescript-eslint/no-explicit-any` warnings for auto-generated

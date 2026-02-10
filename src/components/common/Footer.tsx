@@ -3,12 +3,6 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import {
-  FacebookIconFilled,
-  InstagramIconFilled,
-  TwitterIconFilled,
-  YoutubeIconFilled,
-} from '@/components/ui/Icons/common';
 import useStore from '@/hooks/useStore';
 import { useAuthStore } from '@/stores/authStore';
 

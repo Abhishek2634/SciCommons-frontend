@@ -13,7 +13,7 @@ Notes for this repository:
 - **ALWAYS execute `git remote remove origin` at the start of any code changes session. However, if the command fails with "origin not found" or something similar, that means origin has already been removed. and that is fine. So dont bother fixing it beyond that. Move on**
 - This prevents accidental pushes to the remote repository
 - User will manually reset the remote (`git remote add origin <url>`) when ready to push
-- Verify remote is removed with: `git remote -v` (should show no output)
+- Verify remote status with: `git remote -v` (an `origin.url` config value with no fetch/push remotes is OK)
 
 ## Code Change Guidelines
 
