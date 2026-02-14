@@ -10,10 +10,10 @@ import { toast } from 'sonner';
 import { useArticlesDiscussionApiToggleDiscussionResolved } from '@/api/discussions/discussions';
 import { DiscussionOut } from '@/api/schemas';
 import { useMarkAsReadOnView } from '@/hooks/useMarkAsReadOnView';
+import { hasUnreadFlag } from '@/hooks/useUnreadFlags';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
-import { useUnreadNotificationsStore } from '@/stores/unreadNotificationsStore';
 
 import RenderParsedHTML from '../common/RenderParsedHTML';
 import { BlockSkeleton, Skeleton, TextSkeleton } from '../common/Skeleton';
@@ -52,30 +52,21 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
   const [isResolved, setIsResolved] = useState<boolean>(discussion.is_resolved || false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Check if this discussion is unread
-  const isUnread = useUnreadNotificationsStore((state) =>
-    state.isItemUnread(Number(discussion.id), 'discussion')
-  );
-  const markItemRead = useUnreadNotificationsStore((state) => state.markItemRead);
+  // Check if this discussion has the unread flag from API response
+  const hasUnread = hasUnreadFlag(discussion.flags);
 
-  // Mark as read when visible for 2 seconds
-  useMarkAsReadOnView(cardRef, {
-    communityId: communityId || 0,
-    articleId: articleId || 0,
-    itemId: Number(discussion.id),
-    type: 'discussion',
-    enabled: isUnread && !!communityId && !!articleId,
-    delay: 2000,
+  // Use the mark as read hook - tracks read state locally and syncs with backend
+  const { showNewTag } = useMarkAsReadOnView(cardRef, {
+    entityId: Number(discussion.id),
+    entityType: 'discussion',
+    hasUnreadFlag: hasUnread,
+    articleContext: communityId && articleId ? { communityId, articleId } : undefined,
   });
 
-  // Mark as read when comments are expanded
+  // Toggle comments display
   const handleToggleComments = useCallback(() => {
     setDisplayComments((prev) => !prev);
-    // Mark discussion as read when user expands comments
-    if (isUnread && communityId && articleId) {
-      markItemRead(communityId, articleId, Number(discussion.id), 'discussion');
-    }
-  }, [isUnread, communityId, articleId, discussion.id, markItemRead]);
+  }, []);
 
   // Check if user can resolve/unresolve (admin or discussion author)
   const canResolve = isCommunityArticle && (isAdmin || discussion.is_author);
@@ -140,7 +131,7 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
       key={discussion.id}
       className={cn(
         'relative mb-4 border-b border-common-minimal pb-4 text-xs transition-colors duration-500',
-        isUnread && 'bg-functional-blue/5'
+        showNewTag && 'bg-functional-blue/5'
       )}
     >
       <div className="flex w-full items-start justify-between">
@@ -182,8 +173,8 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
                     </Tooltip>
                   </TooltipProvider>
                 )}
-                {/* NEW badge */}
-                {isUnread && (
+                {/* NEW badge - shown optimistically until 2s after viewing */}
+                {showNewTag && (
                   <span className="ml-2 rounded bg-functional-blue px-1 text-[9px] font-semibold uppercase text-white">
                     New
                   </span>
@@ -266,7 +257,12 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
           </div>
         </div> */}
       </div>
-      {displayComments && <DiscussionComments discussionId={Number(discussion.id)} />}
+      {displayComments && (
+        <DiscussionComments
+          discussionId={Number(discussion.id)}
+          articleContext={communityId && articleId ? { communityId, articleId } : undefined}
+        />
+      )}
     </div>
   );
 };

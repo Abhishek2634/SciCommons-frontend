@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import Image from 'next/image';
 
@@ -15,16 +15,16 @@ import {
   X,
 } from 'lucide-react';
 
-import { ContentTypeEnum } from '@/api/schemas';
+import { ContentTypeEnum, FlagType } from '@/api/schemas';
 import {
   useUsersCommonApiGetReactionCount,
   useUsersCommonApiPostReaction,
 } from '@/api/users-common-api/users-common-api';
 import { TEN_MINUTES_IN_MS } from '@/constants/common.constants';
-import { useMarkAsReadOnViewSimple } from '@/hooks/useMarkAsReadOnView';
+import { useMarkAsReadOnView } from '@/hooks/useMarkAsReadOnView';
+import { hasUnreadFlag } from '@/hooks/useUnreadFlags';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
-import { useUnreadNotificationsStore } from '@/stores/unreadNotificationsStore';
 
 import { Ratings } from '../ui/ratings';
 import CommentInput from './CommentInput';
@@ -51,6 +51,8 @@ export interface CommentData {
   review_version?: boolean;
   isNew?: boolean;
   is_deleted?: boolean;
+  // Flags from API (e.g., 'unread')
+  flags?: FlagType[];
 }
 
 export interface CommentProps extends CommentData {
@@ -61,6 +63,12 @@ export interface CommentProps extends CommentData {
   onUpdateComment: (id: number, content: string, rating?: number) => void;
   onDeleteComment: (id: number) => void;
   contentType: ContentTypeEnum;
+  flags?: FlagType[];
+  /** Article context for tracking read state */
+  articleContext?: {
+    communityId: number;
+    articleId: number;
+  };
 }
 
 type Reaction = 'upvote' | 'downvote' | 'award';
@@ -83,6 +91,8 @@ const Comment: React.FC<CommentProps> = ({
   onDeleteComment,
   isNew,
   contentType,
+  flags,
+  articleContext,
 }) => {
   dayjs.extend(relativeTime);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -118,51 +128,15 @@ const Comment: React.FC<CommentProps> = ({
   const hasReplies = replies && replies.length > 0;
   const commentRef = useRef<HTMLDivElement>(null);
 
-  // Check if this comment is unread in the store (for realtime updates)
-  const isUnreadInStore = useUnreadNotificationsStore((state) =>
-    state.isItemUnread(Number(id), depth === 0 ? 'comment' : 'reply')
-  );
+  // Check if this comment has the unread flag from API response
+  const hasUnread = hasUnreadFlag(flags);
 
-  // Combined unread state: either from prop (isNew) or from store
-  const isUnread = isNew || isUnreadInStore;
-
-  // Get the function to mark items as read - we need to find which article this belongs to
-  const articleUnreads = useUnreadNotificationsStore((state) => state.articleUnreads);
-
-  // Find the article context for this comment
-  const findArticleContext = useCallback(() => {
-    for (const [key, article] of Object.entries(articleUnreads)) {
-      const hasItem = article.items.some(
-        (item) => item.id === Number(id) && (item.type === 'comment' || item.type === 'reply')
-      );
-      if (hasItem) {
-        return { communityId: article.communityId, articleId: article.articleId };
-      }
-    }
-    return null;
-  }, [articleUnreads, id]);
-
-  const markItemRead = useUnreadNotificationsStore((state) => state.markItemRead);
-
-  // Mark as read when visible for 2 seconds
-  const handleMarkRead = useCallback(() => {
-    const context = findArticleContext();
-    if (context) {
-      markItemRead(
-        context.communityId,
-        context.articleId,
-        Number(id),
-        depth === 0 ? 'comment' : 'reply'
-      );
-    }
-  }, [findArticleContext, markItemRead, id, depth]);
-
-  useMarkAsReadOnViewSimple(commentRef, {
-    itemId: Number(id),
-    type: depth === 0 ? 'comment' : 'reply',
-    enabled: isUnreadInStore,
-    delay: 2000,
-    onMarkRead: handleMarkRead,
+  // Use the mark as read hook - tracks read state locally and syncs with backend
+  const { showNewTag } = useMarkAsReadOnView(commentRef, {
+    entityId: Number(id),
+    entityType: depth === 0 ? 'comment' : 'reply',
+    hasUnreadFlag: hasUnread,
+    articleContext,
   });
 
   useEffect(() => {
@@ -212,11 +186,11 @@ const Comment: React.FC<CommentProps> = ({
       className={cn(
         'relative mb-4 flex space-x-0 rounded-xl border-common-minimal transition-colors duration-500',
         highlight && 'bg-yellow-100 dark:bg-yellow-900',
-        isUnreadInStore && !highlight && 'bg-functional-blue/5'
+        showNewTag && !highlight && 'bg-functional-blue/5'
       )}
     >
-      {/* NEW badge for unread comments */}
-      {isUnread && depth === 0 && (
+      {/* NEW badge for unread comments - shown optimistically until 2s after viewing */}
+      {showNewTag && depth === 0 && (
         <span className="absolute -left-1 -top-1 z-10 rounded bg-functional-blue px-1 text-[9px] font-semibold uppercase text-white">
           New
         </span>
@@ -399,6 +373,7 @@ const Comment: React.FC<CommentProps> = ({
               onUpdateComment={onUpdateComment}
               onDeleteComment={onDeleteComment}
               contentType={contentType}
+              articleContext={articleContext}
             />
           </div>
         )}

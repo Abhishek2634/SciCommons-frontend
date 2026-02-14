@@ -11,7 +11,7 @@ import { BlockSkeleton, Skeleton, TextSkeleton } from '@/components/common/Skele
 import { FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
-import { useUnreadNotificationsStore } from '@/stores/unreadNotificationsStore';
+import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
 
 interface SelectedArticle {
   id: number;
@@ -33,11 +33,7 @@ interface FlattenedArticle {
   communityId: number;
   communityName: string;
   isAdmin: boolean;
-}
-
-interface FlattenedArticleWithUnread extends FlattenedArticle {
-  unreadCount: number;
-  lastActivityAt: number;
+  hasUnreadEvent: boolean;
 }
 
 interface DiscussionsSidebarProps {
@@ -51,9 +47,10 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
 
-  // Get unread state from store
-  const articleUnreads = useUnreadNotificationsStore((state) => state.articleUnreads);
-  const getUnreadCount = useUnreadNotificationsStore((state) => state.getUnreadCount);
+  // Subscribe to articlesWithNewEvents directly to trigger re-renders when new events arrive
+  const articlesWithNewEvents = useSubscriptionUnreadStore((s) => s.articlesWithNewEvents);
+  const isArticleUnread = useSubscriptionUnreadStore((s) => s.isArticleUnread);
+  const markArticleAsRead = useSubscriptionUnreadStore((s) => s.markArticleAsRead);
 
   // Fetch user subscriptions
   const { data: subscriptionsData, isPending: subscriptionsLoading } =
@@ -69,45 +66,40 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
   const communities = subscriptionsData?.data?.communities || [];
 
   // Flatten the data: each article becomes its own item with community info
+  // Compute effective unread state using the store (handles optimistic updates and realtime events)
   const flattenedArticles = useMemo<FlattenedArticle[]>(() => {
     return communities.flatMap((community) =>
-      community.articles.map((article) => ({
-        articleId: article.article_id,
-        articleTitle: article.article_title,
-        articleSlug: article.article_slug,
-        articleAbstract: article.article_abstract || '',
-        communityArticleId: article.community_article_id || null,
-        communityId: community.community_id,
-        communityName: community.community_name,
-        isAdmin: community.is_admin || false,
-      }))
-    );
-  }, [communities]);
+      community.articles.map((article) => {
+        // Use the store to determine effective unread state
+        // This combines: API value, optimistic clears, and realtime events
+        const effectiveUnread = isArticleUnread(
+          community.community_id,
+          article.article_id,
+          article.has_unread_event || false
+        );
 
-  // Merge with unread state and sort by activity
-  const sortedArticles = useMemo<FlattenedArticleWithUnread[]>(() => {
-    return flattenedArticles
-      .map((article) => {
-        const key = `${article.communityId}-${article.articleId}`;
-        const unreadState = articleUnreads[key];
         return {
-          ...article,
-          unreadCount: getUnreadCount(article.communityId, article.articleId),
-          lastActivityAt: unreadState?.lastActivityAt || 0,
+          articleId: article.article_id,
+          articleTitle: article.article_title,
+          articleSlug: article.article_slug,
+          articleAbstract: article.article_abstract || '',
+          communityArticleId: article.community_article_id || null,
+          communityId: community.community_id,
+          communityName: community.community_name,
+          isAdmin: community.is_admin || false,
+          hasUnreadEvent: effectiveUnread,
         };
       })
-      .sort((a, b) => {
-        // Sort by lastActivityAt descending (most recent first)
-        // Articles with no activity go to the bottom
-        if (a.lastActivityAt === 0 && b.lastActivityAt === 0) return 0;
-        if (a.lastActivityAt === 0) return 1;
-        if (b.lastActivityAt === 0) return -1;
-        return b.lastActivityAt - a.lastActivityAt;
-      });
-  }, [flattenedArticles, articleUnreads, getUnreadCount]);
+    );
+    // articlesWithNewEvents is intentionally included to trigger re-render when new realtime events arrive
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [communities, isArticleUnread, articlesWithNewEvents]);
 
-  // Handle article selection - don't mark as read here, let individual items be marked as read via Intersection Observer
-  const handleArticleSelect = (article: FlattenedArticleWithUnread) => {
+  // Handle article selection - mark as read immediately when user clicks
+  const handleArticleSelect = (article: FlattenedArticle) => {
+    // Mark article as read when user clicks on it (assume user will read everything)
+    markArticleAsRead(article.communityId, article.articleId);
+
     onArticleSelect({
       id: article.articleId,
       title: article.articleTitle,
@@ -143,10 +135,10 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
         </div>
       )}
 
-      {/* Flattened Articles List - Sorted by activity */}
-      {!subscriptionsLoading && sortedArticles.length > 0 && (
+      {/* Flattened Articles List */}
+      {!subscriptionsLoading && flattenedArticles.length > 0 && (
         <div className="space-y-4">
-          {sortedArticles.map((article) => (
+          {flattenedArticles.map((article) => (
             <button
               key={`${article.communityId}-${article.articleId}`}
               onClick={() => handleArticleSelect(article)}
@@ -154,15 +146,18 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
                 'relative flex w-full flex-col gap-1 text-left transition-colors',
                 'before:absolute before:-inset-x-2 before:-inset-y-1.5 before:rounded-sm before:transition-colors',
                 'hover:before:bg-common-minimal/50',
+                // Selected article styling
                 selectedArticle?.id === article.articleId &&
-                  'before:border-functional-green/30 before:bg-functional-green/10 hover:before:bg-functional-green/10'
+                  'before:border-functional-green/30 before:bg-functional-green/10 hover:before:bg-functional-green/10',
+                // Unread article styling - dark background when has unread events
+                article.hasUnreadEvent &&
+                  selectedArticle?.id !== article.articleId &&
+                  'before:bg-common-contrast/80'
               )}
             >
-              {/* Unread count badge */}
-              {article.unreadCount > 0 && (
-                <span className="absolute -right-3 -top-4 z-20 flex aspect-square h-4 min-w-4 items-center justify-center rounded-full bg-functional-red px-0.5 text-[10px] font-normal text-white">
-                  {article.unreadCount > 99 ? '99+' : article.unreadCount}
-                </span>
+              {/* Unread indicator dot */}
+              {article.hasUnreadEvent && (
+                <span className="absolute -right-1 top-1 z-20 flex aspect-square h-1.5 items-center justify-center rounded-full bg-functional-red" />
               )}
               <div className="relative z-10 flex w-full flex-nowrap items-center">
                 <Link
@@ -181,7 +176,7 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
                 className={cn(
                   'relative z-10 line-clamp-2 text-xs font-medium text-text-secondary',
                   selectedArticle?.id === article.articleId && 'text-text-primary',
-                  article.unreadCount > 0 && 'font-semibold'
+                  article.hasUnreadEvent && 'font-semibold'
                 )}
               >
                 {article.articleTitle}
@@ -192,7 +187,7 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
       )}
 
       {/* Empty State */}
-      {!subscriptionsLoading && sortedArticles.length === 0 && (
+      {!subscriptionsLoading && flattenedArticles.length === 0 && (
         <div className="flex h-[calc(100vh-12rem)] flex-col items-center justify-center py-8 text-center">
           <Bell className="mb-4 h-16 w-16 text-text-tertiary" />
           <p className="text-lg font-semibold text-text-secondary">No subscriptions yet</p>
