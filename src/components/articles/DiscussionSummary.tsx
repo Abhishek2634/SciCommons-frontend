@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { ChevronDown, Edit2, Trash2 } from 'lucide-react';
@@ -10,12 +10,13 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import {
+  articlesDiscussionApiGetDiscussionSummary,
   getArticlesDiscussionApiGetDiscussionSummaryQueryKey,
   useArticlesDiscussionApiCreateDiscussionSummary,
   useArticlesDiscussionApiDeleteDiscussionSummary,
-  useArticlesDiscussionApiGetDiscussionSummary,
   useArticlesDiscussionApiUpdateDiscussionSummary,
 } from '@/api/discussions/discussions';
+import { DiscussionSummaryOut } from '@/api/schemas';
 import FormInput from '@/components/common/FormInput';
 import RenderParsedHTML from '@/components/common/RenderParsedHTML';
 import { Button, ButtonTitle } from '@/components/ui/button';
@@ -42,26 +43,39 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { data, isPending, error } = useArticlesDiscussionApiGetDiscussionSummary(
-    communityArticleId,
-    {
-      request: { headers: { Authorization: `Bearer ${accessToken}` } },
-      query: {
-        enabled: !!accessToken && !!communityArticleId,
-        staleTime: FIFTEEN_MINUTES_IN_MS,
-        refetchOnWindowFocus: false,
-        // Don't retry on 404 - it's expected when no summary exists
-        retry: (failureCount, error) => {
-          if (error?.response?.status === 404) return false;
-          return failureCount < 3;
-        },
-      },
-    }
-  );
+  // Use custom query that treats 404 as "no summary" (null) instead of error
+  // This allows the "no summary" state to be cached properly
+  const { data: summary, isPending } = useQuery<DiscussionSummaryOut | null>({
+    queryKey: getArticlesDiscussionApiGetDiscussionSummaryQueryKey(communityArticleId),
+    queryFn: async () => {
+      try {
+        const response = await articlesDiscussionApiGetDiscussionSummary(communityArticleId, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        return response.data;
+      } catch (error: unknown) {
+        // Treat 404 as "no summary exists" - return null as valid data
+        if (
+          error &&
+          typeof error === 'object' &&
+          'response' in error &&
+          (error as { response?: { status?: number } }).response?.status === 404
+        ) {
+          return null;
+        }
+        // Re-throw other errors
+        throw error;
+      }
+    },
+    enabled: !!accessToken && !!communityArticleId,
+    staleTime: FIFTEEN_MINUTES_IN_MS,
+    gcTime: FIFTEEN_MINUTES_IN_MS,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
 
-  const summary = data?.data;
   const hasSummary = !!summary?.content;
-  const isNotFoundError = error?.response?.status === 404;
 
   const {
     control,
@@ -158,20 +172,14 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
     }
   };
 
-  // Loading state - only show on initial load
-  const isInitialLoading = isPending && !error;
-  if (isInitialLoading) {
+  // Loading state
+  if (isPending) {
     return (
       <div className="mb-4 animate-pulse">
         <div className="mb-2 h-5 w-40 rounded bg-common-minimal" />
         <div className="h-16 rounded bg-common-minimal" />
       </div>
     );
-  }
-
-  // Error state (non-404) - silently fail
-  if (error && !isNotFoundError) {
-    return null;
   }
 
   // No summary and not admin - don't render anything at all

@@ -1,59 +1,125 @@
-import { RefObject, useEffect, useRef } from 'react';
+import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
 
-import { useUnreadNotificationsStore } from '@/stores/unreadNotificationsStore';
+import { useReadItemsStore } from '@/stores/readItemsStore';
+import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
+
+import { NEW_TAG_REMOVAL_DELAY_MS, getEntityType } from './useUnreadFlags';
 
 interface UseMarkAsReadOnViewOptions {
-  communityId: number;
-  articleId: number;
-  itemId: number;
-  type: 'discussion' | 'comment' | 'reply';
-  enabled: boolean;
-  delay?: number; // Default 2000ms
+  entityId: number;
+  entityType: 'discussion' | 'comment' | 'reply';
+  /** Whether the item has the unread flag from API */
+  hasUnreadFlag: boolean;
+  /** Article context for tracking which article this item belongs to */
+  articleContext?: {
+    communityId: number;
+    articleId: number;
+  };
+  /** Delay before starting the mark-as-read process (visibility threshold) */
+  visibilityDelay?: number;
+}
+
+interface UseMarkAsReadOnViewReturn {
+  /** Whether the NEW tag should be shown */
+  showNewTag: boolean;
 }
 
 /**
  * Hook that uses Intersection Observer to mark an item as read
  * after it has been visible in the viewport for a specified duration.
  *
+ * Flow:
+ * 1. Check if item is already marked as read in local storage
+ * 2. If unread (from API) and not in local read list, show NEW tag
+ * 3. When element becomes visible for `visibilityDelay` ms (default 2s):
+ *    - Mark as read in local storage (immediate)
+ *    - After NEW_TAG_REMOVAL_DELAY_MS (2s), hide the NEW tag
+ * 4. Backend sync happens every 2 minutes via the sync manager
+ *
  * @param ref - React ref to the DOM element to observe
- * @param options - Configuration options including item identifiers and delay
+ * @param options - Configuration options
+ * @returns Object with showNewTag state
  */
 export function useMarkAsReadOnView(
   ref: RefObject<HTMLElement | null>,
   options: UseMarkAsReadOnViewOptions
-): void {
-  const { communityId, articleId, itemId, type, enabled, delay = 2000 } = options;
-  const markItemRead = useUnreadNotificationsStore((s) => s.markItemRead);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasMarkedRef = useRef(false);
+): UseMarkAsReadOnViewReturn {
+  const { entityId, entityType, hasUnreadFlag, articleContext, visibilityDelay = 2000 } = options;
 
+  const markItemRead = useReadItemsStore((s) => s.markItemRead);
+  const isItemRead = useReadItemsStore((s) => s.isItemRead);
+  const clearNewEvent = useSubscriptionUnreadStore((s) => s.clearNewEvent);
+
+  // Check if item is already read locally
+  const apiEntityType = getEntityType(entityType);
+  const isAlreadyRead = isItemRead(entityId, apiEntityType);
+
+  // Item is unread if: has unread flag from API AND not marked as read locally
+  const isUnread = hasUnreadFlag && !isAlreadyRead;
+
+  // State for NEW tag visibility
+  const [showNewTag, setShowNewTag] = useState(isUnread);
+
+  const visibilityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tagRemovalTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasProcessedRef = useRef(false);
+
+  // Update showNewTag when isUnread changes
   useEffect(() => {
-    // Reset hasMarked when enabled changes to true (new unread item)
-    if (enabled) {
-      hasMarkedRef.current = false;
+    setShowNewTag(isUnread);
+    if (isUnread) {
+      hasProcessedRef.current = false;
     }
-  }, [enabled, itemId]);
+  }, [isUnread]);
+
+  // Cleanup timeouts
+  const clearTimeouts = useCallback(() => {
+    if (visibilityTimeoutRef.current) {
+      clearTimeout(visibilityTimeoutRef.current);
+      visibilityTimeoutRef.current = null;
+    }
+    if (tagRemovalTimeoutRef.current) {
+      clearTimeout(tagRemovalTimeoutRef.current);
+      tagRemovalTimeoutRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
-    if (!enabled || !ref.current || hasMarkedRef.current) return;
+    if (!isUnread || !ref.current || hasProcessedRef.current) return;
 
     const element = ref.current;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !hasMarkedRef.current) {
-          // Start timer when element becomes visible
-          timeoutRef.current = setTimeout(() => {
-            if (!hasMarkedRef.current) {
-              hasMarkedRef.current = true;
-              markItemRead(communityId, articleId, itemId, type);
+        if (entry.isIntersecting && !hasProcessedRef.current) {
+          // Start visibility timer when element becomes visible
+          visibilityTimeoutRef.current = setTimeout(() => {
+            if (!hasProcessedRef.current) {
+              hasProcessedRef.current = true;
+
+              // Mark as read in local storage (immediate)
+              if (articleContext) {
+                markItemRead(
+                  entityId,
+                  apiEntityType,
+                  articleContext.communityId,
+                  articleContext.articleId
+                );
+                // Also clear the new event flag for this article (for sidebar badge)
+                clearNewEvent(articleContext.communityId, articleContext.articleId);
+              }
+
+              // Start timer to hide NEW tag
+              tagRemovalTimeoutRef.current = setTimeout(() => {
+                setShowNewTag(false);
+              }, NEW_TAG_REMOVAL_DELAY_MS);
             }
-          }, delay);
+          }, visibilityDelay);
         } else {
-          // Clear timer if element leaves viewport before delay completes
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
+          // Clear visibility timer if element leaves viewport before delay completes
+          if (visibilityTimeoutRef.current) {
+            clearTimeout(visibilityTimeoutRef.current);
+            visibilityTimeoutRef.current = null;
           }
         }
       },
@@ -67,17 +133,33 @@ export function useMarkAsReadOnView(
 
     return () => {
       observer.disconnect();
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
+      clearTimeouts();
     };
-  }, [ref, communityId, articleId, itemId, type, enabled, delay, markItemRead]);
+  }, [
+    ref,
+    entityId,
+    apiEntityType,
+    isUnread,
+    visibilityDelay,
+    clearTimeouts,
+    articleContext,
+    markItemRead,
+    clearNewEvent,
+  ]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeouts();
+    };
+  }, [clearTimeouts]);
+
+  return { showNewTag };
 }
 
 /**
- * Simplified hook for marking items as read without needing article context.
- * Useful when the item context is not readily available (e.g., in Comment component).
+ * Simplified hook for cases where you just need to track visibility
+ * and trigger a callback, without the full flag management.
  */
 export function useMarkAsReadOnViewSimple(
   ref: RefObject<HTMLElement | null>,

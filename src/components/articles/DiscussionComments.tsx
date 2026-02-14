@@ -25,9 +25,17 @@ import InfiniteSpinnerAnimation from '../animations/InfiniteSpinnerAnimation';
 
 interface DiscussionCommentsProps {
   discussionId: number;
+  /** Article context for tracking read state */
+  articleContext?: {
+    communityId: number;
+    articleId: number;
+  };
 }
 
-const DiscussionComments: React.FC<DiscussionCommentsProps> = ({ discussionId }) => {
+const DiscussionComments: React.FC<DiscussionCommentsProps> = ({
+  discussionId,
+  articleContext,
+}) => {
   const accessToken = useAuthStore((state) => state.accessToken);
 
   const [maxDepth, setMaxDepth] = useState<number>(Infinity);
@@ -205,6 +213,7 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({ discussionId })
             onUpdateComment={updateComment}
             onDeleteComment={deleteCommentbyId}
             contentType={ContentTypeEnum.articlesdiscussioncomment}
+            articleContext={articleContext}
           />
         </div>
       )}
