@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { Bell } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -15,7 +14,6 @@ import { useEphemeralUnreadStore } from '../stores/ephemeralUnreadStore';
 import { startSyncTimer, stopSyncTimer } from '../stores/readItemsStore';
 import { useRealtimeContextStore } from '../stores/realtimeStore';
 import { useSubscriptionUnreadStore } from '../stores/subscriptionUnreadStore';
-import { isSoundOnDiscussionNotificationEnabled } from './useUserSettings';
 
 type RealtimeEventType =
   | 'new_discussion'
@@ -118,7 +116,6 @@ export function useRealtime() {
   const [status, setStatus] = useState<ConnectionStatus>('idle');
   const [isLeader, setIsLeader] = useState<boolean>(false);
   const leaderHeartbeatRef = useRef<number | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const queueIdRef = useRef<string | null>(null);
   const lastEventIdRef = useRef<number | null>(null);
@@ -214,34 +211,6 @@ export function useRealtime() {
     lastEventIdRef.current = l ? Number(l) : null;
   }, []);
 
-  // Prepare notification sound
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const audio = new Audio('/notification.mp3');
-      audio.preload = 'auto';
-      audio.volume = 0.75;
-      audioRef.current = audio;
-    } catch {
-      audioRef.current = null;
-    }
-  }, []);
-
-  const playNotification = useCallback(() => {
-    // Check if sound notifications are enabled in user settings
-    if (!isSoundOnDiscussionNotificationEnabled()) {
-      return;
-    }
-
-    const audio = audioRef.current;
-    if (!audio) return;
-    try {
-      audio.currentTime = 0;
-      void audio.play();
-    } catch {
-      // ignore autoplay restrictions
-    }
-  }, []);
 
   // Improved cache update functions
   const updateDiscussionsCache = useCallback(
@@ -649,12 +618,14 @@ export function useRealtime() {
 
           // Show notification and mark subscription as having new event
           if (event.type === 'new_discussion' && event.data.discussion) {
-            const username = event.data.discussion.user?.username || 'Unknown user';
-            const topic = event.data.discussion.topic || 'Untitled discussion';
-
             // Mark subscription as having new unread event (for sidebar)
             useSubscriptionUnreadStore.getState().markArticleHasNewEvent(communityId, articleId);
 
+            /* Fixed by Codex on 2026-02-15
+               Who: Codex
+               What: Remove realtime toast + sound for new discussions; keep the unread dot only.
+               Why: Users want silent indicators without popup or audio noise.
+               How: Skip toast.warning and notification audio for new_discussion events. */
             /* Fixed by Codex on 2026-02-15
                Who: Codex
                What: Track realtime-only NEW badges for discussions.
@@ -665,22 +636,6 @@ export function useRealtime() {
               ephemeralStore.markItemUnread('discussion', event.data.discussion.id);
               ephemeralStore.cleanupExpired();
             }
-
-            toast.warning(
-              <div className="flex items-start gap-3">
-                <Bell className="mt-0.5 h-4 w-4 flex-shrink-0 text-functional-yellow" />
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-bold text-functional-yellow">
-                    {username} added a new discussion
-                  </div>
-                  <div className="line-clamp-1 text-xs text-functional-yellow opacity-90">
-                    {topic}
-                  </div>
-                </div>
-              </div>,
-              { duration: 4000, position: 'top-right' }
-            );
-            playNotification();
           }
         }
 
@@ -704,12 +659,14 @@ export function useRealtime() {
 
           // Show notification and mark subscription as having new event
           if (event.type === 'new_comment' && event.data.comment) {
-            const username = event.data.comment.author?.username || 'Unknown user';
-            const content = event.data.comment.content || 'No content';
-
             // Mark subscription as having new unread event (for sidebar)
             useSubscriptionUnreadStore.getState().markArticleHasNewEvent(communityId, articleId);
 
+            /* Fixed by Codex on 2026-02-15
+               Who: Codex
+               What: Remove realtime toast + sound for new comments; keep the unread dot only.
+               Why: Users want silent indicators without popup or audio noise.
+               How: Skip toast.warning and notification audio for new_comment events. */
             /* Fixed by Codex on 2026-02-15
                Who: Codex
                What: Track realtime-only NEW badges for comments and replies.
@@ -721,22 +678,6 @@ export function useRealtime() {
               ephemeralStore.markItemUnread(commentType, event.data.comment.id);
               ephemeralStore.cleanupExpired();
             }
-
-            toast.warning(
-              <div className="flex items-start gap-3">
-                <Bell className="mt-0.5 h-4 w-4 flex-shrink-0 text-functional-yellow" />
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-bold text-functional-yellow">
-                    {username} added a new comment
-                  </div>
-                  <div className="line-clamp-1 text-xs text-functional-yellow opacity-90">
-                    {content}
-                  </div>
-                </div>
-              </div>,
-              { duration: 4000, position: 'top-right' }
-            );
-            playNotification();
           }
         }
 
@@ -753,7 +694,6 @@ export function useRealtime() {
       isContextFresh,
       updateDiscussionsCache,
       updateCommentsCache,
-      playNotification,
     ]
   );
 

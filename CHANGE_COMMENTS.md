@@ -21,6 +21,22 @@ the related documentation/comments to reflect removal 1 second after viewing.
 **Files Modified:** `src/hooks/useUnreadFlags.ts`, `src/hooks/useMarkAsReadOnView.ts`,
 `src/components/articles/DiscussionCard.tsx`, `src/components/common/Comment.tsx`
 
+**Realtime Toasts/Sounds Disabled (2026-02-15)**
+
+**Problem:** Users wanted the unread dot for new discussions/comments without yellow toast popups
+or notification sounds.
+
+**Root Cause:** Realtime event handling always invoked `toast.warning(...)` and `playNotification()`
+for `new_discussion` and `new_comment` events.
+
+**Solution:** Removed the toast + sound behavior while keeping the unread dot (`markArticleHasNewEvent`)
+and ephemeral NEW badge tracking.
+
+**Result:** Realtime updates remain visible via the dot and NEW badges, but no longer produce popups
+or audio.
+
+**Files Modified:** `src/hooks/useRealtime.tsx`
+
 **Realtime Bootstrapper Restored (2026-02-15)**
 
 **Problem:** Discussions unread dots, realtime toasts, and read-flag syncing stopped working after the
