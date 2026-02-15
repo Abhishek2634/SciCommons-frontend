@@ -90,7 +90,11 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
       request: { headers: { Authorization: `Bearer ${accessToken}` } },
       mutation: {
         onSuccess: (response) => {
-          toast.success('Successfully subscribed to discussions');
+          /* Fixed by Codex on 2026-02-15
+             Problem: Subscribe success toast duplicated the button's state change feedback.
+             Solution: Commented out the subscribe success toast to reduce redundant UI noise.
+             Result: The button label/state change now serves as the confirmation. */
+          // toast.success('Successfully subscribed to discussions');
 
           // Update cached subscription status immediately for better UX (no refetch)
           const params = {

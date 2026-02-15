@@ -5,6 +5,20 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Discussion Subscribe Toast Removed (2026-02-15)**
+
+**Problem:** Subscribing to discussions showed a success toast even though the subscribe button
+immediately switched to “Unsubscribe,” making the toast feel redundant.
+
+**Root Cause:** The subscribe mutation always fired `toast.success(...)` on success.
+
+**Solution:** Commented out the subscribe success toast, relying on the button label/state change
+as the confirmation.
+
+**Result:** Subscribing feels less noisy while still providing clear feedback via the button state.
+
+**Files Modified:** `src/components/articles/DiscussionForum.tsx`
+
 **NEW Badge Immediate Removal (2026-02-15)**
 
 **Problem:** NEW badges lingered for two extra seconds after the user had already viewed a discussion
