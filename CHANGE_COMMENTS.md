@@ -5,6 +5,18 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Realtime Reconnect Sync Toast Disabled (2026-02-15)**
+
+**Problem:** The “Syncing latest discussions…” toast on initial login and the “Reconnected. Syncing latest discussions…” toast after reconnects felt noisy.
+
+**Root Cause:** The realtime catch-up flow always surfaced `toast.info(...)` after successful initial registration and re-registration.
+
+**Solution:** Commented out both sync toasts while keeping cache invalidation intact so discussions still refresh.
+
+**Result:** Initial logins and reconnects refresh data silently without pop-up notifications.
+
+**Files Modified:** `src/hooks/useRealtime.tsx`
+
 **Articles Sidebar Subscribe Button (2026-02-15)**
 
 **Problem:** The subscribe/unsubscribe button was missing in the Articles page right-panel discussions tab.

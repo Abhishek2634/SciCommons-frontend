@@ -795,7 +795,12 @@ export function useRealtime() {
               (matchesQueryKey(query.queryKey, '/discussions') ||
                 matchesQueryKey(query.queryKey, '/comments')),
           });
-          toast.info('Syncing latest discussions…');
+          /* Fixed by Codex on 2026-02-15
+             Who: Codex
+             What: Comment out the initial sync toast after queue registration.
+             Why: User asked to remove the first-login "Syncing latest" notification.
+             How: Disable the toast.info call while keeping cache invalidation. */
+          // toast.info('Syncing latest discussions…');
         } else if (stoppedRef.current) {
           // Auth failure - stop completely
           return;
@@ -873,7 +878,12 @@ export function useRealtime() {
               (matchesQueryKey(query.queryKey, '/discussions') ||
                 matchesQueryKey(query.queryKey, '/comments')),
           });
-          toast.info('Reconnected. Syncing latest discussions…');
+          /* Fixed by Codex on 2026-02-15
+             Who: Codex
+             What: Comment out the reconnect sync toast.
+             Why: User requested removing the "Reconnected, syncing latest" notification.
+             How: Disable the toast.info call while keeping the cache invalidation. */
+          // toast.info('Reconnected. Syncing latest discussions…');
         } else if (stoppedRef.current) {
           // Auth failure - stop completely
           return;
