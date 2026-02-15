@@ -227,6 +227,21 @@ for reuse.
 
 **Files Modified:** `src/app/(home)/page.tsx`
 
+**Homepage Primary CTA Update (2026-02-15)**
+
+**Problem:** The homepage still showed two hero CTAs and the secondary button styling made the primary
+action less clear after copy and layout changes.
+
+**Root Cause:** The hero markup retained the original two-button layout with the “Visit Communities”
+button styled as an outline.
+
+**Solution:** Commented out the “Explore Articles” CTA and promoted “Visit Communities” to the primary
+gradient style so a single centered action remains.
+
+**Result:** The hero now presents one prominent CTA with clear visual emphasis.
+
+**Files Modified:** `src/app/(home)/page.tsx`
+
 **Accessibility Audit Fixes (2026-02-15)**
 
 **Problem:** Multiple controls were mouse-only or icon-only (review toggles, tooltip icons, ratings,

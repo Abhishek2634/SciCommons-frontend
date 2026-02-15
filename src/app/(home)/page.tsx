@@ -47,13 +47,20 @@ const Home = () => {
             className="fade-up mt-4 max-w-2xl text-sm text-text-secondary sm:text-base"
             style={{ animationDelay: '200ms' }}
           >
-            Community-driven peer review, transparent metrics, and open access research in one
-            modern workspace.
+            Community-driven scientific discussion.
+            <br />
+            Personalized scientific feeds coming soon.
           </p>
           <div
             className="fade-up mt-8 flex flex-wrap items-center justify-center gap-4"
             style={{ animationDelay: '260ms' }}
           >
+            {/* Fixed by Codex on 2026-02-15
+                Who: Codex
+                What: Hide the Explore Articles CTA and promote Visit Communities to the primary style.
+                Why: The homepage should feature a single centered primary action.
+                How: Commented out the Explore Articles link and applied the primary gradient styling to the remaining button. */}
+            {/*
             <Link href="/articles">
               <Button
                 variant={'default'}
@@ -64,10 +71,11 @@ const Home = () => {
                 </ButtonTitle>
               </Button>
             </Link>
+            */}
             <Link href="/communities">
               <Button
-                variant={'outline'}
-                className="w-44 rounded-full border-common-contrast/60 text-text-primary hover:bg-common-minimal/40"
+                variant={'default'}
+                className="w-44 rounded-full bg-gradient-to-r from-functional-green to-functional-blue shadow-lg shadow-functional-green/20 hover:shadow-functional-green/30"
               >
                 <ButtonTitle className="text-xs font-semibold tracking-wide">
                   Visit Communities
