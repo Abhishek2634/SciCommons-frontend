@@ -33,6 +33,21 @@ inside the shared `Input` component.
 
 **Files Modified:** `src/components/ui/input.tsx`
 
+**Search Input Background Alignment (2026-02-15)**
+
+**Problem:** Search bars showed a dark background in light mode and a light background in dark mode, making
+the input feel inverted and hiding typed text.
+
+**Root Cause:** The shared `Input` component used `bg-common-invert`, which intentionally flips surfaces
+between themes.
+
+**Solution:** Switched the base input background to `bg-common-cardBackground` while keeping the shared
+text/caret colors.
+
+**Result:** Search inputs now render with theme-appropriate backgrounds and readable text in both modes.
+
+**Files Modified:** `src/components/ui/input.tsx`
+
 **NavBar JSX Syntax Fix (2026-02-15)**
 
 **Problem:** The navigation bar failed to compile with a syntax error at the start of the JSX return.
