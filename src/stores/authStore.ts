@@ -3,8 +3,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { clearRegisteredQueryCache } from '@/api/queryClientRegistry';
-
-import { useUnreadNotificationsStore } from './unreadNotificationsStore';
+import { useReadItemsStore } from './readItemsStore';
+import { useSubscriptionUnreadStore } from './subscriptionUnreadStore';
 import { useUserSettingsStore } from './userSettingsStore';
 
 // NOTE(bsureshkrishna, 2026-02-07): Auth bootstrap was hardened vs baseline 5271498.
@@ -194,13 +194,13 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         clearCookies();
         clearRegisteredQueryCache();
-        useUnreadNotificationsStore.getState().clearAll();
-        // NOTE(Codex for bsureshkrishna, 2026-02-09): Clear persisted settings
-        // to avoid showing a prior user's preferences after logout.
+        // Clear Armaan's flag-based unread stores on logout
+        useReadItemsStore.getState().reset();
+        useSubscriptionUnreadStore.getState().reset();
+        // Clear persisted settings to avoid showing a prior user's preferences after logout
         useUserSettingsStore.getState().clearSettings();
 
-        // Fixed by Claude Sonnet 4.5 on 2026-02-08
-        // Issue 3: Clear server validation timestamp on logout
+        // Clear server validation timestamp on logout
         lastServerValidation = null;
 
         set(() => ({

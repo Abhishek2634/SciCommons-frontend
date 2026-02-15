@@ -36,7 +36,7 @@ import { useTabTitleNotification } from '@/hooks/useTabTitleNotification';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
-import { useUnreadNotificationsStore } from '@/stores/unreadNotificationsStore';
+import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
 
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
@@ -46,8 +46,8 @@ const NavBar: React.FC = () => {
   const user = useStore(useAuthStore, (state) => state.user);
   const pathname = usePathname();
 
-  // Get total unread count for discussions badge
-  const totalUnread = useUnreadNotificationsStore((state) => state.getTotalUnreadCount());
+  // Get count of articles with new realtime events for discussions badge
+  const newEventsCount = useSubscriptionUnreadStore((state) => state.getNewEventsCount());
 
   // Update tab title with unread count
   useTabTitleNotification();
@@ -123,13 +123,11 @@ const NavBar: React.FC = () => {
                 )}
               >
                 <Link href={link.href}>{link.label}</Link>
-                {/* Unread badge for Discussions */}
+                {/* Unread indicator dot for Discussions */}
                 {link.href === '/discussions' &&
-                  totalUnread > 0 &&
+                  newEventsCount > 0 &&
                   !pathname?.startsWith('/discussion') && (
-                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-functional-red px-1 text-[9px] font-bold text-white">
-                      {totalUnread > 99 ? '99+' : totalUnread}
-                    </span>
+                    <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-functional-red" />
                   )}
               </li>
             );

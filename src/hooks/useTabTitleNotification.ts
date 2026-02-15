@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
-import { useUnreadNotificationsStore } from '@/stores/unreadNotificationsStore';
+import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
 
 /**
  * Hook that updates the browser tab title to show unread notification count.
@@ -11,7 +11,7 @@ import { useUnreadNotificationsStore } from '@/stores/unreadNotificationsStore';
  * Should be used once at the app root level (e.g., in a layout or provider).
  */
 export function useTabTitleNotification(): void {
-  const totalUnread = useUnreadNotificationsStore((s) => s.getTotalUnreadCount());
+  const newEventsCount = useSubscriptionUnreadStore((s) => s.getNewEventsCount());
   const originalTitleRef = useRef<string>('');
   const isInitializedRef = useRef(false);
 
@@ -26,8 +26,8 @@ export function useTabTitleNotification(): void {
     }
 
     // Update title based on unread count
-    if (totalUnread > 0) {
-      const countDisplay = totalUnread > 99 ? '99+' : totalUnread;
+    if (newEventsCount > 0) {
+      const countDisplay = newEventsCount > 99 ? '99+' : newEventsCount;
       document.title = `(${countDisplay}) ${originalTitleRef.current}`;
     } else {
       document.title = originalTitleRef.current;
@@ -39,7 +39,7 @@ export function useTabTitleNotification(): void {
         document.title = originalTitleRef.current;
       }
     };
-  }, [totalUnread]);
+  }, [newEventsCount]);
 }
 
 /**
@@ -47,8 +47,8 @@ export function useTabTitleNotification(): void {
  * This provides additional visual feedback for background tabs.
  */
 export function useTabTitleFlash(): void {
-  const totalUnread = useUnreadNotificationsStore((s) => s.getTotalUnreadCount());
-  const prevUnreadRef = useRef(totalUnread);
+  const newEventsCount = useSubscriptionUnreadStore((s) => s.getNewEventsCount());
+  const prevUnreadRef = useRef(newEventsCount);
   const flashIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const originalTitleRef = useRef<string>('');
 
@@ -77,10 +77,10 @@ export function useTabTitleFlash(): void {
     if (typeof document === 'undefined') return;
 
     // Check if new unreads arrived while tab is hidden
-    const hasNewUnreads = totalUnread > prevUnreadRef.current;
-    prevUnreadRef.current = totalUnread;
+    const hasNewUnreads = newEventsCount > prevUnreadRef.current;
+    prevUnreadRef.current = newEventsCount;
 
-    if (hasNewUnreads && document.hidden && totalUnread > 0) {
+    if (hasNewUnreads && document.hidden && newEventsCount > 0) {
       // Store current title for flashing
       originalTitleRef.current = document.title;
 
@@ -107,5 +107,5 @@ export function useTabTitleFlash(): void {
         }
       }, 1000);
     }
-  }, [totalUnread]);
+  }, [newEventsCount]);
 }

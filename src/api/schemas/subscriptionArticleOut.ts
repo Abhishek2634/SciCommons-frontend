@@ -11,4 +11,5 @@ export interface SubscriptionArticleOut {
   article_slug: string;
   article_title: string;
   community_article_id: number;
+  has_unread_event?: boolean;
 }
