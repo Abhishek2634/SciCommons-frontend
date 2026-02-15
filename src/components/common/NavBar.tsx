@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
@@ -317,19 +317,34 @@ const ThemeSwitch = ({
   showTitle?: boolean;
   iconSize?: number;
 }) => {
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme ,setTheme } = useTheme();
+  const [isMounted, setIsMounted] = useState(false);
+
+
+  useEffect(() => {
+    setIsMounted(true);
+  },[]);
+
+
+  if (!isMounted) {
+    return null;
+  }
+
+  const currentTheme = resolvedTheme || theme;
+ 
+
 
   return (
     <div
       className="flex cursor-pointer items-center space-x-2"
-      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+      onClick={() => setTheme(currentTheme === 'light' ? 'dark' : 'light')}
     >
-      {theme === 'light' ? (
+      {currentTheme === 'light' ? (
         <MoonIcon size={iconSize} className="mr-2" />
       ) : (
         <SunMediumIcon size={iconSize} className="mr-2" />
       )}
-      {showTitle && <>{theme === 'light' ? 'Dark' : 'Light'} Mode</>}
+      {showTitle && <>{currentTheme === 'light' ? 'Dark' : 'Light'} Mode</>}
     </div>
   );
 };
