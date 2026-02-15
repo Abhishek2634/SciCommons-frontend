@@ -227,8 +227,12 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
                 <span className="absolute -right-1 top-1 z-20 flex aspect-square h-1.5 items-center justify-center rounded-full bg-functional-red" />
               )}
               <div className="relative z-10 flex w-full flex-nowrap items-center">
+                {/* Fixed by Codex on 2026-02-15
+                   Problem: Community names with spaces or symbols broke sidebar links.
+                   Solution: Encode the community name in the href.
+                   Result: Sidebar community links navigate reliably. */}
                 <Link
-                  href={`/community/${article.communityName}`}
+                  href={`/community/${encodeURIComponent(article.communityName)}`}
                   className={cn(
                     'line-clamp-1 truncate text-[9px] font-semibold text-text-tertiary hover:text-functional-blueLight hover:underline',
                     selectedArticle?.id === article.articleId && 'text-text-secondary'

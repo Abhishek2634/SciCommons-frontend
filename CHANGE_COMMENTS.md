@@ -26,6 +26,7 @@ reliably marks it as read without ESLint dependency warnings. Follow-up memoizat
 react-hooks dependency warning in the discussions sidebar.
 Follow-up updates also enabled the discussion subscribe/unsubscribe control in panel and
 discussions views when community context is available.
+Sidebar links now encode community names to handle spaces and special characters reliably.
 
 **Files Modified:** `src/app/(main)/discussions/DiscussionsSidebar.tsx`,
 `src/components/articles/DiscussionCard.tsx`
