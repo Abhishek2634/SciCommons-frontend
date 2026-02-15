@@ -7,15 +7,15 @@ code now does, not a commit-by-commit history.
 
 **Abstract Newline Preservation via Wrapper (2026-02-15)**
 
-**Problem:** Line breaks entered in article abstracts were collapsed when displayed.
+**Problem:** Line breaks and consecutive blank lines entered in article abstracts were collapsed when displayed.
 
-**Root Cause:** Abstracts were rendered with default white-space handling, which collapses newlines.
+**Root Cause:** Abstracts were rendered with default white-space handling that collapses consecutive newlines.
 
 **Solution:** Introduced an `AbstractText` wrapper around `RenderParsedHTML` that applies
-`whitespace-pre-line` and standardizes abstract rendering flags. Updated abstract call sites
-to use the wrapper.
+`whitespace-pre-wrap` and standardizes abstract rendering flags. Updated abstract call sites
+to use the wrapper and preserve multiple blank lines.
 
-**Result:** Abstracts now preserve author-entered line breaks across list cards, drawer previews,
+**Result:** Abstracts now preserve author-entered line breaks and blank lines across list cards, drawer previews,
 sidebar previews, and the article detail view, with a single shared abstraction.
 
 **Files Modified:** `src/components/articles/AbstractText.tsx`,

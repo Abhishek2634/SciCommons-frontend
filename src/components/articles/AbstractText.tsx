@@ -8,7 +8,7 @@ import RenderParsedHTML from '../common/RenderParsedHTML';
    Who: Codex
    What: Added AbstractText wrapper for consistent abstract rendering.
    Why: Preserve author line breaks without repeating RenderParsedHTML flags everywhere.
-   How: Wrap RenderParsedHTML with fixed flags and whitespace-pre-line, allow class overrides. */
+   How: Wrap RenderParsedHTML with fixed flags and whitespace-pre-wrap, allow class overrides. */
 interface AbstractTextProps {
   text: string;
   className?: string;
@@ -32,7 +32,12 @@ const AbstractText: React.FC<AbstractTextProps> = ({
       isShrinked={isShrinked}
       gradientClassName={gradientClassName}
       containerClassName={containerClassName}
-      contentClassName={cn('whitespace-pre-line', className)}
+      /* Fixed by Codex on 2026-02-15
+         Who: Codex
+         What: Preserve consecutive blank lines in abstracts.
+         Why: Authors enter empty lines in the editor that were collapsing in display.
+         How: Switch to whitespace-pre-wrap so multiple newlines survive rendering. */
+      contentClassName={cn('whitespace-pre-wrap', className)}
     />
   );
 };
