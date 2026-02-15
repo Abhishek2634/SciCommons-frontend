@@ -5,6 +5,19 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**NavBar JSX Syntax Fix (2026-02-15)**
+
+**Problem:** The navigation bar failed to compile with a syntax error at the start of the JSX return.
+
+**Root Cause:** A JSX comment was placed before the `<header>` without wrapping the return value in a fragment,
+so the return contained multiple top-level JSX nodes.
+
+**Solution:** Moved the explanatory comment to a standard block comment just above the `return` statement.
+
+**Result:** The component returns a single JSX element and the syntax error is resolved.
+
+**Files Modified:** `src/components/common/NavBar.tsx`
+
 **Modern Visual Refresh (2026-02-15)**
 
 **Problem:** The site’s look felt staid and overly white/green, with generic typography and flat depth.

@@ -165,7 +165,11 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
             handleArticleSelect(article);
           }
         }}
-        className={viewType === 'preview' ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/50' : undefined}
+        className={
+          viewType === 'preview'
+            ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/50'
+            : undefined
+        }
       >
         <ArticleCard
           article={article}

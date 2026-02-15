@@ -11,7 +11,7 @@ interface CustomTooltipProps {
 const CustomTooltip = ({ info }: CustomTooltipProps) => {
   return (
     <TooltipProvider delayDuration={10}>
-        <Tooltip>
+      <Tooltip>
         <TooltipTrigger asChild>
           {/* Fixed by Codex on 2026-02-15
               Who: Codex

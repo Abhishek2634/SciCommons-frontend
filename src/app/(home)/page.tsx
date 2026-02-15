@@ -17,10 +17,10 @@ const Home = () => {
           Why: The previous hero was flat and overly white/green.
           How: Added ambient background layers, staggered fades, and modern highlight cards. */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 hero-ambient" />
-        <div className="pointer-events-none absolute -left-12 top-24 hidden hero-orb teal float-soft md:block" />
+        <div className="hero-ambient absolute inset-0" />
+        <div className="hero-orb teal float-soft pointer-events-none absolute -left-12 top-24 hidden md:block" />
         <div
-          className="pointer-events-none absolute -right-20 -top-10 hidden hero-orb blue float-soft md:block"
+          className="hero-orb blue float-soft pointer-events-none absolute -right-20 -top-10 hidden md:block"
           style={{ animationDelay: '2s' }}
         />
         <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center px-6 pb-16 pt-20 text-center sm:px-10 sm:pt-24">
@@ -40,8 +40,8 @@ const Home = () => {
             className="fade-up mt-4 max-w-2xl text-sm text-text-secondary sm:text-base"
             style={{ animationDelay: '200ms' }}
           >
-            Community-driven peer review, transparent metrics, and open access research in one modern
-            workspace.
+            Community-driven peer review, transparent metrics, and open access research in one
+            modern workspace.
           </p>
           <div
             className="fade-up mt-8 flex flex-wrap items-center justify-center gap-4"
@@ -161,7 +161,9 @@ const Home = () => {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-tertiary">
                 Discover
               </p>
-              <h2 className="mt-3 text-lg font-semibold text-text-primary">Browse fresh reviews.</h2>
+              <h2 className="mt-3 text-lg font-semibold text-text-primary">
+                Browse fresh reviews.
+              </h2>
               <p className="mt-2 text-sm text-text-secondary">
                 Explore peer feedback, highlights, and new submissions in one view.
               </p>
@@ -170,7 +172,9 @@ const Home = () => {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-tertiary">
                 Collaborate
               </p>
-              <h2 className="mt-3 text-lg font-semibold text-text-primary">Join focused communities.</h2>
+              <h2 className="mt-3 text-lg font-semibold text-text-primary">
+                Join focused communities.
+              </h2>
               <p className="mt-2 text-sm text-text-secondary">
                 Follow topic-driven journals and contribute to shared review standards.
               </p>
@@ -179,7 +183,9 @@ const Home = () => {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-tertiary">
                 Contribute
               </p>
-              <h2 className="mt-3 text-lg font-semibold text-text-primary">Publish with confidence.</h2>
+              <h2 className="mt-3 text-lg font-semibold text-text-primary">
+                Publish with confidence.
+              </h2>
               <p className="mt-2 text-sm text-text-secondary">
                 Submit preprints and connect with reviewers who care about rigor.
               </p>

@@ -77,12 +77,12 @@ const NavBar: React.FC = () => {
     // { href: '/about', label: 'About' },
   ];
 
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Modernize the navbar treatment with a lighter glass finish.
+     Why: The heavier green emphasis pulled focus away from content.
+     How: Shifted to cooler neutrals, softer borders, and subtle hover fills. */
   return (
-    {/* Fixed by Codex on 2026-02-15
-        Who: Codex
-        What: Modernize the navbar treatment with a lighter glass finish.
-        Why: The heavier green emphasis pulled focus away from content.
-        How: Shifted to cooler neutrals, softer borders, and subtle hover fills. */}
     <header className="sticky top-0 z-[1000] w-full border-b border-common-contrast/40 bg-common-background/70 text-text-primary backdrop-blur-md">
       <nav className="container mx-auto flex items-center justify-between px-4 py-2">
         <div className="flex items-center">
@@ -135,7 +135,7 @@ const NavBar: React.FC = () => {
                      How: Added a contrast border and underline indicator for active states. */
                   'relative rounded-full border border-transparent px-3 py-1 text-sm text-text-primary transition hover:bg-functional-green/10',
                   {
-                    'bg-functional-green/10 font-semibold text-functional-green border-common-contrast/60 shadow-sm after:absolute after:-bottom-1 after:left-1/2 after:h-[2px] after:w-5 after:-translate-x-1/2 after:rounded-full after:bg-current':
+                    'border-common-contrast/60 bg-functional-green/10 font-semibold text-functional-green shadow-sm after:absolute after:-bottom-1 after:left-1/2 after:h-[2px] after:w-5 after:-translate-x-1/2 after:rounded-full after:bg-current':
                       isActive,
                     'font-bold': link.bold && !isActive,
                   }
