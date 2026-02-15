@@ -227,15 +227,17 @@ and expose state changes consistently across article, discussion, review, and co
 **Abstract Newline Preservation via Wrapper (2026-02-15)**
 
 **Problem:** Line breaks and consecutive blank lines entered in article abstracts were collapsed when displayed.
+Follow-up: Hard-wrapped imports (single newlines every ~80 chars) rendered as narrow columns instead of reflowing.
 
 **Root Cause:** Abstracts were rendered with default white-space handling that collapses consecutive newlines.
+Follow-up: `whitespace-pre-wrap` preserved every single newline from imported abstracts, preventing reflow.
 
-**Solution:** Introduced an `AbstractText` wrapper around `RenderParsedHTML` that applies
-`whitespace-pre-wrap` and standardizes abstract rendering flags. Updated abstract call sites
-to use the wrapper and preserve multiple blank lines.
+**Solution:** Introduced an `AbstractText` wrapper around `RenderParsedHTML` that standardizes abstract rendering
+flags and preserves blank lines. Follow-up: normalize abstract text to replace single newlines with spaces while
+preserving consecutive blank lines, and render with `whitespace-pre-line` so paragraphs remain intact.
 
-**Result:** Abstracts now preserve author-entered line breaks and blank lines across list cards, drawer previews,
-sidebar previews, and the article detail view, with a single shared abstraction.
+**Result:** Abstracts preserve author-entered paragraph breaks across list cards, drawer previews, sidebar previews,
+and the article detail view, while reflowing to window width instead of displaying as hard-wrapped columns.
 
 **Files Modified:** `src/components/articles/AbstractText.tsx`,
 `src/components/articles/ArticleCard.tsx`,

@@ -32,10 +32,8 @@ const EmptyState = ({
           ) : (
             logo
           )
-        ) : (
-          // <AlertCircle className="h-16 w-16 text-text-tertiary" />
-          null
-        )}
+        ) : // <AlertCircle className="h-16 w-16 text-text-tertiary" />
+        null}
       </div>
       <p className="text-center text-xl font-semibold text-text-tertiary">{content}</p>
       {subcontent && (
