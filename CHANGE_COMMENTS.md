@@ -5,6 +5,20 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Search Input Text Contrast Fix (2026-02-15)**
+
+**Problem:** Search inputs appeared with dark fill while typed text stayed dark, making input text invisible.
+
+**Root Cause:** The base `Input` component did not enforce a shared text/caret color, so inputs inherited
+contextual text colors that were too dark for the inverted background.
+
+**Solution:** Set the default input text and caret colors to `text-text-primary` and `caret-text-primary`
+inside the shared `Input` component.
+
+**Result:** Search text is readable across screens and themes while keeping the same background styling.
+
+**Files Modified:** `src/components/ui/input.tsx`
+
 **NavBar JSX Syntax Fix (2026-02-15)**
 
 **Problem:** The navigation bar failed to compile with a syntax error at the start of the JSX return.
