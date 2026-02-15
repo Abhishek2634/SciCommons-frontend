@@ -115,6 +115,16 @@ const DiscussionsPageClientInner: React.FC = () => {
     }
   };
 
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Default the discussions view to the Discussions tab and reset per article.
+     Why: Clicking a sidebar discussion should open its discussions, not reviews.
+     How: Provide defaultTab and a reset key tied to the selected article. */
+  const discussionTabDefaults = {
+    defaultTab: 'discussions' as const,
+    tabResetKey: selectedArticle?.id,
+  };
+
   // Mobile Layout
   if (isMobile) {
     return (
@@ -158,6 +168,7 @@ const DiscussionsPageClientInner: React.FC = () => {
                 isAdmin={selectedArticle.isAdmin}
                 showPdfViewerButton={true}
                 handleOpenPdfViewer={handleOpenPdfViewer}
+                {...discussionTabDefaults}
               />
             </div>
           ) : (
@@ -207,6 +218,7 @@ const DiscussionsPageClientInner: React.FC = () => {
                   isAdmin={selectedArticle.isAdmin}
                   showPdfViewerButton={true}
                   handleOpenPdfViewer={handleOpenPdfViewer}
+                  {...discussionTabDefaults}
                 />
               </div>
             ) : (

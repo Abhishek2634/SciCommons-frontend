@@ -12,15 +12,35 @@ interface TabNavigationProps {
   // Performance: Enable lazy loading by default to avoid rendering inactive tabs
   // Set to false if you need all tabs to render immediately (e.g., for SEO)
   lazyLoad?: boolean;
+  initialActiveTab?: number;
+  resetKey?: string | number;
 }
 
-const TabNavigation: React.FC<TabNavigationProps> = ({ tabs, lazyLoad = true }) => {
-  const [activeTab, setActiveTab] = useState(0);
+const TabNavigation: React.FC<TabNavigationProps> = ({
+  tabs,
+  lazyLoad = true,
+  initialActiveTab = 0,
+  resetKey,
+}) => {
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Allow an initial active tab and a reset trigger for tab state.
+     Why: Some parents (e.g., discussions view) must open on a non-default tab.
+     How: Clamp the initial index and reinitialize active/loading state when resetKey changes. */
+  const safeInitialTab = Math.min(Math.max(initialActiveTab, 0), Math.max(tabs.length - 1, 0));
+  const [activeTab, setActiveTab] = useState(safeInitialTab);
   const [underlineStyle, setUnderlineStyle] = useState({ width: '0px', left: '0px' });
   // Performance: Track which tabs have been visited to preserve their state
   // First tab (index 0) is loaded by default
-  const [loadedTabs, setLoadedTabs] = useState<Set<number>>(new Set([0]));
+  const [loadedTabs, setLoadedTabs] = useState<Set<number>>(new Set([safeInitialTab]));
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  useEffect(() => {
+    setActiveTab(safeInitialTab);
+    if (lazyLoad) {
+      setLoadedTabs(new Set([safeInitialTab]));
+    }
+  }, [lazyLoad, resetKey, safeInitialTab]);
 
   // Update the underline position when active tab changes
   useEffect(() => {

@@ -27,6 +27,8 @@ interface ArticleContentViewProps {
   handleOpenPdfViewer?: () => void;
   onReviewFormToggle?: (show: boolean) => void;
   submitReviewExternal?: boolean;
+  defaultTab?: 'reviews' | 'discussions';
+  tabResetKey?: string | number;
 }
 
 /**
@@ -42,6 +44,8 @@ interface ArticleContentViewProps {
  * @param handleOpenPdfViewer - Handler for opening PDF viewer
  * @param onReviewFormToggle - Callback when review form is toggled (for parent state management)
  * @param submitReviewExternal - External control for showing review form
+ * @param defaultTab - Optional default tab selection ("reviews" or "discussions")
+ * @param tabResetKey - Optional key to reset tab state when the parent selection changes
  */
 const ArticleContentView: React.FC<ArticleContentViewProps> = ({
   articleSlug,
@@ -54,6 +58,8 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
   handleOpenPdfViewer,
   onReviewFormToggle,
   submitReviewExternal,
+  defaultTab = 'reviews',
+  tabResetKey,
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
 
@@ -129,6 +135,12 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
     communityId ?? articleData?.data?.community_article?.community?.id ?? null;
 
   const shouldShowSubscribeButton = !!resolvedCommunityArticleId && !!resolvedCommunityId;
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Support a default tab override for article content views.
+     Why: Discussions page should open with the Discussions tab selected by default.
+     How: Convert the defaultTab name into a stable tab index for TabNavigation. */
+  const initialTabIndex = defaultTab === 'discussions' ? 1 : 0;
 
   // Create tabs configuration
   const tabs = articleData
@@ -206,7 +218,7 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
         handleOpenPdfViewer={handleOpenPdfViewer}
       />
       <div className="mt-4">
-        <TabNavigation tabs={tabs} />
+        <TabNavigation tabs={tabs} initialActiveTab={initialTabIndex} resetKey={tabResetKey} />
       </div>
     </>
   );

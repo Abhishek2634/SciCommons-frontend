@@ -34,7 +34,8 @@ describe('Footer', () => {
 
   it('displays copyright information', () => {
     render(<Footer />);
-    expect(screen.getByText(/© 2024 SciCommons. All rights reserved./)).toBeInTheDocument();
+    const currentYear = new Date().getFullYear();
+    expect(screen.getByText(`© 2024–${currentYear} SciCommons`)).toBeInTheDocument();
   });
 
   /* Fixed by Codex on 2026-02-15

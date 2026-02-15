@@ -5,6 +5,25 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Discussions View Default Tab (2026-02-15)**
+
+**Problem:** Opening an item from the discussions sidebar showed the article on the Reviews tab instead
+of Discussions.
+
+**Root Cause:** `ArticleContentView` always initialized tab navigation to the first tab (Reviews), and
+the discussions page did not override that default or reset the tab when a new article was selected.
+
+**Solution:** Added optional initial tab and reset support to `TabNavigation`, exposed a default tab
+prop on `ArticleContentView`, and passed a discussions-specific default + reset key from the
+discussions page.
+
+**Result:** Clicking a discussion in the left panel now opens the right panel with the Discussions
+tab selected every time.
+
+**Files Modified:** `src/components/ui/tab-navigation.tsx`,
+`src/components/articles/ArticleContentView.tsx`,
+`src/app/(main)/discussions/DiscussionsPageClient.tsx`
+
 **Realtime Reconnect Sync Toast Disabled (2026-02-15)**
 
 **Problem:** The “Syncing latest discussions…” toast on initial login and the “Reconnected. Syncing latest discussions…” toast after reconnects felt noisy.

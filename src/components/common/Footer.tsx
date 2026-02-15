@@ -21,6 +21,7 @@ const Footer: React.FC = () => {
   const isAshokaUser = useStore(useAuthStore, (state) =>
     state.user?.email?.endsWith('ashoka.edu.in')
   );
+  const currentYear = new Date().getFullYear();
 
   // Filter navLinks to remove Login/Register if authenticated
   const filteredNavLinks = isAuthenticated
@@ -109,7 +110,7 @@ const Footer: React.FC = () => {
           Why: Keep gradient text contrast aligned with skin palettes.
           How: Replace white/black utilities with primary-foreground. */}
       <div className="flex w-full flex-wrap items-center bg-gradient-to-r from-functional-green to-functional-blue p-4 text-xs font-semibold text-primary-foreground sm:justify-center">
-        <span className="mr-2 sm:mr-4">© 2024 SciCommons. All rights reserved.</span>
+        <span className="mr-2 sm:mr-4">© 2024–{currentYear} SciCommons</span>
         {/* Commented out dead links */}
         {/* <span className="mr-2 sm:mr-4">
           <span className="mr-2 sm:mr-4">|</span>
