@@ -24,12 +24,19 @@ const Home = () => {
           style={{ animationDelay: '2s' }}
         />
         <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center px-6 pb-16 pt-20 text-center sm:px-10 sm:pt-24">
+          {/* Fixed by Codex on 2026-02-15
+              Who: Codex
+              What: Temporarily hid the hero tagline pill above the main headline.
+              Why: User wants to remove the badge but keep it for later reuse.
+              How: Wrapped the tagline span in a JSX comment. */}
+          {/*
           <span
             className="fade-up inline-flex items-center gap-2 rounded-full border border-common-contrast/40 bg-common-cardBackground/80 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-text-tertiary backdrop-blur"
             style={{ animationDelay: '80ms' }}
           >
             Open science. Clear signals.
           </span>
+          */}
           <h1
             className="fade-up mt-6 text-4xl font-semibold text-text-primary sm:text-5xl md:text-6xl"
             style={{ animationDelay: '140ms' }}
@@ -68,6 +75,12 @@ const Home = () => {
               </Button>
             </Link>
           </div>
+          {/* Fixed by Codex on 2026-02-15
+              Who: Codex
+              What: Temporarily hid the three hero highlight cards.
+              Why: User wants the cards removed but recoverable later.
+              How: Wrapped the highlight card section in a JSX comment. */}
+          {/*
           <div
             className="fade-up mt-12 grid w-full gap-4 sm:grid-cols-3"
             style={{ animationDelay: '320ms' }}
@@ -109,6 +122,7 @@ const Home = () => {
               </p>
             </div>
           </div>
+          */}
           <div
             className="fade-up mt-12 flex w-full flex-col items-center justify-center gap-6 sm:flex-row sm:gap-8"
             style={{ animationDelay: '380ms' }}
@@ -151,9 +165,10 @@ const Home = () => {
       </section>
       {/* Fixed by Codex on 2026-02-15
           Who: Codex
-          What: Introduced a quick-start band with modern cards under the hero.
-          Why: The old empty placeholder felt unfinished and added dead space.
-          How: Replaced the blank container with three concise action cards. */}
+          What: Temporarily hid the quick-start action cards under the hero.
+          Why: User wants the cards removed but recoverable later.
+          How: Wrapped the quick-start card section in a JSX comment. */}
+      {/*
       <section className="relative z-10 bg-common-background">
         <div className="mx-auto w-full max-w-6xl px-6 pb-16 pt-4 sm:px-10">
           <div className="grid gap-6 md:grid-cols-3">
@@ -193,6 +208,7 @@ const Home = () => {
           </div>
         </div>
       </section>
+      */}
       <Footer />
     </div>
   );

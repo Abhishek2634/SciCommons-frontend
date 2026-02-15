@@ -53,6 +53,21 @@ readability in primary navigation states.
 `src/app/(home)/page.tsx`, `src/components/common/NavBar.tsx`, `src/components/common/Footer.tsx`,
 `src/app/(main)/discussions/DiscussionsSidebar.tsx`, `src/components/common/BottomBar.tsx`
 
+**Home Cards Temporarily Hidden (2026-02-15)**
+
+**Problem:** The homepage showed six explanatory cards plus the “Open science. Clear signals.” badge
+that should be hidden for now while keeping them easy to restore later.
+
+**Root Cause:** The cards were added during the modern visual refresh and remained visible by default.
+
+**Solution:** Wrapped the hero badge and both card sections in JSX comments with inline notes so they
+can be restored by uncommenting and editing the copy later.
+
+**Result:** The homepage no longer displays the badge or six cards, but the markup remains available
+for reuse.
+
+**Files Modified:** `src/app/(home)/page.tsx`
+
 **Accessibility Audit Fixes (2026-02-15)**
 
 **Problem:** Multiple controls were mouse-only or icon-only (review toggles, tooltip icons, ratings,
