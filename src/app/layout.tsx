@@ -9,6 +9,7 @@ import PathTracker from '@/HOCs/withPathTracker';
 import { ReactQueryClientProvider } from '@/api/ReactQueryClientProvider';
 import BottomBar from '@/components/common/BottomBar';
 import { GlobalErrorHandler } from '@/components/common/GlobalErrorHandler';
+import RealtimeBootstrap from '@/components/common/RealtimeBootstrap';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -55,6 +56,12 @@ export default function RootLayout({
           <NextTopLoader showSpinner={false} color="#64e466" shadow={false} />
           <SessionExpirationDialog />
           <PathTracker />
+          {/* Fixed by Codex on 2026-02-15
+              Who: Codex
+              What: Mount realtime logic without rendering the HUD.
+              Why: Realtime hook was only mounted by RealtimeStatus; removing it disabled unread dots.
+              How: Add a bootstrapper component that calls useRealtime and returns null. */}
+          <RealtimeBootstrap />
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <TooltipProvider delayDuration={10}>
               <main className="flex-grow">{children}</main>

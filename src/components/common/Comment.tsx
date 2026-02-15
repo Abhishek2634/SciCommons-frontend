@@ -194,7 +194,7 @@ const Comment: React.FC<CommentProps> = ({
         showNewTag && !highlight && 'bg-functional-blue/5'
       )}
     >
-      {/* NEW badge for unread comments - shown optimistically until 2s after viewing */}
+      {/* NEW badge for unread comments - shown optimistically until 1s after viewing (2s visibility threshold) */}
       {showNewTag && depth === 0 && (
         <span className="absolute -left-1 -top-1 z-10 rounded bg-functional-blue px-1 text-[9px] font-semibold uppercase text-white">
           New

@@ -5,6 +5,38 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**NEW Badge Immediate Removal (2026-02-15)**
+
+**Problem:** NEW badges lingered for two extra seconds after the user had already viewed a discussion
+or comment, which felt slow and unnecessary.
+
+**Root Cause:** `NEW_TAG_REMOVAL_DELAY_MS` was set to `2000`, so the badge stayed visible for an
+additional 2 seconds after the visibility threshold was met.
+
+**Solution:** Set the removal delay to `1000ms` while keeping the 2-second visibility dwell, and update
+the related documentation/comments to reflect removal 1 second after viewing.
+
+**Result:** NEW badges now disappear 1 second after the 2-second viewing threshold is satisfied.
+
+**Files Modified:** `src/hooks/useUnreadFlags.ts`, `src/hooks/useMarkAsReadOnView.ts`,
+`src/components/articles/DiscussionCard.tsx`, `src/components/common/Comment.tsx`
+
+**Realtime Bootstrapper Restored (2026-02-15)**
+
+**Problem:** Discussions unread dots, realtime toasts, and read-flag syncing stopped working after the
+realtime status badge was removed from the UI.
+
+**Root Cause:** The realtime hook (`useRealtime`) was only mounted inside the HUD component, so removing
+the badge also stopped the realtime polling loop and unread store updates.
+
+**Solution:** Added a headless realtime bootstrapper component that calls `useRealtime()` and renders
+nothing, then mounted it in the root layout.
+
+**Result:** Realtime polling resumes without showing the HUD, restoring unread indicators and sync
+behavior while keeping the UI clean.
+
+**Files Modified:** `src/components/common/RealtimeBootstrap.tsx`, `src/app/layout.tsx`
+
 **Discussions Scroll Persistence + Realtime NEW Overlay (2026-02-15)**
 
 **Problem:** The discussions sidebar lost scroll position after navigation, reaction counts could

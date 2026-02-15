@@ -201,7 +201,7 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
                     </Tooltip>
                   </TooltipProvider>
                 )}
-                {/* NEW badge - shown optimistically until 2s after viewing */}
+                {/* NEW badge - shown optimistically until 1s after viewing (2s visibility threshold) */}
                 {showNewTag && (
                   <span className="ml-2 rounded bg-functional-blue px-1 text-[9px] font-semibold uppercase text-white">
                     New

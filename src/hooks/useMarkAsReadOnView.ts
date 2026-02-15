@@ -36,7 +36,7 @@ interface UseMarkAsReadOnViewReturn {
  * 2. If unread (from API) and not in local read list, show NEW tag
  * 3. When element becomes visible for `visibilityDelay` ms (default 2s):
  *    - Mark as read in local storage (immediate)
- *    - After NEW_TAG_REMOVAL_DELAY_MS (2s), hide the NEW tag
+ *    - After NEW_TAG_REMOVAL_DELAY_MS (now 1s), hide the NEW tag
  * 4. Backend sync happens every 2 minutes via the sync manager
  *
  * @param ref - React ref to the DOM element to observe

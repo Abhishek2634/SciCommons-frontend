@@ -7,6 +7,7 @@ Notes for this repository:
 - Line-ending warnings (LF to CRLF) are expected in this workspace; do not treat them as errors.
 - If `git status` shows a file as modified but `git diff` is empty and the LF/CRLF warning appears, treat it as line-ending noise; do not loop trying to resolve it.
 - **NEVER redirect stderr to `Nul` or `nul`** - these are Windows reserved device names; use `NUL` (all caps) instead to avoid creating phantom untracked files that git cannot remove.
+- **Interpretation rule:** A question phrased like "can you do this" is informational only; do not take action unless the user says "do this".
 
 ## Git Remote Management (CRITICAL)
 

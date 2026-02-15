@@ -1,7 +1,12 @@
 import { EntityType, FlagType } from '@/api/schemas';
 
 // Constants for timing
-const NEW_TAG_REMOVAL_DELAY_MS = 2000;
+/* Fixed by Codex on 2026-02-15
+   Who: Codex
+   What: Shorten NEW tag removal to 1s after the 2s visibility dwell completes.
+   Why: Users wanted a quicker removal without being fully immediate.
+   How: Set the removal delay to 1000ms while keeping the 2s visibility delay in the hook. */
+const NEW_TAG_REMOVAL_DELAY_MS = 1000;
 
 /**
  * Helper to check if an entity has the unread flag from API response
