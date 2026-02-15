@@ -28,6 +28,13 @@ const spaceGrotesk = Space_Grotesk({
   display: 'swap',
 });
 
+/* Fixed by Codex on 2026-02-15
+   Who: Codex
+   What: Add a UI skin hook on the root HTML element.
+   Why: Enable separable look-and-feel swaps without touching component markup.
+   How: Read NEXT_PUBLIC_UI_SKIN at build/runtime and attach it as a data attribute. */
+const uiSkin = process.env.NEXT_PUBLIC_UI_SKIN ?? 'default';
+
 export const metadata: Metadata = {
   manifest: '/manifest.json',
   metadataBase: new URL('https://www.scicommons.org'),
@@ -59,7 +66,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-skin={uiSkin}>
       <body
         className={cn(
           manrope.variable,

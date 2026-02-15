@@ -2091,3 +2091,15 @@ const { data: articleData, error, isPending } = useArticlesApiGetArticle(
 - Without community_name parameter, backend rejects as unauthorized (403)
 
 **Result**: Community articles now display correctly in all sidebar contexts (articles page, community page, discussions page). The 403 "you don't have access to this article" error is eliminated. Users can preview community articles in the sidebar without errors, while the backend properly validates community membership permissions.
+
+**UI Skin Infrastructure (2026-02-15)**
+
+**Problem**: The UI tokens were defined only for a single default theme, so swapping look-and-feel required editing component classes.
+
+**Root Cause**: There was no root-level skin selector or alternate variable set to override the design tokens.
+
+**Solution**: Added a `data-skin` attribute on `<html>` (driven by `NEXT_PUBLIC_UI_SKIN`) and introduced a `data-skin="sage"` variable override block for both light and dark tokens in `globals.css`.
+
+**Result**: The site can now switch skins by changing one environment value, with no component-level edits. Token-based surfaces update automatically; remaining hard-coded color utilities still bypass the skin until they are converted.
+
+**Files Modified**: `src/app/layout.tsx`, `src/app/globals.css`, `CHANGE_COMMENTS.md`

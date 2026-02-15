@@ -330,6 +330,179 @@ body {
     --scrollbar-thumb-color: var(--neutral-800);
     --scrollbar-thumb-hover-color: var(--neutral-700);
   }
+
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Add a separable "sage" UI skin via CSS variable overrides.
+     Why: Enable look-and-feel swaps without component rewrites.
+     How: Provide a data-skin="sage" variant for both light and dark tokens. */
+  :root[data-skin='sage'] {
+    --color-white-primary: #f9fbf8;
+    --color-white-secondary: #ffffff;
+    --color-dark-primary: #0f1f1a;
+    --color-dark-secondary: #1b2c26;
+
+    --background: 150 25% 97%;
+    --foreground: 164 28% 15%;
+
+    --muted: 150 20% 92%;
+    --muted-foreground: 160 10% 40%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 164 28% 15%;
+
+    --border: 150 16% 86%;
+    --input: 150 16% 86%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 164 28% 15%;
+
+    --primary: 164 40% 28%;
+    --primary-foreground: 150 25% 96%;
+
+    --secondary: 150 20% 92%;
+    --secondary-foreground: 164 28% 15%;
+
+    --accent: 150 20% 90%;
+    --accent-foreground: 164 28% 15%;
+
+    --destructive: 0 70% 48%;
+    --destructive-foreground: 0 0% 98%;
+
+    --brand-green: 163 45% 34%;
+    --brand-green-foreground: 150 45% 96%;
+
+    --ring: 150 18% 70%;
+
+    --Functional-Green-Green: 16, 110, 95;
+    --Functional-Green-GreenLight: 142, 220, 202;
+    --Functional-Green-Greencontrast: 12, 88, 76;
+
+    --Functional-Blue-Blue: 56, 116, 190;
+    --Functional-Blue-BlueLight: 133, 182, 226;
+    --Functional-Blue-Bluecontrast: 41, 93, 160;
+
+    --Functional-Yellow-Yellow: 204, 141, 0;
+    --Functional-Yellow-YellowLight: 242, 205, 120;
+    --Functional-Yellow-Yellowcontrast: 176, 116, 0;
+
+    --Functional-Red-Red: 200, 64, 64;
+    --Functional-Red-RedLight: 235, 162, 162;
+    --Functional-Red-Redcontrast: 170, 50, 50;
+
+    --Functional-Gray-Gray: 196, 202, 196;
+    --Functional-Gray-GrayLight: 220, 226, 220;
+    --Functional-Gray-Graycontrast: 170, 178, 170;
+
+    --Common-Background: 245, 248, 246;
+    --Common-CardBackground: 255, 255, 255;
+    --Common-Minimal: 232, 238, 233;
+    --Common-Contrast: 212, 222, 214;
+    --Common-HeavyContrast: 176, 188, 178;
+    --Common-Invert: 18, 30, 26;
+
+    --Accessory-Accessory1: 255, 255, 255;
+    --Accessory-Accessory2: 249, 251, 248;
+    --Accessory-Accessory3: 243, 246, 242;
+    --Accessory-Accessory4: 236, 240, 235;
+    --Accessory-Accessory5: 228, 234, 228;
+    --Accessory-Accessory6: 210, 218, 212;
+    --Accessory-Accessory7: 190, 200, 194;
+
+    --Text-Primary: 18, 30, 26;
+    --Text-Secondary: 74, 92, 86;
+    --Text-Tertiary: 103, 120, 112;
+
+    --loading: #eef2ef;
+
+    --scrollbar-track-color: var(--Common-Background);
+    --scrollbar-thumb-color: var(--Common-Contrast);
+    --scrollbar-thumb-hover-color: var(--Common-HeavyContrast);
+  }
+
+  .dark[data-skin='sage'] {
+    --color-white-primary: #0f1a16;
+    --color-white-secondary: #16231e;
+    --color-dark-primary: #f3f7f4;
+    --color-dark-secondary: #e2e9e4;
+
+    --background: 164 35% 8%;
+    --foreground: 150 22% 88%;
+
+    --muted: 162 28% 16%;
+    --muted-foreground: 150 12% 60%;
+
+    --accent: 162 28% 18%;
+    --accent-foreground: 150 22% 92%;
+
+    --popover: 164 35% 8%;
+    --popover-foreground: 150 22% 80%;
+
+    --border: 162 22% 18%;
+    --input: 162 22% 18%;
+
+    --card: 164 35% 8%;
+    --card-foreground: 150 22% 88%;
+
+    --primary: 150 30% 88%;
+    --primary-foreground: 164 35% 8%;
+
+    --secondary: 164 35% 12%;
+    --secondary-foreground: 150 22% 88%;
+
+    --destructive: 0 55% 30%;
+    --destructive-foreground: 150 22% 92%;
+
+    --brand-green: 160 42% 75%;
+    --brand-green-foreground: 164 35% 16%;
+
+    --ring: 162 22% 20%;
+
+    --Common-Background: 12, 22, 18;
+    --Common-CardBackground: 18, 30, 26;
+    --Common-Minimal: 26, 40, 35;
+    --Common-Contrast: 44, 60, 54;
+    --Common-HeavyContrast: 68, 84, 78;
+    --Common-Invert: 232, 240, 236;
+
+    --Accessory-Accessory1: 12, 22, 18;
+    --Accessory-Accessory2: 18, 30, 26;
+    --Accessory-Accessory3: 24, 38, 33;
+    --Accessory-Accessory4: 30, 46, 40;
+    --Accessory-Accessory5: 44, 60, 54;
+    --Accessory-Accessory6: 68, 84, 78;
+    --Accessory-Accessory7: 90, 104, 98;
+
+    --Text-Primary: 232, 240, 236;
+    --Text-Secondary: 170, 186, 178;
+    --Text-Tertiary: 140, 156, 148;
+
+    --Functional-Green-Green: 62, 199, 170;
+    --Functional-Green-GreenLight: 130, 230, 210;
+    --Functional-Green-Greencontrast: 40, 170, 145;
+
+    --Functional-Blue-Blue: 88, 168, 220;
+    --Functional-Blue-BlueLight: 140, 200, 235;
+    --Functional-Blue-Bluecontrast: 70, 140, 196;
+
+    --Functional-Yellow-Yellow: 224, 177, 68;
+    --Functional-Yellow-YellowLight: 244, 214, 140;
+    --Functional-Yellow-Yellowcontrast: 200, 140, 40;
+
+    --Functional-Red-Red: 230, 116, 116;
+    --Functional-Red-RedLight: 246, 180, 180;
+    --Functional-Red-Redcontrast: 200, 90, 90;
+
+    --Functional-Gray-Gray: 90, 104, 98;
+    --Functional-Gray-GrayLight: 118, 132, 126;
+    --Functional-Gray-Graycontrast: 72, 86, 80;
+
+    --loading: #2c3732;
+
+    --scrollbar-track-color: var(--Common-Background);
+    --scrollbar-thumb-color: var(--Common-Contrast);
+    --scrollbar-thumb-hover-color: var(--Common-HeavyContrast);
+  }
 }
 
 /* html {
