@@ -47,9 +47,9 @@ const Home = () => {
             className="fade-up mt-4 max-w-2xl text-sm text-text-secondary sm:text-base"
             style={{ animationDelay: '200ms' }}
           >
-            Community-driven scientific discussion.
+            Community-driven scholarly discussion.
             <br />
-            Personalized scientific feeds coming soon.
+            Personalized feeds coming soon.
           </p>
           <div
             className="fade-up mt-8 flex flex-wrap items-center justify-center gap-4"
