@@ -46,7 +46,12 @@ describe('Footer', () => {
   it('applies correct CSS classes for light mode', () => {
     render(<Footer />);
     const footer = screen.getByRole('contentinfo');
-    expect(footer).toHaveClass('bg-functional-green/10');
+    /* Fixed by Codex on 2026-02-15
+       Who: Codex
+       What: Update footer class expectation to match refreshed palette.
+       Why: Footer now uses the neutral background token instead of green tint.
+       How: Assert the presence of the new background class. */
+    expect(footer).toHaveClass('bg-common-background');
   });
 
   // Note: Testing dark mode might require additional setup or a different approach

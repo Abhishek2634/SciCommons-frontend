@@ -52,12 +52,12 @@ const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profil
             },
           })}
         />
+        {/* Fixed by Codex on 2026-02-15
+            Who: Codex
+            What: Add accessible labels to icon-only profile controls.
+            Why: Screen readers need descriptive labels for icon buttons.
+            How: Provide aria-labels for the photo and edit/save actions. */}
         {editMode && (
-          {/* Fixed by Codex on 2026-02-15
-              Who: Codex
-              What: Add accessible labels to icon-only profile controls.
-              Why: Screen readers need descriptive labels for icon buttons.
-              How: Provide aria-labels for the photo and edit/save actions. */}
           <button
             type="button"
             onClick={() => {
