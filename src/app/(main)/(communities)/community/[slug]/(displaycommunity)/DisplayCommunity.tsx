@@ -188,6 +188,7 @@ const DisplayCommunity: React.FC<DisplayCommunityProps> = ({ community, refetch 
                       <Button
                         size="xs"
                         className="border border-common-minimal/70 bg-white hover:bg-white dark:bg-black dark:hover:bg-black"
+                        aria-label="Community settings"
                       >
                         <ButtonIcon>
                           <Settings className="size-3 text-text-secondary sm:size-4" />
@@ -244,6 +245,13 @@ const DisplayCommunity: React.FC<DisplayCommunityProps> = ({ community, refetch 
                     variant="outline"
                     size="xs"
                     className="aspect-square p-1.5"
+                    /* Fixed by Codex on 2026-02-15
+                       Who: Codex
+                       What: Add screen-reader labels for the bookmark toggle.
+                       Why: Icon-only buttons are announced without context.
+                       How: Provide aria-label and aria-pressed for the toggle state. */
+                    aria-label={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+                    aria-pressed={isBookmarked}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

@@ -9,9 +9,9 @@
 }
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --foreground-rgb: 15, 23, 42;
+  --background-start-rgb: 248, 250, 252;
+  --background-end-rgb: 241, 245, 249;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -30,6 +30,11 @@ body {
 
 @layer base {
   :root {
+    /* Fixed by Codex on 2026-02-15
+       Who: Codex
+       What: Refresh the light theme palette with cooler neutrals and a teal accent.
+       Why: The previous white/green palette felt staid and overly flat.
+       How: Adjusted common background/text tokens and brand green hues to a modern teal spectrum. */
     /* New background color variables */
     --color-white-primary: #ffffff;
     --color-white-secondary: #ffffff;
@@ -39,8 +44,8 @@ body {
 
     /* ShadCN Colors */
 
-    --background: 0 0% 100%; /* bg-gray-50 */
-    --foreground: 222.2 47.4% 11.2%; /* text-gray-800 */
+    --background: 220 33% 98%;
+    --foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
@@ -51,7 +56,7 @@ body {
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
 
-    --card: 0 0% 100%; /* bg-gray-50 */
+    --card: 0 0% 100%;
     --card-foreground: 222.2 47.4% 11.2%;
 
     --primary: 222.2 47.4% 11.2%;
@@ -66,8 +71,8 @@ body {
     --destructive: 0 100% 50%;
     --destructive-foreground: 210 40% 98%;
 
-    --brand-green: 120 57% 40%;
-    --brand-green-foreground: 120 100% 98%;
+    --brand-green: 173 80% 40%;
+    --brand-green-foreground: 173 100% 96%;
 
     --ring: 215 20.2% 65.1%;
 
@@ -153,9 +158,14 @@ body {
     --neutral-1000: 10, 10, 10;
 
     /* Functional Green */
-    --Functional-Green-Green: var(--color-green-600);
-    --Functional-Green-GreenLight: var(--color-green-400);
-    --Functional-Green-Greencontrast: var(--color-green-700);
+    /* Fixed by Codex on 2026-02-15
+       Who: Codex
+       What: Darkened the primary teal for better text contrast in light mode.
+       Why: The previous teal was too light for color-blind and low-contrast contexts.
+       How: Shifted the base teal to a deeper tone and separated the light/contrast variants. */
+    --Functional-Green-Green: 15, 118, 110;
+    --Functional-Green-GreenLight: 94, 234, 212;
+    --Functional-Green-Greencontrast: 12, 94, 88;
 
     /* Functional Blue */
     --Functional-Blue-Blue: var(--color-blue-600);
@@ -178,12 +188,12 @@ body {
     --Functional-Gray-Graycontrast: var(--color-gray-400);
 
     /* Common Light */
-    --Common-Background: var(--neutral-50);
-    --Common-CardBackground: var(--neutral-100);
-    --Common-Minimal: var(--neutral-200);
-    --Common-Contrast: var(--neutral-300);
-    --Common-HeavyContrast: var(--neutral-400);
-    --Common-Invert: var(--neutral-0);
+    --Common-Background: 248, 250, 252;
+    --Common-CardBackground: 255, 255, 255;
+    --Common-Minimal: 226, 232, 240;
+    --Common-Contrast: 203, 213, 225;
+    --Common-HeavyContrast: 148, 163, 184;
+    --Common-Invert: 15, 23, 42;
 
     /* Accessory Light */
     --Accessory-Accessory1: var(--neutral-0);
@@ -195,9 +205,14 @@ body {
     --Accessory-Accessory7: var(--neutral-400);
 
     /* Text Light */
-    --Text-Primary: var(--neutral-800);
-    --Text-Secondary: var(--neutral-600);
-    --Text-Tertiary: var(--neutral-400);
+    --Text-Primary: 15, 23, 42;
+    --Text-Secondary: 71, 85, 105;
+    /* Fixed by Codex on 2026-02-15
+       Who: Codex
+       What: Increase light-mode tertiary text contrast.
+       Why: Tertiary copy fell below WCAG AA on white surfaces.
+       How: Darkened the tertiary token to a higher-contrast slate tone. */
+    --Text-Tertiary: 100, 116, 139;
 
     /* Loading */
     --loading: #f2f2f2;
@@ -208,6 +223,11 @@ body {
   }
 
   .dark {
+    /* Fixed by Codex on 2026-02-15
+       Who: Codex
+       What: Rebalance dark mode neutrals to match the new cool-teal accent.
+       Why: Dark mode needed cleaner contrast with the updated brand palette.
+       How: Shifted common background/text tokens and teal accents to the new scale. */
     /* Background variations */
     --color-white-primary: #111827;
     --color-white-secondary: #1f2937;
@@ -244,20 +264,20 @@ body {
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --brand-green: 120 100% 98%;
-    --brand-green-foreground: 120 57% 20%;
+    --brand-green: 173 80% 88%;
+    --brand-green-foreground: 173 80% 18%;
 
     --ring: 216 34% 17%;
 
     --radius: 0.5rem;
 
     /* Common Dark */
-    --Common-Background: var(--neutral-950);
-    --Common-CardBackground: var(--neutral-900);
-    --Common-Minimal: var(--neutral-800);
-    --Common-Contrast: var(--neutral-750);
-    --Common-HeavyContrast: var(--neutral-650);
-    --Common-Invert: var(--neutral-1000);
+    --Common-Background: 11, 18, 32;
+    --Common-CardBackground: 15, 23, 42;
+    --Common-Minimal: 30, 41, 59;
+    --Common-Contrast: 51, 65, 85;
+    --Common-HeavyContrast: 71, 85, 105;
+    --Common-Invert: 226, 232, 240;
 
     /* Accessory Dark */
     --Accessory-Accessory1: var(--neutral-950);
@@ -269,9 +289,19 @@ body {
     --Accessory-Accessory7: var(--neutral-500);
 
     /* Text Dark */
-    --Text-Primary: var(--neutral-100);
-    --Text-Secondary: var(--neutral-400);
-    --Text-Tertiary: var(--neutral-500);
+    --Text-Primary: 226, 232, 240;
+    --Text-Secondary: 148, 163, 184;
+    --Text-Tertiary: 120, 134, 157;
+
+    /* Functional Green */
+    /* Fixed by Codex on 2026-02-15
+       Who: Codex
+       What: Brightened the teal accent for dark mode readability.
+       Why: Dark surfaces need higher luminance accents for clear state cues.
+       How: Used a lighter teal base with a slightly deeper hover tone. */
+    --Functional-Green-Green: 45, 212, 191;
+    --Functional-Green-GreenLight: 94, 234, 212;
+    --Functional-Green-Greencontrast: 20, 184, 166;
 
     /* Funtional Gray */
     --Functional-Gray-Gray: var(--color-gray-700);
@@ -311,10 +341,19 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
 }
 
@@ -344,6 +383,63 @@ body {
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #555;
+  }
+
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Add modern hero utility styles (ambient gradients, glass panels, soft motion).
+     Why: The homepage needed more visual depth without adding heavy UI chrome.
+     How: Introduced reusable hero/background utilities and gentle animations. */
+  .hero-ambient {
+    background:
+      radial-gradient(800px 420px at 15% -10%, rgba(20, 184, 166, 0.18), transparent 60%),
+      radial-gradient(700px 360px at 85% -20%, rgba(59, 130, 246, 0.14), transparent 60%),
+      linear-gradient(180deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    box-shadow: 0 24px 60px -45px rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .dark .hero-ambient {
+    background:
+      radial-gradient(800px 420px at 15% -10%, rgba(45, 212, 191, 0.15), transparent 60%),
+      radial-gradient(700px 360px at 85% -20%, rgba(59, 130, 246, 0.12), transparent 60%),
+      linear-gradient(180deg, rgba(11, 18, 32, 1) 0%, rgba(15, 23, 42, 1) 100%);
+  }
+
+  .dark .glass-panel {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    box-shadow: 0 24px 60px -45px rgba(0, 0, 0, 0.7);
+  }
+
+  .hero-orb {
+    width: 240px;
+    height: 240px;
+    border-radius: 999px;
+    filter: blur(12px);
+    opacity: 0.45;
+  }
+
+  .hero-orb.teal {
+    background: radial-gradient(circle at 30% 30%, rgba(45, 212, 191, 0.7), transparent 65%);
+  }
+
+  .hero-orb.blue {
+    background: radial-gradient(circle at 30% 30%, rgba(96, 165, 250, 0.6), transparent 65%);
+  }
+
+  .fade-up {
+    animation: fade-up 0.8s ease-out both;
+  }
+
+  .float-soft {
+    animation: float-soft 12s ease-in-out infinite;
   }
 }
 
@@ -468,6 +564,27 @@ body {
   }
   to {
     transform: rotate(-360deg);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0);
   }
 }
 

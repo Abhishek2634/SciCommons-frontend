@@ -154,8 +154,10 @@ const TextSelectionPopup: React.FC<TextSelectionPopupProps> = ({
           <span className="text-sm font-medium text-text-secondary">Private Note</span>
         </div>
         <button
+          type="button"
           onClick={onClose}
           className="rounded p-1 text-text-tertiary transition-colors hover:bg-common-minimal hover:text-text-primary"
+          aria-label="Close note popup"
         >
           <X size={16} />
         </button>
@@ -178,6 +180,7 @@ const TextSelectionPopup: React.FC<TextSelectionPopupProps> = ({
           />
         ) : (
           <button
+            type="button"
             onClick={() => setIsNoteExpanded(true)}
             className="w-full rounded border border-dashed border-common-minimal p-2 text-left text-sm text-text-tertiary transition-colors hover:border-common-contrast hover:bg-common-minimal"
           >
@@ -188,15 +191,23 @@ const TextSelectionPopup: React.FC<TextSelectionPopupProps> = ({
 
       {/* Color picker */}
       <div className="mb-3 flex items-center gap-2">
+        {/* Fixed by Codex on 2026-02-15
+            Who: Codex
+            What: Add ARIA labels and pressed state to color swatches.
+            Why: Color-only controls are not announced to screen readers.
+            How: Provide aria-labels and aria-pressed, keeping the visual ring. */}
         {colorOptions.map((color) => (
           <button
             key={color}
+            type="button"
             onClick={() => setSelectedColor(color)}
             className={`relative h-6 w-6 rounded-full transition-transform hover:scale-110 ${
               selectedColor === color ? 'ring-2 ring-functional-blue ring-offset-2' : ''
             }`}
             style={{ backgroundColor: ANNOTATION_COLORS[color].hex }}
             title={color.charAt(0).toUpperCase() + color.slice(1)}
+            aria-label={`${color} highlight color`}
+            aria-pressed={selectedColor === color}
           >
             {selectedColor === color && (
               <Check

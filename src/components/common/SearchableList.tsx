@@ -168,11 +168,17 @@ function SearchableList<T>({
               )}
               {showViewTypeIcons && (
                 <>
+                  {/* Fixed by Codex on 2026-02-15
+                     Who: Codex
+                     What: Add accessible labels to view toggles.
+                     Why: Icon-only controls need screen-reader context.
+                     How: Provide aria-labels for grid/preview buttons and the grid menu. */}
                   {(!allowedViewTypes || allowedViewTypes.includes('grid')) && (
                     <div className="flex items-center">
                       <Button
                         variant={viewType === 'grid' ? 'gray' : 'transparent'}
                         className="p-1"
+                        aria-label="Grid view"
                         onClick={() => setViewType?.('grid')}
                       >
                         <ButtonIcon>
@@ -199,6 +205,7 @@ function SearchableList<T>({
                     <Button
                       variant={viewType === 'preview' ? 'gray' : 'transparent'}
                       className="hidden aspect-square p-1 md:block"
+                      aria-label="Preview split view"
                       onClick={() => setViewType?.('preview')}
                     >
                       <ButtonIcon>
@@ -274,6 +281,8 @@ const GridSectionMenu: React.FC<{ onSelectGrid: (count: number) => void }> = ({ 
     <DropdownMenu>
       <DropdownMenuTrigger asChild className="hidden lg:block">
         <button
+          type="button"
+          aria-label="Change grid columns"
           className="ml-1 hover:bg-common-cardBackground"
           onClick={(e) => e.stopPropagation()}
         >

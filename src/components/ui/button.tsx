@@ -225,6 +225,7 @@ const ButtonTitle = React.forwardRef<HTMLDivElement, ButtonTitleProps>(
  */
 type ButtonIconProps = {
   src?: string;
+  alt?: string;
   className?: string;
   height?: number;
   width?: number;
@@ -232,9 +233,23 @@ type ButtonIconProps = {
 };
 
 const ButtonIcon = React.forwardRef<HTMLImageElement | HTMLDivElement, ButtonIconProps>(
-  ({ src, className, height, width, children }, ref) => {
+  ({ src, alt, className, height, width, children }, ref) => {
     if (src) {
-      return <Image src={src} alt="icon" height={height} width={width} className={className} />;
+      /* Fixed by Codex on 2026-02-15
+         Who: Codex
+         What: Allow explicit alt text for icon images.
+         Why: Generic alt text ("icon") is not meaningful for screen readers.
+         How: Add an optional `alt` prop and default to decorative when omitted. */
+      return (
+        <Image
+          src={src}
+          alt={alt ?? ''}
+          aria-hidden={alt ? undefined : true}
+          height={height}
+          width={width}
+          className={className}
+        />
+      );
     } else {
       return (
         <div

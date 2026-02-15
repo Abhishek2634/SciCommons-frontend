@@ -93,27 +93,35 @@ const LoginForm: React.FC = () => {
     <div className="relative flex h-dvh flex-col items-center justify-center bg-black p-4 sm:p-0">
       <Image
         src="/images/assets/bg-auth-pages.webp"
-        alt="Background"
+        alt=""
+        aria-hidden="true"
         layout="fill"
         objectFit="cover"
         className="z-0"
       />
       {/* Left side */}
       <div className="relative flex h-fit w-full flex-col gap-6 overflow-y-auto rounded-xl bg-white px-8 py-12 sm:w-[540px] sm:justify-center sm:p-16 md:shadow-[0px_4px_200px_-40px_rgba(66,182,95,0.5)]">
-        <div
-          className="absolute left-6 top-6 flex cursor-pointer flex-row items-center text-sm md:hidden"
+        {/* Fixed by Codex on 2026-02-15
+            Who: Codex
+            What: Replace clickable div/image with real buttons.
+            Why: Non-button click targets are not keyboard accessible.
+            How: Use button elements with aria-labels for back and home actions. */}
+        <button
+          type="button"
+          aria-label="Go back"
+          className="absolute left-6 top-6 flex flex-row items-center text-sm md:hidden"
           onClick={() => router.back()}
         >
           <ArrowNarrowLeft className="text-black" />
-        </div>
-        <Image
-          alt="scicommons_logo"
-          width={60}
-          height={20}
-          src={'/logo.png'}
-          className="mx-auto mb-2 cursor-pointer md:mb-4"
+        </button>
+        <button
+          type="button"
+          aria-label="Go to SciCommons home"
+          className="mx-auto mb-2 md:mb-4"
           onClick={() => router.push('/')}
-        />
+        >
+          <Image alt="SciCommons logo" width={60} height={20} src={'/logo.png'} />
+        </button>
         <h4 className="text-xl font-bold text-black md:text-2xl">Sign in to your account</h4>
         <form
           ref={formRef}

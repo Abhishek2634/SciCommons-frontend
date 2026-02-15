@@ -153,29 +153,37 @@ const PostDetailPage = ({ params }: { params: { postId: number } }) => {
               </div>
             )}
             <div className="mb-6 flex items-center space-x-4 text-gray-500">
-              {/* Reactions */}
-              <button className="flex items-center space-x-1 transition hover:text-blue-500">
+              {/* Fixed by Codex on 2026-02-15
+                 Who: Codex
+                 What: Add accessible labels to post reactions.
+                 Why: Icon-only actions were not announced to screen readers.
+                 How: Move handlers onto buttons and provide aria-label/aria-pressed. */}
+              <button
+                type="button"
+                aria-label="Upvote post"
+                aria-pressed={reactions?.data.user_reaction === 1}
+                className="flex items-center space-x-1 transition hover:text-blue-500"
+                onClick={() => handleReaction('upvote')}
+              >
                 {reactions?.data.user_reaction === 1 ? (
-                  <ThumbsUp
-                    size={16}
-                    className="text-blue-500"
-                    onClick={() => handleReaction('upvote')}
-                  />
+                  <ThumbsUp size={16} className="text-blue-500" />
                 ) : (
-                  <ThumbsUp size={16} onClick={() => handleReaction('upvote')} />
+                  <ThumbsUp size={16} />
                 )}
                 <span className="text-xs">{reactions?.data.likes}</span>
               </button>
-              <button className="flex items-center space-x-1 transition hover:text-red-500">
+              <button
+                type="button"
+                aria-label="Downvote post"
+                aria-pressed={reactions?.data.user_reaction === -1}
+                className="flex items-center space-x-1 transition hover:text-red-500"
+                onClick={() => handleReaction('downvote')}
+              >
                 {/* Thumbs Down */}
                 {reactions?.data.user_reaction === -1 ? (
-                  <ThumbsDown
-                    size={16}
-                    className="text-red-500"
-                    onClick={() => handleReaction('downvote')}
-                  />
+                  <ThumbsDown size={16} className="text-red-500" />
                 ) : (
-                  <ThumbsDown size={16} onClick={() => handleReaction('downvote')} />
+                  <ThumbsDown size={16} />
                 )}
                 <span className="text-xs">{reactions?.data.dislikes}</span>
               </button>

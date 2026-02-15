@@ -54,6 +54,7 @@ const ArticleCard: FC<ArticleCardProps> = memo(
     );
 
     const [isBookmarked, setIsBookmarked] = useState(article.is_bookmarked ?? false);
+    const isPreviewClickable = compactType === 'default' && !!handleArticlePreview;
 
     // Sync bookmark state when article data changes (e.g., after auth state changes)
     useEffect(() => {
@@ -102,10 +103,27 @@ const ArticleCard: FC<ArticleCardProps> = memo(
           className,
           {
             'border-none bg-transparent p-2 hover:shadow-none': compactType === 'minimal',
-          }
+          },
+          isPreviewClickable &&
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/50'
         )}
+        /* Fixed by Codex on 2026-02-15
+           Who: Codex
+           What: Make the preview card keyboard accessible.
+           Why: Click-only preview cards are not focusable for keyboard users.
+           How: Add role, tabIndex, and key handlers when the preview action is available. */
+        role={isPreviewClickable ? 'button' : undefined}
+        tabIndex={isPreviewClickable ? 0 : undefined}
+        aria-label={isPreviewClickable ? 'Open article preview' : undefined}
         onClick={() => {
-          if (compactType === 'default') {
+          if (isPreviewClickable) {
+            handleArticlePreview?.(article);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (!isPreviewClickable) return;
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
             handleArticlePreview?.(article);
           }
         }}
@@ -154,6 +172,8 @@ const ArticleCard: FC<ArticleCardProps> = memo(
                   variant="transparent"
                   size="xs"
                   className="p-0"
+                  aria-label={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+                  aria-pressed={isBookmarked}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -176,6 +196,7 @@ const ArticleCard: FC<ArticleCardProps> = memo(
                     <TooltipTrigger asChild>
                       <button
                         type="button"
+                        aria-label="Open abstract preview"
                         className="hidden cursor-pointer opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:block"
                         onClick={(e) => {
                           e.preventDefault();

@@ -44,6 +44,7 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
 
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const summaryPanelId = 'discussion-summary-panel';
 
   // Use custom query that treats 404 as "no summary" (null) instead of error
   // This allows the "no summary" state to be cached properly
@@ -195,8 +196,11 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
       <div className="mb-4 border-b border-common-minimal pb-4">
         <div className="mb-2 flex items-center justify-between">
           <button
+            type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex items-center gap-1 text-sm font-semibold text-text-primary hover:text-text-secondary"
+            aria-expanded={isExpanded}
+            aria-controls={summaryPanelId}
           >
             Discussions Summary
             <ChevronDown
@@ -206,18 +210,27 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
           </button>
           {isAdmin && !isEditing && isExpanded && (
             <div className="flex items-center gap-1">
+              {/* Fixed by Codex on 2026-02-15
+                  Who: Codex
+                  What: Add ARIA labels to icon-only admin actions.
+                  Why: Icon buttons without labels are not announced to screen readers.
+                  How: Provide aria-labels and explicit button types for edit/delete. */}
               <button
+                type="button"
                 onClick={handleEdit}
                 className="rounded p-1.5 text-text-tertiary hover:bg-common-minimal hover:text-text-secondary"
                 title="Edit summary"
+                aria-label="Edit discussion summary"
               >
                 <Edit2 size={14} />
               </button>
               <button
+                type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
                 className="rounded p-1.5 text-text-tertiary hover:bg-functional-red/10 hover:text-functional-red disabled:opacity-50"
                 title="Delete summary"
+                aria-label="Delete discussion summary"
               >
                 <Trash2 size={14} />
               </button>
@@ -227,6 +240,7 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
 
         {/* Collapsible content */}
         <div
+          id={summaryPanelId}
           className={cn(
             'overflow-hidden transition-all duration-200',
             isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
@@ -291,8 +305,11 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
       <div className="mb-4 border-b border-common-minimal pb-4">
         <div className="mb-2 flex items-center justify-between">
           <button
+            type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex items-center gap-1 text-sm font-semibold text-text-primary hover:text-text-secondary"
+            aria-expanded={isExpanded}
+            aria-controls={summaryPanelId}
           >
             Discussions Summary
             <ChevronDown
@@ -302,6 +319,7 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
           </button>
         </div>
         <div
+          id={summaryPanelId}
           className={cn(
             'overflow-hidden transition-all duration-200',
             isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'

@@ -5,6 +5,67 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Modern Visual Refresh (2026-02-15)**
+
+**Problem:** The site’s look felt staid and overly white/green, with generic typography and flat depth.
+
+**Root Cause:** The default Inter-only font stack and neutral tokens produced a plain surface, while the
+homepage hero lacked ambient depth or modern motion cues.
+
+**Solution:** Shifted the global palette to cooler neutrals with a teal accent, introduced a Manrope +
+Space Grotesk font pairing, rebuilt the homepage hero with ambient gradients, glass cards, and staggered
+fade-ins, and aligned the navbar/footer treatments to the updated palette. Follow-up work added non-color
+active cues in the navbar, retuned teal accents for higher contrast, verified key token contrast ratios,
+and replaced unread dots with labeled badges in navigation surfaces.
+
+**Result:** The UI reads as cooler, more modern, and professional without feeling heavy, with clearer
+visual hierarchy and subtle motion that keeps the home experience lively while improving color-blind
+readability in primary navigation states.
+
+**Files Modified:** `src/app/globals.css`, `src/app/layout.tsx`, `tailwind.config.ts`,
+`src/app/(home)/page.tsx`, `src/components/common/NavBar.tsx`, `src/components/common/Footer.tsx`,
+`src/app/(main)/discussions/DiscussionsSidebar.tsx`, `src/components/common/BottomBar.tsx`
+
+**Accessibility Audit Fixes (2026-02-15)**
+
+**Problem:** Multiple controls were mouse-only or icon-only (review toggles, tooltip icons, ratings,
+PDF color swatches, settings/close buttons), and option cards relied on clickable divs without
+form semantics. This created keyboard and screen reader gaps.
+
+**Root Cause:** Several UI elements were implemented with `span`/`div` click handlers or icon-only
+buttons without accessible labels and state cues.
+
+**Solution:** Replaced span/div click targets with real buttons or labeled controls, added
+`aria-label`/`aria-pressed`/`aria-expanded` where appropriate, converted community option cards
+to labeled radio inputs, made rating stars interactive via radio-button semantics, and added
+labels to social/tooltip icons and PDF annotation color swatches.
+
+**Result:** Key interactions are now keyboard accessible, properly announced by screen readers,
+and expose state changes consistently across article, discussion, review, and community flows.
+
+**Files Modified:** `src/app/(main)/(articles)/article/[slug]/(displayarticle)/ArticleDisplayPageClient.tsx`,
+`src/app/not-found.tsx`,
+`src/app/(main)/(communities)/community/[slug]/articles/[articleSlug]/page.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(admin)/settings/EditCommunityDetails.tsx`,
+`src/components/articles/ArticleContentView.tsx`,
+`src/components/articles/DisplayArticle.tsx`,
+`src/components/articles/DiscussionComments.tsx`,
+`src/components/articles/ReviewComments.tsx`,
+`src/components/articles/DiscussionThread.tsx`,
+`src/components/articles/DiscussionSummary.tsx`,
+`src/components/ui/ratings.tsx`,
+`src/components/pdf/TextSelectionPopup.tsx`,
+`src/components/ui/placeholders-and-vanish-input.tsx`,
+`src/components/common/CustomTooltip.tsx`,
+`src/components/common/LabeledToolTip.tsx`,
+`src/components/communities/OptionCard.tsx`,
+`src/app/(main)/(communities)/createcommunity/OptionCard.tsx`,
+`src/app/(main)/(posts)/posts/createpost/page.tsx`,
+`src/app/(main)/(posts)/posts/page.tsx`,
+`src/app/(main)/about/page.tsx`,
+`src/app/(main)/(users)/myprofile/Profile.tsx`
+
 **Abstract Newline Preservation via Wrapper (2026-02-15)**
 
 **Problem:** Line breaks and consecutive blank lines entered in article abstracts were collapsed when displayed.

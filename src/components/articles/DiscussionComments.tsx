@@ -135,19 +135,24 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({
     <div className="mt-2 flex flex-col">
       <div className="mb-2 flex items-center gap-2">
         <span className="text-xs font-bold text-text-tertiary">Add Comment:</span>
-        {isCommentFormCollapsed ? (
-          <SquarePlus
-            size={14}
-            className={cn('cursor-pointer text-text-secondary')}
-            onClick={() => setIsCommentFormCollapsed(!isCommentFormCollapsed)}
-          />
-        ) : (
-          <SquareMinus
-            size={14}
-            className={cn('cursor-pointer text-text-secondary')}
-            onClick={() => setIsCommentFormCollapsed(!isCommentFormCollapsed)}
-          />
-        )}
+        {/* Fixed by Codex on 2026-02-15
+            Who: Codex
+            What: Replace icon-only toggles with real buttons.
+            Why: Clickable SVGs are not keyboard accessible or announced to screen readers.
+            How: Wrap the icons in buttons with aria-labels and focus-visible styling. */}
+        <button
+          type="button"
+          onClick={() => setIsCommentFormCollapsed(!isCommentFormCollapsed)}
+          className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"
+          aria-label={isCommentFormCollapsed ? 'Add a comment' : 'Collapse comment form'}
+          aria-expanded={!isCommentFormCollapsed}
+        >
+          {isCommentFormCollapsed ? (
+            <SquarePlus size={14} className={cn('text-text-secondary')} aria-hidden="true" />
+          ) : (
+            <SquareMinus size={14} className={cn('text-text-secondary')} aria-hidden="true" />
+          )}
+        </button>
       </div>
       {!isCommentFormCollapsed && (
         <CommentInput

@@ -197,24 +197,34 @@ function ArticleDisplayPageClientInner({ params }: Props) {
                   <span className="text-sm font-semibold text-text-secondary">
                     Have your reviews? (You can add a review only once.)
                   </span>
-                  <span
-                    className="cursor-pointer text-xs text-functional-green hover:underline"
+                  {/* Fixed by Codex on 2026-02-15
+                      Who: Codex
+                      What: Switch review form toggle from span to button with aria state.
+                      Why: Ensure the control is keyboard accessible and announces state changes.
+                      How: Use a button with aria-expanded/controls targeting the form wrapper. */}
+                  <button
+                    type="button"
+                    className="text-xs text-functional-green hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"
                     onClick={() => setSubmitReview(!submitReview)}
+                    aria-expanded={submitReview}
+                    aria-controls="article-review-form"
                   >
                     {submitReview ? 'Cancel' : 'Add review'}
-                  </span>
+                  </button>
                 </div>
               )}
               {submitReview && !hasUserReviewed && (
-                <ReviewForm
-                  articleId={Number(data.data.id)}
-                  refetch={reviewsRefetch}
-                  is_submitter={data.data.is_submitter}
-                  onSubmitSuccess={() => {
-                    setSubmitReview(false);
-                    setPendingQuote(null);
-                  }}
-                />
+                <div id="article-review-form">
+                  <ReviewForm
+                    articleId={Number(data.data.id)}
+                    refetch={reviewsRefetch}
+                    is_submitter={data.data.is_submitter}
+                    onSubmitSuccess={() => {
+                      setSubmitReview(false);
+                      setPendingQuote(null);
+                    }}
+                  />
+                </div>
               )}
               {/* Show pending quote notice */}
               {pendingQuote && submitReview && (
@@ -223,8 +233,10 @@ function ArticleDisplayPageClientInner({ params }: Props) {
                     Quote copied! Paste it in your review with Ctrl+V / Cmd+V
                   </span>
                   <button
+                    type="button"
                     onClick={() => setPendingQuote(null)}
                     className="text-functional-blue hover:text-functional-blue/80"
+                    aria-label="Dismiss quote notice"
                   >
                     <X size={16} />
                   </button>
@@ -311,6 +323,8 @@ function ArticleDisplayPageClientInner({ params }: Props) {
                     size="sm"
                     onClick={() => setShowAnnotations(!showAnnotations)}
                     className={`h-8 gap-1 px-2 text-xs ${showAnnotations ? 'bg-common-minimal' : ''}`}
+                    aria-pressed={showAnnotations}
+                    aria-controls="article-annotation-sidebar"
                   >
                     <BookOpen size={14} />
                     Notes
@@ -320,7 +334,7 @@ function ArticleDisplayPageClientInner({ params }: Props) {
                     size="sm"
                     onClick={handleClosePdfViewer}
                     className="h-8 w-8 p-0"
-                    title="Close PDF viewer"
+                    aria-label="Close PDF viewer"
                   >
                     <X size={16} />
                   </Button>
@@ -342,7 +356,10 @@ function ArticleDisplayPageClientInner({ params }: Props) {
 
                 {/* Annotation Sidebar */}
                 {showAnnotations && (
-                  <div className="w-72 overflow-hidden bg-common-cardBackground">
+                  <div
+                    id="article-annotation-sidebar"
+                    className="w-72 overflow-hidden bg-common-cardBackground"
+                  >
                     <AnnotationSidebar
                       articleSlug={params.slug}
                       pdfUrl={selectedPdfUrl}

@@ -10,10 +10,12 @@ export function PlaceholdersAndVanishInput({
   placeholders,
   onChange,
   onSubmit,
+  ariaLabel = 'Search',
 }: {
   placeholders: string[];
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  ariaLabel?: string;
 }) {
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
 
@@ -177,6 +179,7 @@ export function PlaceholdersAndVanishInput({
         ref={inputRef}
         value={value}
         type="text"
+        aria-label={ariaLabel}
         className={cn(
           'relative z-50 h-full w-full rounded-full border-none bg-transparent pl-4 pr-20 text-sm text-black focus:outline-none focus:ring-0 dark:text-white sm:pl-10 sm:text-base',
           animating && 'text-transparent dark:text-transparent'
@@ -187,7 +190,13 @@ export function PlaceholdersAndVanishInput({
         disabled={!value}
         type="submit"
         className="absolute right-2 top-1/2 z-50 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black transition duration-200 disabled:bg-gray-100 dark:bg-zinc-900 dark:disabled:bg-zinc-800"
+        aria-label="Submit search"
       >
+        {/* Fixed by Codex on 2026-02-15
+            Who: Codex
+            What: Add aria-label to icon-only submit control.
+            Why: Screen readers need a text label for the submit button.
+            How: Provide an explicit aria-label on the button. */}
         <motion.svg
           xmlns="http://www.w3.org/2000/svg"
           width="24"

@@ -149,7 +149,23 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
     (article: ArticlesListOut) => (
       <div
         data-article-id={String(article.id)}
+        /* Fixed by Codex on 2026-02-15
+           Who: Codex
+           What: Make preview selection keyboard accessible.
+           Why: Div click handlers are not focusable for keyboard users.
+           How: Add role, tabIndex, and key handling when preview mode is active. */
+        role={viewType === 'preview' ? 'button' : undefined}
+        tabIndex={viewType === 'preview' ? 0 : undefined}
+        aria-label={viewType === 'preview' ? 'Select article for preview' : undefined}
         onClick={viewType === 'preview' ? () => handleArticleSelect(article) : undefined}
+        onKeyDown={(event) => {
+          if (viewType !== 'preview') return;
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleArticleSelect(article);
+          }
+        }}
+        className={viewType === 'preview' ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/50' : undefined}
       >
         <ArticleCard
           article={article}

@@ -236,6 +236,7 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
             <button
               key={`${article.communityId}-${article.articleId}`}
               onClick={() => handleArticleSelect(article)}
+              aria-pressed={selectedArticle?.id === article.articleId}
               className={cn(
                 'relative flex w-full flex-col gap-1 text-left transition-colors',
                 'before:absolute before:-inset-x-2 before:-inset-y-1.5 before:rounded-sm before:transition-colors',
@@ -249,9 +250,15 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
                   'before:bg-common-contrast/80'
               )}
             >
-              {/* Unread indicator dot */}
+              {/* Fixed by Codex on 2026-02-15
+                 Who: Codex
+                 What: Replace color-only unread dots with a labeled badge.
+                 Why: Color-only cues are harder to detect for common color-blind users.
+                 How: Render a small "New" pill that adds a text cue alongside color. */}
               {article.hasUnreadEvent && (
-                <span className="absolute -right-1 top-1 z-20 flex aspect-square h-1.5 items-center justify-center rounded-full bg-functional-red" />
+                <span className="absolute -right-2 top-0 z-20 rounded-full border border-functional-red/50 bg-functional-red/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-functional-red">
+                  New
+                </span>
               )}
               <div className="relative z-10 flex w-full flex-nowrap items-center">
                 {/* Fixed by Codex on 2026-02-15

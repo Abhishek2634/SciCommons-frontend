@@ -16,6 +16,7 @@ const ReputationBadge: React.FC<ReputationBadgeProps> = ({ level, score }) => (
       src={'/images/assets/gradient.webp'}
       fill
       alt=""
+      aria-hidden="true"
       className="z-0 object-cover opacity-20 blur-lg invert dark:invert-0"
       quality={10}
     />

@@ -7,15 +7,29 @@ import Link from 'next/link';
 
 import { Globe, LinkedinIcon, LucideIcon, Target, TwitterIcon, Users, Zap } from 'lucide-react';
 
-const SocialLink = ({ href, icon: Icon }: { href?: string; icon: LucideIcon }) =>
+const SocialLink = ({
+  href,
+  icon: Icon,
+  label,
+}: {
+  href?: string;
+  icon: LucideIcon;
+  label: string;
+}) =>
   href ? (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
       className="transition-colors hover:text-functional-green"
+      aria-label={label}
     >
-      <Icon size={20} />
+      {/* Fixed by Codex on 2026-02-15
+          Who: Codex
+          What: Add aria-labels to icon-only social links.
+          Why: Screen readers need a text label for links that render only icons.
+          How: Pass an explicit label per social network and hide the icon. */}
+      <Icon size={20} aria-hidden="true" />
     </a>
   ) : null;
 
@@ -45,8 +59,8 @@ const ContributorCard = ({
     <h3 className="break-words text-center font-semibold text-text-primary">{name}</h3>
     <p className="mb-4 text-center text-xs text-text-secondary">{role}</p>
     <div className="flex space-x-3 text-text-secondary">
-      <SocialLink href={linkedin} icon={LinkedinIcon} />
-      <SocialLink href={twitter} icon={TwitterIcon} />
+      <SocialLink href={linkedin} icon={LinkedinIcon} label="LinkedIn profile" />
+      <SocialLink href={twitter} icon={TwitterIcon} label="Twitter profile" />
     </div>
   </div>
 );

@@ -166,11 +166,19 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
                   {review.is_author && (
                     <>
                       <span className="text-[10px] font-normal text-text-tertiary">(You)</span>
-                      <Pencil
-                        size={12}
+                      {/* Fixed by Codex on 2026-02-15
+                         Who: Codex
+                         What: Make the edit action keyboard accessible.
+                         Why: Clickable icons without buttons are not focusable.
+                         How: Wrap the icon in a button with an aria-label. */}
+                      <button
+                        type="button"
+                        aria-label="Edit review"
                         onClick={() => setEdit(!edit)}
-                        className="cursor-pointer hover:text-functional-green"
-                      />
+                        className="inline-flex items-center"
+                      >
+                        <Pencil size={12} className="cursor-pointer hover:text-functional-green" />
+                      </button>
                     </>
                   )}
                   {getReviewTypeTag(review.review_type || '')}
@@ -277,6 +285,9 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
             </div> */}
             <div className="ml-auto flex items-center space-x-2 text-text-secondary">
               <button
+                type="button"
+                aria-expanded={displayComments}
+                aria-controls={`review-${review.id}-comments`}
                 onClick={() => setDisplayComments((prev) => !prev)}
                 className="flex items-center gap-2 text-[10px] hover:underline focus:outline-none"
               >
@@ -311,7 +322,7 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
             </div>
           </div>
           {displayComments && (
-            <div className="w-full">
+            <div className="w-full" id={`review-${review.id}-comments`}>
               <ReviewComments
                 reviewId={Number(review.id)}
                 displayComments={displayComments}

@@ -33,14 +33,19 @@ const Footer: React.FC = () => {
   const secondColLinks = filteredNavLinks.slice(mid);
 
   return (
-    <footer className="rounded-t-3xl bg-functional-green/10 pb-16 dark:bg-functional-green/10 md:pb-0">
+    <footer className="rounded-t-3xl border-t border-common-contrast/40 bg-common-background pb-16 md:pb-0">
+      {/* Fixed by Codex on 2026-02-15
+         Who: Codex
+         What: Rebalanced the footer colors to match the cooler, modern palette.
+         Why: The solid green footer block felt heavy against the new lighter hero.
+         How: Swapped to neutral backgrounds with accent gradients for the legal strip. */}
       <div className="sm-gap-0 flex w-full flex-col justify-between gap-10 p-8 pt-12 sm:flex-row sm:p-16 md:px-44 md:py-12">
         <div className="flex flex-col items-start gap-12">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center">
               <Image
                 src="/logo.png"
-                alt="Logo"
+                alt="SciCommons logo"
                 width={isAshokaUser ? 90 : 120}
                 height={isAshokaUser ? 66 : 80}
               />
@@ -73,24 +78,32 @@ const Footer: React.FC = () => {
           </div> */}
         </div>
 
-        <div className="flex gap-6 text-xs font-semibold leading-6 text-functional-green sm:gap-14">
+        <div className="flex gap-6 text-xs font-semibold leading-6 text-text-secondary sm:gap-14">
           <div className="flex flex-col gap-2">
             {firstColLinks.map((link) => (
-              <Link key={link.name} href={link.path} className="hover:underline">
+              <Link
+                key={link.name}
+                href={link.path}
+                className="hover:text-functional-green hover:underline"
+              >
                 {link.name}
               </Link>
             ))}
           </div>
           <div className="flex flex-col gap-2">
             {secondColLinks.map((link) => (
-              <Link key={link.name} href={link.path} className="hover:underline">
+              <Link
+                key={link.name}
+                href={link.path}
+                className="hover:text-functional-green hover:underline"
+              >
                 {link.name}
               </Link>
             ))}
           </div>
         </div>
       </div>
-      <div className="flex w-full flex-wrap items-center bg-functional-green p-4 text-xs font-semibold text-white dark:text-black sm:justify-center">
+      <div className="flex w-full flex-wrap items-center bg-gradient-to-r from-functional-green to-functional-blue p-4 text-xs font-semibold text-white dark:text-black sm:justify-center">
         <span className="mr-2 sm:mr-4">© 2024 SciCommons. All rights reserved.</span>
         {/* Commented out dead links */}
         {/* <span className="mr-2 sm:mr-4">

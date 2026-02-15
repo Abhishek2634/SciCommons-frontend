@@ -92,6 +92,7 @@ export default function UnRegisteredUsersInvitation({
         src={'/images/assets/gradient.webp'}
         fill
         alt=""
+        aria-hidden="true"
         className="z-0 opacity-10 invert dark:invert-0"
         quality={10}
       />

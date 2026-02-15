@@ -92,27 +92,36 @@ const PostCard = (post: PostOut) => {
         )}
 
         <div className="flex items-center space-x-6 text-gray-500">
-          <button className="flex items-center space-x-1 transition hover:text-blue-500">
+          {/* Fixed by Codex on 2026-02-15
+             Who: Codex
+             What: Make reaction buttons accessible and keyboard friendly.
+             Why: Icon-only clicks were not focusable or labeled for screen readers.
+             How: Move handlers to the button and add aria-label/aria-pressed. */}
+          <button
+            type="button"
+            aria-label="Upvote post"
+            aria-pressed={data?.data?.user_reaction === 1}
+            className="flex items-center space-x-1 transition hover:text-blue-500"
+            onClick={() => handleReaction('upvote')}
+          >
             {data?.data?.user_reaction === 1 ? (
-              <ThumbsUp
-                size={20}
-                className="text-blue-500"
-                onClick={() => handleReaction('upvote')}
-              />
+              <ThumbsUp size={20} className="text-blue-500" />
             ) : (
-              <ThumbsUp size={20} onClick={() => handleReaction('upvote')} />
+              <ThumbsUp size={20} />
             )}
             <span>{data?.data?.likes}</span>
           </button>
-          <button className="flex items-center space-x-1 transition hover:text-red-500">
+          <button
+            type="button"
+            aria-label="Downvote post"
+            aria-pressed={data?.data?.user_reaction === -1}
+            className="flex items-center space-x-1 transition hover:text-red-500"
+            onClick={() => handleReaction('downvote')}
+          >
             {data?.data.user_reaction === -1 ? (
-              <ThumbsDown
-                size={20}
-                className="text-red-500"
-                onClick={() => handleReaction('downvote')}
-              />
+              <ThumbsDown size={20} className="text-red-500" />
             ) : (
-              <ThumbsDown size={20} onClick={() => handleReaction('downvote')} />
+              <ThumbsDown size={20} />
             )}
           </button>
           <button className="flex items-center space-x-1 transition hover:text-green-500">

@@ -72,7 +72,8 @@ const ResendVerificationForm: React.FC = () => {
     <div className="relative flex h-dvh flex-col items-center justify-center bg-black p-4 sm:p-0">
       <Image
         src="/images/assets/bg-auth-pages.webp"
-        alt="Background"
+        alt=""
+        aria-hidden="true"
         layout="fill"
         objectFit="cover"
         className="z-0"
@@ -84,7 +85,12 @@ const ResendVerificationForm: React.FC = () => {
           <>
             <div className="text-center">
               <div className="flex items-center justify-center">
-                <Image src="/auth/resendemail.png" alt="logo" width={80} height={80} />
+                <Image
+                  src="/auth/resendemail.png"
+                  alt="Resend verification illustration"
+                  width={80}
+                  height={80}
+                />
               </div>
               <h1 className="mt-4 font-bold text-black res-heading-base">
                 Resend Verification Email

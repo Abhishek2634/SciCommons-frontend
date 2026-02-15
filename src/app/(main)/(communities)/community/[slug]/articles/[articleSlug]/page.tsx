@@ -94,22 +94,32 @@ const CommunityArticleDisplayPage: React.FC = () => {
                   <span className="text-sm font-semibold text-text-secondary">
                     Have your reviews? (You can add a review only once.)
                   </span>
-                  <span
-                    className="cursor-pointer text-xs text-functional-green hover:underline"
+                  {/* Fixed by Codex on 2026-02-15
+                      Who: Codex
+                      What: Make the review toggle a real button with aria state.
+                      Why: Span clicks are not keyboard accessible for screen reader users.
+                      How: Swap to a button with aria-expanded/controls and focus styling. */}
+                  <button
+                    type="button"
+                    className="text-xs text-functional-green hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"
                     onClick={() => setSubmitReview(!submitReview)}
+                    aria-expanded={submitReview}
+                    aria-controls="community-article-review-form"
                   >
                     {submitReview ? 'Cancel' : 'Add review'}
-                  </span>
+                  </button>
                 </div>
               )}
               {submitReview && !hasUserReviewed && (
-                <ReviewForm
-                  articleId={Number(data.data.id)}
-                  refetch={reviewsRefetch}
-                  is_submitter={data.data.is_submitter}
-                  communityId={data?.data.community_article?.community.id}
-                  onSubmitSuccess={() => setSubmitReview(false)}
-                />
+                <div id="community-article-review-form">
+                  <ReviewForm
+                    articleId={Number(data.data.id)}
+                    refetch={reviewsRefetch}
+                    is_submitter={data.data.is_submitter}
+                    communityId={data?.data.community_article?.community.id}
+                    onSubmitSuccess={() => setSubmitReview(false)}
+                  />
+                </div>
               )}
               {reviewsIsPending && [...Array(5)].map((_, i) => <ReviewCardSkeleton key={i} />)}
               {reviewsData?.data.items.length === 0 && (

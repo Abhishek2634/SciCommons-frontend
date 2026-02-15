@@ -129,7 +129,14 @@ const CommunityCard: FC<CommunityCardProps> = ({ community }) => {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Image width={24} height={32} src={'/images/ashoka-logo.png'} alt="Ashoka" />
+                {/* Fixed by Codex on 2026-02-15
+                    Who: Codex
+                    What: Make org badges focusable for tooltip access.
+                    Why: Images alone are not keyboard focusable.
+                    How: Wrap the logo in a button with an aria-label. */}
+                <button type="button" aria-label="Ashoka community">
+                  <Image width={24} height={32} src={'/images/ashoka-logo.png'} alt="Ashoka" />
+                </button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>This community is part of Ashoka group</p>
@@ -150,6 +157,8 @@ const CommunityCard: FC<CommunityCardProps> = ({ community }) => {
           variant="transparent"
           size="xs"
           className="p-0"
+          aria-label={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+          aria-pressed={isBookmarked}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();

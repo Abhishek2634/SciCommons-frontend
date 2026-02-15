@@ -82,7 +82,8 @@ const RegisterForm: React.FC = () => {
     <div className="flex h-dvh flex-col p-4 md:flex-row md:p-0">
       <Image
         src="/images/assets/bg-auth-pages.webp"
-        alt="Background"
+        alt=""
+        aria-hidden="true"
         layout="fill"
         objectFit="cover"
         className="z-0 md:hidden"
@@ -91,7 +92,8 @@ const RegisterForm: React.FC = () => {
       <div className="relative overflow-hidden md:w-1/2">
         <Image
           src="/images/assets/bg-auth-pages.webp"
-          alt="Background"
+          alt=""
+          aria-hidden="true"
           layout="fill"
           objectFit="cover"
           className="z-0"
@@ -108,7 +110,7 @@ const RegisterForm: React.FC = () => {
             <div className="relative mt-12 overflow-hidden rounded-lg md:h-[400px] md:w-[720px] lg:h-[600px] lg:w-[1080px]">
               <Image
                 src="/images/assets/screenshot.png"
-                alt="Logo"
+                alt="SciCommons product preview"
                 layout="fill"
                 objectFit="cover"
               />
@@ -119,20 +121,27 @@ const RegisterForm: React.FC = () => {
 
       {/* Right Side */}
       <div className="relative flex h-full flex-col gap-4 overflow-y-auto rounded-xl bg-white p-10 md:w-1/2 md:rounded-none md:px-8 md:py-10 lg:px-24">
-        <div
-          className="absolute left-6 top-6 flex cursor-pointer flex-row items-center text-sm md:hidden"
+        {/* Fixed by Codex on 2026-02-15
+            Who: Codex
+            What: Convert back and logo actions into buttons.
+            Why: Clickable divs/images are not keyboard accessible.
+            How: Use button elements with aria-labels. */}
+        <button
+          type="button"
+          aria-label="Go back"
+          className="absolute left-6 top-6 flex flex-row items-center text-sm md:hidden"
           onClick={() => router.back()}
         >
           <ArrowNarrowLeft className="text-black" />
-        </div>
-        <Image
-          alt="scicommons_logo"
-          width={60}
-          height={20}
-          src={'/logo.png'}
-          className="mx-auto mb-2 cursor-pointer md:mb-6"
+        </button>
+        <button
+          type="button"
+          aria-label="Go to SciCommons home"
+          className="mx-auto mb-2 md:mb-6"
           onClick={() => router.push('/')}
-        />
+        >
+          <Image alt="SciCommons logo" width={60} height={20} src={'/logo.png'} />
+        </button>
         <h4 className="text-xl font-bold text-black md:text-2xl">Create your free Account</h4>
         <form onSubmit={handleSubmit(onSubmit)} className="mx-auto flex w-full flex-col space-y-4">
           <FormInput

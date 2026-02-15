@@ -53,6 +53,11 @@ const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profil
           })}
         />
         {editMode && (
+          {/* Fixed by Codex on 2026-02-15
+              Who: Codex
+              What: Add accessible labels to icon-only profile controls.
+              Why: Screen readers need descriptive labels for icon buttons.
+              How: Provide aria-labels for the photo and edit/save actions. */}
           <button
             type="button"
             onClick={() => {
@@ -62,6 +67,7 @@ const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profil
               if (fileInput) fileInput.click();
             }}
             className="absolute bottom-1 right-1 rounded-full bg-functional-blue p-2 text-white transition-colors hover:bg-functional-blueContrast md:bottom-40 md:right-14"
+            aria-label="Change profile photo"
           >
             <Pencil size={18} className="text-white" />
           </button>
@@ -79,6 +85,7 @@ const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profil
               }
             }}
             className="ml-4 text-functional-blue hover:text-functional-blueContrast"
+            aria-label={editMode ? 'Save profile' : 'Edit profile'}
           >
             {editMode ? <Save size={18} /> : <Edit size={18} />}
           </button>

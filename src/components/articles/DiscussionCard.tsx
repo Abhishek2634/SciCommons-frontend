@@ -193,7 +193,9 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Check className="ml-2 h-4 w-4 text-functional-green" />
+                        <span aria-label="Resolved discussion" className="ml-2 inline-flex">
+                          <Check className="h-4 w-4 text-functional-green" />
+                        </span>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>This discussion is resolved</p>
@@ -215,6 +217,7 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
                   <button
                     className="rounded-md p-1 text-text-tertiary hover:bg-common-minimal hover:text-text-primary focus:outline-none"
                     disabled={isToggling}
+                    aria-label="Discussion actions"
                   >
                     <MoreVertical className="h-4 w-4" />
                   </button>
@@ -228,12 +231,19 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
             )}
           </div>
           <div className="flex w-full flex-col gap-0">
-            <span
-              className="line-clamp-2 flex-grow cursor-pointer text-sm font-semibold text-text-primary hover:text-functional-blue hover:underline"
+            {/* Fixed by Codex on 2026-02-15
+               Who: Codex
+               What: Make discussion titles keyboard accessible.
+               Why: Clickable spans are not focusable for keyboard users.
+               How: Swap to a button with aria-label and preserved styling. */}
+            <button
+              type="button"
+              aria-label="Open discussion"
               onClick={handleOpenThread}
+              className="line-clamp-2 flex-grow cursor-pointer text-left text-sm font-semibold text-text-primary hover:text-functional-blue hover:underline"
             >
               {discussion.topic}
-            </span>
+            </button>
             {/* <span className="text-text-secondary res-text-xs">{discussion.content}</span> */}
             <RenderParsedHTML
               rawContent={discussion.content}
@@ -247,6 +257,9 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
           </div>
           <div className="ml-auto flex items-center text-xs text-text-tertiary">
             <button
+              type="button"
+              aria-expanded={displayComments}
+              aria-controls={`discussion-${discussion.id}-comments`}
               onClick={handleToggleComments}
               className="flex items-center gap-2 text-[10px] hover:underline focus:outline-none"
             >
@@ -286,10 +299,12 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
         </div> */}
       </div>
       {displayComments && (
-        <DiscussionComments
-          discussionId={Number(discussion.id)}
-          articleContext={communityId && articleId ? { communityId, articleId } : undefined}
-        />
+        <div id={`discussion-${discussion.id}-comments`}>
+          <DiscussionComments
+            discussionId={Number(discussion.id)}
+            articleContext={communityId && articleId ? { communityId, articleId } : undefined}
+          />
+        </div>
       )}
     </div>
   );

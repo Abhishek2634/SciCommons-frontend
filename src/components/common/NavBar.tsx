@@ -78,21 +78,34 @@ const NavBar: React.FC = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-[1000] w-full border-b border-common-minimal bg-common-background/50 text-text-primary backdrop-blur-md">
+    {/* Fixed by Codex on 2026-02-15
+        Who: Codex
+        What: Modernize the navbar treatment with a lighter glass finish.
+        Why: The heavier green emphasis pulled focus away from content.
+        How: Shifted to cooler neutrals, softer borders, and subtle hover fills. */}
+    <header className="sticky top-0 z-[1000] w-full border-b border-common-contrast/40 bg-common-background/70 text-text-primary backdrop-blur-md">
       <nav className="container mx-auto flex items-center justify-between px-4 py-2">
         <div className="flex items-center">
-          <MoveLeft
-            className="mr-4 size-5 cursor-pointer text-primary"
-            strokeWidth={1.5}
+          {/* Fixed by Codex on 2026-02-15
+              Who: Codex
+              What: Convert the back icon into a real button.
+              Why: Icon-only divs are not keyboard accessible or announced by screen readers.
+              How: Wrap the icon in a button with an aria-label and click handler. */}
+          <button
+            type="button"
+            aria-label="Go back"
+            className="mr-4 flex size-8 items-center justify-center rounded-full text-primary hover:bg-common-minimal/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/60"
             onClick={() => {
               router.back();
             }}
-          />
+          >
+            <MoveLeft className="size-5" strokeWidth={1.5} />
+          </button>
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center">
               <Image
                 src="/logo.png"
-                alt="Logo"
+                alt="SciCommons logo"
                 width={isAshokaUser ? 45 : 60}
                 height={isAshokaUser ? 33 : 40}
               />
@@ -115,19 +128,29 @@ const NavBar: React.FC = () => {
               <li
                 key={link.href}
                 className={cn(
-                  'relative rounded-full px-3 py-1 text-sm text-text-primary hover:bg-functional-green/10',
+                  /* Fixed by Codex on 2026-02-15
+                     Who: Codex
+                     What: Add non-color active cues in the navbar.
+                     Why: Color-only highlighting is weak for common color-blind users.
+                     How: Added a contrast border and underline indicator for active states. */
+                  'relative rounded-full border border-transparent px-3 py-1 text-sm text-text-primary transition hover:bg-functional-green/10',
                   {
-                    'bg-functional-green/10 font-bold text-functional-green': isActive,
+                    'bg-functional-green/10 font-semibold text-functional-green border-common-contrast/60 shadow-sm after:absolute after:-bottom-1 after:left-1/2 after:h-[2px] after:w-5 after:-translate-x-1/2 after:rounded-full after:bg-current':
+                      isActive,
                     'font-bold': link.bold && !isActive,
                   }
                 )}
               >
-                <Link href={link.href}>{link.label}</Link>
-                {/* Unread indicator dot for Discussions */}
+                <Link href={link.href} aria-current={isActive ? 'page' : undefined}>
+                  {link.label}
+                </Link>
+                {/* Unread indicator badge for Discussions */}
                 {link.href === '/discussions' &&
                   newEventsCount > 0 &&
                   !pathname?.startsWith('/discussion') && (
-                    <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-functional-red" />
+                    <span className="absolute -right-3 -top-2 rounded-full border border-functional-red/50 bg-functional-red/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-functional-red">
+                      New
+                    </span>
                   )}
               </li>
             );
@@ -138,7 +161,7 @@ const NavBar: React.FC = () => {
             <div className="hidden md:block">
               <CreateDropdown />
             </div>
-            <Link href="/notifications">
+            <Link href="/notifications" aria-label="Notifications">
               <Bell className="hover:animate-wiggle h-9 w-9 cursor-pointer rounded-full p-2 text-text-secondary hover:text-functional-yellow" />
             </Link>
             <ThemeSwitch iconSize={20} />
@@ -259,16 +282,27 @@ const ProfileDropdown: React.FC = () => {
   return (
     <DropdownMenu onOpenChange={(isOpen) => setIsDropdownOpen(isOpen)} open={isDropdownOpen}>
       <DropdownMenuTrigger asChild>
-        <Image
-          src={profileImage}
-          alt="Profile"
-          width={32}
-          height={32}
-          className="aspect-square cursor-pointer rounded-full object-cover"
-          quality={80}
-          sizes="32px"
-          priority
-        />
+        {/* Fixed by Codex on 2026-02-15
+            Who: Codex
+            What: Make the profile menu trigger keyboard accessible.
+            Why: An image alone is not focusable for keyboard users.
+            How: Wrap the avatar in a button with an aria-label. */}
+        <button
+          type="button"
+          aria-label="Open profile menu"
+          className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/60"
+        >
+          <Image
+            src={profileImage}
+            alt="Profile"
+            width={32}
+            height={32}
+            className="aspect-square cursor-pointer rounded-full object-cover"
+            quality={80}
+            sizes="32px"
+            priority
+          />
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent sideOffset={12}>
         <DropdownMenuItem onClick={() => setIsDropdownOpen(false)}>
@@ -318,8 +352,16 @@ const ThemeSwitch = ({
   const { theme, setTheme } = useTheme();
 
   return (
-    <div
-      className="flex cursor-pointer items-center space-x-2"
+    /* Fixed by Codex on 2026-02-15
+       Who: Codex
+       What: Make the theme toggle keyboard and screen-reader accessible.
+       Why: A clickable div is not focusable and lacks a programmatic label.
+       How: Swap to a button with aria-label and aria-pressed state. */
+    <button
+      type="button"
+      className="flex items-center space-x-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/60"
+      aria-label="Toggle color theme"
+      aria-pressed={theme === 'dark'}
       onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
     >
       {theme === 'light' ? (
@@ -328,6 +370,6 @@ const ThemeSwitch = ({
         <SunMediumIcon size={iconSize} className="mr-2" />
       )}
       {showTitle && <>{theme === 'light' ? 'Dark' : 'Light'} Mode</>}
-    </div>
+    </button>
   );
 };

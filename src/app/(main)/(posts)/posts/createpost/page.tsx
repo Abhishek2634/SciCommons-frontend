@@ -209,21 +209,29 @@ const CreatePostPage: React.FC = () => {
                 ref={hashtagDropdownRef}
                 className="max-h-60 w-full overflow-y-auto rounded-common-lg border border-common-minimal bg-white-primary"
               >
+                {/* Fixed by Codex on 2026-02-15
+                    Who: Codex
+                    What: Convert hashtag suggestions to buttons.
+                    Why: Clickable list items/divs are not keyboard accessible.
+                    How: Use buttons inside list items with explicit labels. */}
                 {availableHashtags.map((hashtagObj, index) => (
-                  <li
-                    key={index}
-                    className="flex cursor-pointer items-center justify-between border-b border-common-minimal p-2 hover:bg-common-minimal/50"
-                    onClick={() => {
-                      const newPostBody =
-                        postBody + hashtagObj.hashtag.substring(currentWord.length);
-                      setPostBody(newPostBody);
-                      setValue('content', newPostBody);
-                      setAvailableHashtags([]);
-                    }}
-                  >
-                    <span className="text-sm text-text-primary">
-                      {highlightHashtag(hashtagObj.hashtag)}
-                    </span>
+                  <li key={index} className="border-b border-common-minimal">
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between p-2 text-left hover:bg-common-minimal/50"
+                      onClick={() => {
+                        const newPostBody =
+                          postBody + hashtagObj.hashtag.substring(currentWord.length);
+                        setPostBody(newPostBody);
+                        setValue('content', newPostBody);
+                        setAvailableHashtags([]);
+                      }}
+                      aria-label={`Insert hashtag ${hashtagObj.hashtag}`}
+                    >
+                      <span className="text-sm text-text-primary">
+                        {highlightHashtag(hashtagObj.hashtag)}
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -234,17 +242,19 @@ const CreatePostPage: React.FC = () => {
           <h4 className="font-bold text-primary">Popular Hashtags</h4>
           <div className="flex flex-wrap gap-2">
             {HashtagsList.map((hashtagObj, index) => (
-              <div
+              <button
                 key={index}
-                className="flex cursor-pointer flex-wrap items-center gap-1 rounded-full bg-gray-200 px-3 py-2"
+                type="button"
+                className="flex flex-wrap items-center gap-1 rounded-full bg-gray-200 px-3 py-2"
                 onClick={() => {
                   const newPostBody = `${postBody} ${hashtagObj.hashtag}`;
                   setPostBody(newPostBody);
                   setValue('content', newPostBody);
                 }}
+                aria-label={`Insert hashtag ${hashtagObj.hashtag}`}
               >
                 <span className="text-sm text-text-primary">{hashtagObj?.hashtag}</span>
-              </div>
+              </button>
             ))}
           </div>
         </div>

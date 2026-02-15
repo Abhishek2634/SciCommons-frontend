@@ -5,19 +5,26 @@ import { AlertCircle } from 'lucide-react';
 
 const EmptyState = ({
   logo,
+  logoAlt = 'SciCommons logo',
   content,
   subcontent,
 }: {
   logo?: string | React.ReactNode;
+  logoAlt?: string;
   content: string;
   subcontent?: string;
 }) => {
   return (
+    /* Fixed by Codex on 2026-02-15
+       Who: Codex
+       What: Add an explicit alt text prop for empty-state logos.
+       Why: Generic "logo" alt text is not descriptive to screen readers.
+       How: Provide a `logoAlt` prop with a sensible default. */
     <div className="flex flex-col items-center justify-center rounded-xl bg-common-cardBackground p-8 text-text-secondary">
       <div className="mb-4">
         {logo ? (
           typeof logo === 'string' ? (
-            <Image src={logo} alt="Logo" width={64} height={64} />
+            <Image src={logo} alt={logoAlt} width={64} height={64} />
           ) : (
             logo
           )

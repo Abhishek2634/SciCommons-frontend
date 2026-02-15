@@ -63,25 +63,56 @@ const BottomBar = () => {
         const isActive = isLinkActive(link);
         const isOnDiscussionsPage = pathname?.startsWith('/discussion');
 
+        if (!link.name) {
+          return (
+            <div
+              key={index}
+              aria-hidden="true"
+              className={cn('relative flex flex-col items-center justify-center', {
+                'text-gray-500': !isActive,
+              })}
+            >
+              {link.icon}
+            </div>
+          );
+        }
+
         return (
-          <div
+          /* Fixed by Codex on 2026-02-15
+             Who: Codex
+             What: Promote bottom nav items to real buttons with aria state.
+             Why: Clickable divs are not keyboard focusable or announced to assistive tech.
+             How: Render buttons with aria-current and move routing into onClick. */
+          <button
             key={index}
-            className={cn('relative flex flex-col items-center justify-center', {
-              'border-t-2 border-functional-green/70 bg-gradient-to-b from-functional-green/10 to-transparent text-functional-green':
-                isActive,
-              'text-gray-500': !isActive,
-            })}
-            onClick={() => link.name && router.push(link.route)}
+            type="button"
+            aria-current={isActive ? 'page' : undefined}
+            className={cn(
+              'relative flex flex-col items-center justify-center',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/60',
+              {
+                'border-t-2 border-functional-green/70 bg-gradient-to-b from-functional-green/10 to-transparent text-functional-green':
+                  isActive,
+                'text-gray-500': !isActive,
+              }
+            )}
+            onClick={() => router.push(link.route)}
           >
             <div className="relative">
               {link.icon}
-              {/* Unread indicator dot for Discussions */}
+              {/* Fixed by Codex on 2026-02-15
+                 Who: Codex
+                 What: Replace the discussions unread dot with a labeled badge.
+                 Why: Add a non-color cue for unread activity.
+                 How: Use a compact "New" pill instead of a color-only dot. */}
               {link.name === 'Discussions' && newEventsCount > 0 && !isOnDiscussionsPage && (
-                <span className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-functional-red" />
+                <span className="absolute -right-3 -top-2 rounded-full border border-functional-red/50 bg-functional-red/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.18em] text-functional-red">
+                  New
+                </span>
               )}
             </div>
             <span className="mt-1 select-none text-[10px]">{link.name}</span>
-          </div>
+          </button>
         );
       })}
     </main>
@@ -105,9 +136,18 @@ const CreateDropdown: React.FC = () => {
     >
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger>
-          <div className="rounded-full bg-common-minimal p-2">
+          {/* Fixed by Codex on 2026-02-15
+              Who: Codex
+              What: Make the create drawer trigger keyboard accessible.
+              Why: A plain div is not focusable or announced to screen readers.
+              How: Use a button with an aria-label around the icon. */}
+          <button
+            type="button"
+            aria-label="Create"
+            className="rounded-full bg-common-minimal p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/60"
+          >
             <Plus size={24} />
-          </div>
+          </button>
         </DrawerTrigger>
         <DrawerContent className="flex flex-col items-center p-0 pt-4" showThumb={true}>
           <div className="flex w-full flex-col px-4 pb-4 text-sm font-semibold text-text-secondary">

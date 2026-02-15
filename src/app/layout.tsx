@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Manrope, Space_Grotesk } from 'next/font/google';
 import NextTopLoader from 'nextjs-toploader';
 
 import { Toaster as SonnerToaster } from 'sonner';
@@ -16,7 +16,17 @@ import { cn } from '@/lib/utils';
 
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+/* Fixed by Codex on 2026-02-15
+   Who: Codex
+   What: Swap the default font stack to a modern display + body pairing.
+   Why: The Inter-only stack felt generic; a new pairing adds character without heaviness.
+   How: Load Manrope for body text and Space Grotesk for display usage via CSS variables. */
+const manrope = Manrope({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   manifest: '/manifest.json',
@@ -40,7 +50,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#00050d',
+  themeColor: '#0f172a',
 };
 
 export default function RootLayout({
@@ -50,10 +60,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={cn(inter.className, 'relative bg-common-background')}>
+      <body
+        className={cn(
+          manrope.variable,
+          spaceGrotesk.variable,
+          'relative bg-common-background font-sans'
+        )}
+      >
         <ReactQueryClientProvider>
           <GlobalErrorHandler />
-          <NextTopLoader showSpinner={false} color="#64e466" shadow={false} />
+          {/* Fixed by Codex on 2026-02-15
+              Who: Codex
+              What: Align the route transition loader color with the new accent palette.
+              Why: The old neon green clashed with the cooler modern palette.
+              How: Updated NextTopLoader to use the teal accent token. */}
+          <NextTopLoader showSpinner={false} color="#14b8a6" shadow={false} />
           <SessionExpirationDialog />
           <PathTracker />
           {/* Fixed by Codex on 2026-02-15

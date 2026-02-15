@@ -244,7 +244,11 @@ const FormInput = <TFieldValues extends FieldValues>({
                     eyeBtnClassName
                   )}
                   onClick={togglePasswordVisibility}
-                  tabIndex={-1}
+                  /* Fixed by Codex on 2026-02-15
+                     Who: Codex
+                     What: Allow keyboard access to the password visibility toggle.
+                     Why: tabIndex -1 hides the control from keyboard users.
+                     How: Remove the negative tabIndex so it can receive focus. */
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}

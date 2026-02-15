@@ -242,6 +242,9 @@ const Comment: React.FC<CommentProps> = ({
           <div className="hidden items-center gap-2 sm:flex">
             {hasReplies && (
               <button
+                type="button"
+                aria-expanded={!isCollapsed}
+                aria-controls={`comment-${id}-replies`}
                 onClick={() => setIsCollapsed(!isCollapsed)}
                 className="flex items-center gap-1 text-xs text-functional-blue hover:text-functional-blueContrast"
               >
@@ -276,15 +279,22 @@ const Comment: React.FC<CommentProps> = ({
         )}
         {!is_deleted && (
           <div className="mt-2 flex flex-wrap items-center gap-4 pl-2 text-text-secondary">
-            <button className="flex items-center space-x-1">
+            {/* Fixed by Codex on 2026-02-15
+               Who: Codex
+               What: Add accessible labels and pressed state for reaction controls.
+               Why: Icon-only buttons were not announced to screen readers.
+               How: Move handlers to buttons and set aria-label/aria-pressed. */}
+            <button
+              type="button"
+              aria-label="Upvote"
+              aria-pressed={data?.data.user_reaction === 1}
+              onClick={() => handleReaction('upvote')}
+              className="flex items-center space-x-1"
+            >
               {data?.data.user_reaction === 1 ? (
-                <ThumbsUp
-                  size={16}
-                  className="text-functional-blue"
-                  onClick={() => handleReaction('upvote')}
-                />
+                <ThumbsUp size={16} className="text-functional-blue" />
               ) : (
-                <ThumbsUp size={16} onClick={() => handleReaction('upvote')} />
+                <ThumbsUp size={16} />
               )}
               {/* Fixed by Codex on 2026-02-15
                  Who: Codex
@@ -293,18 +303,23 @@ const Comment: React.FC<CommentProps> = ({
                  How: Render server likes with a fallback to the prop value. */}
               <span className="text-xs">{data?.data.likes ?? upvotes ?? 0}</span>
             </button>
-            <button className="flex items-center space-x-1">
+            <button
+              type="button"
+              aria-label="Downvote"
+              aria-pressed={data?.data.user_reaction === -1}
+              onClick={() => handleReaction('downvote')}
+              className="flex items-center space-x-1"
+            >
               {data?.data.user_reaction === -1 ? (
-                <ThumbsDown
-                  size={16}
-                  className="text-functional-red"
-                  onClick={() => handleReaction('downvote')}
-                />
+                <ThumbsDown size={16} className="text-functional-red" />
               ) : (
-                <ThumbsDown size={16} onClick={() => handleReaction('downvote')} />
+                <ThumbsDown size={16} />
               )}
             </button>
             <button
+              type="button"
+              aria-expanded={isReplying}
+              aria-controls={`comment-${id}-reply`}
               className="flex items-center space-x-1"
               onClick={() => setIsReplying((prev) => !prev)}
             >
@@ -316,6 +331,8 @@ const Comment: React.FC<CommentProps> = ({
                 {' '}
                 {isEditing ? (
                   <button
+                    type="button"
+                    aria-label="Cancel edit"
                     className="text-text-tertiary hover:text-functional-blue"
                     onClick={() => setIsEditing((prev) => !prev)}
                   >
@@ -323,6 +340,8 @@ const Comment: React.FC<CommentProps> = ({
                   </button>
                 ) : (
                   <button
+                    type="button"
+                    aria-label="Edit comment"
                     className="text-text-tertiary hover:text-functional-blue"
                     onClick={() => setIsEditing((prev) => !prev)}
                   >
@@ -330,6 +349,8 @@ const Comment: React.FC<CommentProps> = ({
                   </button>
                 )}
                 <button
+                  type="button"
+                  aria-label="Delete comment"
                   className="text-text-tertiary hover:text-functional-red"
                   onClick={handleDeleteComment}
                 >
@@ -340,6 +361,9 @@ const Comment: React.FC<CommentProps> = ({
             <div className="flex items-center space-x-2 sm:hidden">
               {hasReplies && (
                 <button
+                  type="button"
+                  aria-expanded={!isCollapsed}
+                  aria-controls={`comment-${id}-replies`}
                   onClick={() => setIsCollapsed(!isCollapsed)}
                   className="flex items-center gap-1 text-xs text-functional-blue hover:text-functional-blueContrast"
                 >
@@ -362,7 +386,7 @@ const Comment: React.FC<CommentProps> = ({
           </div>
         )}
         {isReplying && (
-          <div className="mt-4">
+          <div className="mt-4" id={`comment-${id}-reply`}>
             <CommentInput
               onSubmit={handleAddReply}
               placeholder="Write your reply..."
@@ -373,7 +397,7 @@ const Comment: React.FC<CommentProps> = ({
           </div>
         )}
         {hasReplies && !isCollapsed && (
-          <div className="mt-4 pl-0">
+          <div className="mt-4 pl-0" id={`comment-${id}-replies`}>
             <RenderComments
               comments={replies}
               depth={depth + 1}
@@ -389,6 +413,9 @@ const Comment: React.FC<CommentProps> = ({
         )}
         {hasReplies && isCollapsed && (
           <button
+            type="button"
+            aria-expanded={false}
+            aria-controls={`comment-${id}-replies`}
             onClick={() => setIsCollapsed(false)}
             className="relative mt-4 pl-2 text-xs text-functional-blue hover:underline"
           >

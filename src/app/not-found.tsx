@@ -80,18 +80,25 @@ export default function NotFound() {
           <div
             className={`flex flex-col gap-4 transition-all delay-300 duration-1000 sm:flex-row sm:justify-center ${isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
           >
-            <Link href="/">
-              <button className="group relative inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-3 text-base font-semibold text-white shadow-lg transition-all hover:from-blue-700 hover:to-blue-800 hover:shadow-xl active:scale-95 dark:from-blue-500 dark:to-blue-600">
-                <Home className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
-                Back to Home
-              </button>
+            {/* Fixed by Codex on 2026-02-15
+                Who: Codex
+                What: Remove nested interactive controls in 404 CTAs.
+                Why: Link-wrapped buttons are invalid and flagged by accessibility checkers.
+                How: Style the Link directly and keep the same visual treatment. */}
+            <Link
+              href="/"
+              className="group relative inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-3 text-base font-semibold text-white shadow-lg transition-all hover:from-blue-700 hover:to-blue-800 hover:shadow-xl active:scale-95 dark:from-blue-500 dark:to-blue-600"
+            >
+              <Home className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
+              Back to Home
             </Link>
 
-            <Link href="/articles">
-              <button className="group relative inline-flex items-center gap-2 rounded-lg border-2 border-green-500 px-8 py-3 text-base font-semibold text-green-600 transition-all hover:border-green-600 hover:bg-green-50 hover:text-green-700 active:scale-95 dark:border-green-400 dark:text-green-400 dark:hover:border-green-300 dark:hover:bg-green-950">
-                <Search className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
-                Explore Articles
-              </button>
+            <Link
+              href="/articles"
+              className="group relative inline-flex items-center gap-2 rounded-lg border-2 border-green-500 px-8 py-3 text-base font-semibold text-green-600 transition-all hover:border-green-600 hover:bg-green-50 hover:text-green-700 active:scale-95 dark:border-green-400 dark:text-green-400 dark:hover:border-green-300 dark:hover:bg-green-950"
+            >
+              <Search className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+              Explore Articles
             </Link>
           </div>
 

@@ -136,12 +136,19 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
                   <span className="text-sm font-semibold text-text-secondary">
                     Have your reviews? (You can add a review only once.)
                   </span>
-                  <span
-                    className="cursor-pointer text-xs text-functional-green hover:underline"
+                  {/* Fixed by Codex on 2026-02-15
+                      Who: Codex
+                      What: Use a button for the review toggle with aria state.
+                      Why: Span-based click targets are not keyboard accessible.
+                      How: Switch to button with aria-expanded and focus-visible ring. */}
+                  <button
+                    type="button"
+                    className="text-xs text-functional-green hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"
                     onClick={() => onReviewFormToggle(!submitReviewExternal)}
+                    aria-expanded={!!submitReviewExternal}
                   >
                     {submitReviewExternal ? 'Cancel' : 'Add review'}
-                  </span>
+                  </button>
                 </div>
               )}
               {/* Note: Review form is handled externally in ArticleDisplayPageClient */}

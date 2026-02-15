@@ -217,6 +217,7 @@ const CreateCommunity: React.FC = () => {
                           field.onChange(value);
                           setSelectedType(value);
                         }}
+                        groupName="community-type"
                         showRadio={false}
                       />
                     ))}
@@ -248,6 +249,7 @@ const CreateCommunity: React.FC = () => {
                               field.onChange(value);
                               setSelectedPublicCommunitiesSettings(value);
                             }}
+                            groupName="community-settings"
                           />
                         ))}
                       </>

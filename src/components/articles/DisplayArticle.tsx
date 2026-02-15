@@ -262,17 +262,28 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({
                   ? `/article/${article.slug}/settings?community=${encodeURIComponent(article.community_article.community.name)}&returnTo=community`
                   : `/article/${article.slug}/settings`
               }
+              className="rounded-md border border-common-contrast bg-white px-3 py-1.5 text-xs text-black dark:bg-black dark:text-white"
             >
-              <div className="rounded-md border border-common-contrast bg-white px-3 py-1.5 text-xs text-black dark:bg-black dark:text-white">
-                Edit Article
-              </div>
+              {/* Fixed by Codex on 2026-02-15
+                  Who: Codex
+                  What: Use semantic link text for edit action.
+                  Why: Div-wrapped links obscure the interactive element for assistive tech.
+                  How: Move styling onto the Link so the anchor is the focus target. */}
+              Edit Article
             </Link>
           )}
           {!article.community_article && (
+            /* Fixed by Codex on 2026-02-15
+               Who: Codex
+               What: Add ARIA labels and pressed state to the bookmark toggle.
+               Why: Icon-only buttons need accessible names and state feedback.
+               How: Provide aria-label/aria-pressed on the Button element. */
             <Button
               variant="outline"
               size="xs"
               className="aspect-square p-1.5"
+              aria-label={isBookmarked ? 'Remove bookmark for article' : 'Add bookmark for article'}
+              aria-pressed={isBookmarked}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -302,12 +313,21 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({
                 </Button>
               }
             >
+              {/* Fixed by Codex on 2026-02-15
+                  Who: Codex
+                  What: Make settings triggers accessible buttons with labels.
+                  Why: Icon-only sheet/drawer triggers were unlabeled for screen readers.
+                  How: Use asChild buttons with aria-labels and explicit types. */}
               {isDesktop ? (
                 <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                  <SheetTrigger>
-                    <div className="rounded-lg border border-common-contrast bg-white px-4 py-2 text-black res-text-xs dark:bg-black dark:text-white">
+                  <SheetTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Open article settings"
+                      className="rounded-lg border border-common-contrast bg-white px-4 py-2 text-black res-text-xs dark:bg-black dark:text-white"
+                    >
                       <Settings size={18} />
-                    </div>
+                    </button>
                   </SheetTrigger>
                   <SheetContent
                     isOpen={isSheetOpen}
@@ -342,10 +362,14 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({
                 </Sheet>
               ) : (
                 <Drawer>
-                  <DrawerTrigger>
-                    <div className="rounded-lg border border-common-contrast bg-white px-4 py-2 text-black res-text-xs dark:bg-black dark:text-white">
+                  <DrawerTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Open article settings"
+                      className="rounded-lg border border-common-contrast bg-white px-4 py-2 text-black res-text-xs dark:bg-black dark:text-white"
+                    >
                       <Settings size={18} />
-                    </div>
+                    </button>
                   </DrawerTrigger>
                   <DrawerContent className="flex flex-col items-center p-0 pt-4">
                     <DrawerHeader className="flex flex-col items-center">

@@ -56,7 +56,8 @@ const ResetPasswordForm = ({ params }: { params: { token: string } }) => {
     <div className="relative flex h-dvh flex-col items-center justify-center bg-black p-4 sm:p-0">
       <Image
         src="/images/assets/bg-auth-pages.webp"
-        alt="Background"
+        alt=""
+        aria-hidden="true"
         layout="fill"
         objectFit="cover"
         className="z-0"
@@ -64,7 +65,12 @@ const ResetPasswordForm = ({ params }: { params: { token: string } }) => {
       <div className="relative flex h-fit w-full flex-col gap-6 overflow-y-auto rounded-xl bg-white px-8 py-12 sm:w-[540px] sm:justify-center sm:px-10 sm:py-14 md:shadow-[0px_4px_200px_-40px_rgba(66,182,95,0.5)]">
         <div className="text-center">
           <div className="flex items-center justify-center">
-            <Image src="/auth/resetpassword.png" alt="logo" width={80} height={80} />
+            <Image
+              src="/auth/resetpassword.png"
+              alt="Reset password illustration"
+              width={80}
+              height={80}
+            />
           </div>
           <h1 className="mt-4 font-bold text-black res-text-xl">Reset Password</h1>
           <p className="mt-2 text-sm text-text-secondary">

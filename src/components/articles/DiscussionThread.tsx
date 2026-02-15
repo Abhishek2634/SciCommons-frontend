@@ -145,11 +145,11 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({ discussionId, setDi
                 </div>
               </div>
               <div className="mt-4 flex items-center text-gray-500 res-text-xs">
-                <button className="mr-4 flex items-center space-x-1">
+                <button type="button" className="mr-4 flex items-center space-x-1">
                   <MessageSquare size={16} />
                   <span>{discussion.comments_count} comments</span>
                 </button>
-                <button className="flex items-center space-x-1">
+                <button type="button" className="flex items-center space-x-1">
                   <Share2 size={16} />
                   <span>Share</span>
                 </button>
@@ -158,16 +158,27 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({ discussionId, setDi
             <div className="flex flex-col gap-2">
               <MoreVertical className="text-gray-500" />
               <div className="flex flex-col items-center">
+                {/* Fixed by Codex on 2026-02-15
+                    Who: Codex
+                    What: Add labels and pressed state to discussion vote buttons.
+                    Why: Icon-only controls are silent to screen readers and lack state.
+                    How: Provide aria-label/pressed and explicit button types. */}
                 <button
+                  type="button"
                   className="text-gray-400 hover:text-gray-600"
                   onClick={() => handleReaction('upvote')}
+                  aria-label="Upvote discussion"
+                  aria-pressed={reactions?.data.user_reaction === 1}
                 >
                   <ChevronUp size={20} />
                 </button>
                 <span className="font-bold text-gray-700">{reactions?.data.likes}</span>
                 <button
+                  type="button"
                   className="text-gray-400 hover:text-gray-600"
                   onClick={() => handleReaction('downvote')}
+                  aria-label="Downvote discussion"
+                  aria-pressed={reactions?.data.user_reaction === -1}
                 >
                   <ChevronDown size={20} />
                 </button>
