@@ -211,7 +211,6 @@ export function useRealtime() {
     lastEventIdRef.current = l ? Number(l) : null;
   }, []);
 
-
   // Improved cache update functions
   const updateDiscussionsCache = useCallback(
     (event: RealtimeEvent) => {
