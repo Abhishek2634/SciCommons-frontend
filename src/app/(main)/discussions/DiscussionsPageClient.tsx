@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
@@ -32,8 +32,6 @@ const DiscussionsPageClientInner: React.FC = () => {
   const [selectedArticle, setSelectedArticle] = useState<SelectedArticle | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const sidebarScrollPositionRef = useRef<number>(0);
-  const hasRestoredFromUrl = useRef(false);
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
      Problem: When navigating to article page and using back button, sidebar resets to top article
@@ -64,43 +62,6 @@ const DiscussionsPageClientInner: React.FC = () => {
       setIsMobileSidebarOpen(false);
     }
   };
-
-  // Handle articles loaded - restore selected article from URL
-  const handleArticlesLoaded = React.useCallback(
-    (
-      articles: Array<{
-        articleId: number;
-        articleTitle: string;
-        articleSlug: string;
-        articleAbstract: string;
-        communityArticleId: number | null;
-        communityId: number;
-        communityName: string;
-        isAdmin: boolean;
-      }>
-    ) => {
-      const articleIdParam = searchParams?.get('articleId');
-      // Only restore once when component mounts with URL param
-      if (articleIdParam && !selectedArticle && !hasRestoredFromUrl.current) {
-        const articleId = parseInt(articleIdParam, 10);
-        const article = articles.find((a) => a.articleId === articleId);
-        if (article) {
-          hasRestoredFromUrl.current = true;
-          setSelectedArticle({
-            id: article.articleId,
-            title: article.articleTitle,
-            slug: article.articleSlug,
-            abstract: article.articleAbstract,
-            communityId: article.communityId,
-            communityArticleId: article.communityArticleId,
-            isAdmin: article.isAdmin,
-            communityName: article.communityName,
-          });
-        }
-      }
-    },
-    [searchParams, selectedArticle]
-  );
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
      Problem: Clicking PDF viewer in discussions should open article page, then back button should return
@@ -133,8 +94,6 @@ const DiscussionsPageClientInner: React.FC = () => {
               <DiscussionsSidebar
                 onArticleSelect={handleArticleSelect}
                 selectedArticle={selectedArticle}
-                onArticlesLoaded={handleArticlesLoaded}
-                scrollPositionRef={sidebarScrollPositionRef}
               />
             </SheetContent>
           </Sheet>
@@ -183,8 +142,6 @@ const DiscussionsPageClientInner: React.FC = () => {
             <DiscussionsSidebar
               onArticleSelect={handleArticleSelect}
               selectedArticle={selectedArticle}
-              onArticlesLoaded={handleArticlesLoaded}
-              scrollPositionRef={sidebarScrollPositionRef}
             />
           </div>
         </ResizablePanel>

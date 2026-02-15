@@ -74,10 +74,7 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
     if (discussion.id) {
       handleDiscussionClick(Number(discussion.id));
     }
-    if (isUnread && communityId && articleId) {
-      markItemRead(communityId, articleId, Number(discussion.id), 'discussion');
-    }
-  }, [handleDiscussionClick, discussion.id, isUnread, communityId, articleId, markItemRead]);
+  }, [handleDiscussionClick, discussion.id]);
 
   // Check if user can resolve/unresolve (admin or discussion author)
   const canResolve = isCommunityArticle && (isAdmin || discussion.is_author);
