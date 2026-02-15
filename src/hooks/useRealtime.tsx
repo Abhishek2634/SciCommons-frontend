@@ -11,6 +11,7 @@ import {
   myappRealtimeApiRegisterQueue,
 } from '../api/real-time/real-time';
 import { useAuthStore } from '../stores/authStore';
+import { useEphemeralUnreadStore } from '../stores/ephemeralUnreadStore';
 import { startSyncTimer, stopSyncTimer } from '../stores/readItemsStore';
 import { useRealtimeContextStore } from '../stores/realtimeStore';
 import { useSubscriptionUnreadStore } from '../stores/subscriptionUnreadStore';
@@ -654,6 +655,17 @@ export function useRealtime() {
             // Mark subscription as having new unread event (for sidebar)
             useSubscriptionUnreadStore.getState().markArticleHasNewEvent(communityId, articleId);
 
+            /* Fixed by Codex on 2026-02-15
+               Who: Codex
+               What: Track realtime-only NEW badges for discussions.
+               Why: Backend unread flags may arrive later, delaying NEW indicators.
+               How: Record ephemeral unread entries on realtime events and clean expired ones. */
+            if (event.data.discussion.id !== undefined) {
+              const ephemeralStore = useEphemeralUnreadStore.getState();
+              ephemeralStore.markItemUnread('discussion', event.data.discussion.id);
+              ephemeralStore.cleanupExpired();
+            }
+
             toast.warning(
               <div className="flex items-start gap-3">
                 <Bell className="mt-0.5 h-4 w-4 flex-shrink-0 text-functional-yellow" />
@@ -697,6 +709,18 @@ export function useRealtime() {
 
             // Mark subscription as having new unread event (for sidebar)
             useSubscriptionUnreadStore.getState().markArticleHasNewEvent(communityId, articleId);
+
+            /* Fixed by Codex on 2026-02-15
+               Who: Codex
+               What: Track realtime-only NEW badges for comments and replies.
+               Why: Comments can appear before unread flags, so NEW badges need a local overlay.
+               How: Record ephemeral unread entries keyed by comment/reply IDs. */
+            if (event.data.comment.id !== undefined) {
+              const commentType = event.data.parent_id ? 'reply' : 'comment';
+              const ephemeralStore = useEphemeralUnreadStore.getState();
+              ephemeralStore.markItemUnread(commentType, event.data.comment.id);
+              ephemeralStore.cleanupExpired();
+            }
 
             toast.warning(
               <div className="flex items-start gap-3">

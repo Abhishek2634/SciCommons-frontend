@@ -6,9 +6,7 @@ const HelpPage = () => {
   return (
     <div className="relative min-h-[calc(100vh-200px)] bg-common-background">
       <div className="container mx-auto px-4 py-12">
-        <h1 className="mb-8 text-center text-4xl font-bold text-text-primary">
-          Help & Support
-        </h1>
+        <h1 className="mb-8 text-center text-4xl font-bold text-text-primary">Help & Support</h1>
 
         <div className="mx-auto max-w-6xl">
           <div className="mb-32">

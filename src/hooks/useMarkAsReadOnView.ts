@@ -1,5 +1,6 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
 
+import { useEphemeralUnreadStore } from '@/stores/ephemeralUnreadStore';
 import { useReadItemsStore } from '@/stores/readItemsStore';
 import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
 
@@ -51,13 +52,27 @@ export function useMarkAsReadOnView(
   const markItemRead = useReadItemsStore((s) => s.markItemRead);
   const isItemRead = useReadItemsStore((s) => s.isItemRead);
   const clearNewEvent = useSubscriptionUnreadStore((s) => s.clearNewEvent);
+  const clearEphemeralUnread = useEphemeralUnreadStore((s) => s.clearItemUnread);
+  const cleanupEphemeralUnread = useEphemeralUnreadStore((s) => s.cleanupExpired);
+  const isEphemeralUnread = useEphemeralUnreadStore(
+    useCallback((s) => s.isItemUnread(entityType, entityId), [entityType, entityId])
+  );
 
   // Check if item is already read locally
   const apiEntityType = getEntityType(entityType);
   const isAlreadyRead = isItemRead(entityId, apiEntityType);
 
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Include ephemeral realtime unread state when deciding to show NEW tags.
+     Why: Realtime events can arrive before backend unread flags, so NEW badges would be delayed.
+     How: Overlay ephemeral unread checks on top of API flags and clear them on read. */
+  useEffect(() => {
+    cleanupEphemeralUnread();
+  }, [cleanupEphemeralUnread]);
+
   // Item is unread if: has unread flag from API AND not marked as read locally
-  const isUnread = hasUnreadFlag && !isAlreadyRead;
+  const isUnread = (hasUnreadFlag || isEphemeralUnread) && !isAlreadyRead;
 
   // State for NEW tag visibility
   const [showNewTag, setShowNewTag] = useState(isUnread);
@@ -110,6 +125,7 @@ export function useMarkAsReadOnView(
                 // Also clear the new event flag for this article (for sidebar badge)
                 clearNewEvent(articleContext.communityId, articleContext.articleId);
               }
+              clearEphemeralUnread(entityType, entityId);
 
               // Start timer to hide NEW tag
               tagRemovalTimeoutRef.current = setTimeout(() => {
@@ -140,6 +156,7 @@ export function useMarkAsReadOnView(
   }, [
     ref,
     entityId,
+    entityType,
     apiEntityType,
     isUnread,
     visibilityDelay,
@@ -147,6 +164,7 @@ export function useMarkAsReadOnView(
     articleContext,
     markItemRead,
     clearNewEvent,
+    clearEphemeralUnread,
   ]);
 
   // Cleanup on unmount

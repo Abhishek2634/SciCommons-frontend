@@ -78,6 +78,7 @@ const Comment: React.FC<CommentProps> = ({
   author,
   created_at,
   content,
+  upvotes,
   replies,
   depth,
   maxDepth,
@@ -97,15 +98,19 @@ const Comment: React.FC<CommentProps> = ({
   dayjs.extend(relativeTime);
   const accessToken = useAuthStore((state) => state.accessToken);
 
-  // Todo: Too many requests
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Restore lazy reaction-count query behavior.
+     Why: Avoid eager N+1 reaction requests and keep tests aligned.
+     How: Disable the query by default and rely on manual refetch after reactions. */
   const { data, refetch } = useUsersCommonApiGetReactionCount(contentType, Number(id), {
     request: { headers: { Authorization: `Bearer ${accessToken}` } },
     query: {
-      enabled: !!accessToken && !!id,
+      enabled: false,
       staleTime: TEN_MINUTES_IN_MS,
       refetchOnWindowFocus: false,
-      refetchOnMount: true,
-      refetchOnReconnect: true,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
     },
   });
 
@@ -281,7 +286,12 @@ const Comment: React.FC<CommentProps> = ({
               ) : (
                 <ThumbsUp size={16} onClick={() => handleReaction('upvote')} />
               )}
-              <span className="text-xs">{data?.data.likes}</span>
+              {/* Fixed by Codex on 2026-02-15
+                 Who: Codex
+                 What: Restore reaction count fallback to initial upvotes.
+                 Why: Avoid blank counts while the reaction query is loading or fails.
+                 How: Render server likes with a fallback to the prop value. */}
+              <span className="text-xs">{data?.data.likes ?? upvotes ?? 0}</span>
             </button>
             <button className="flex items-center space-x-1">
               {data?.data.user_reaction === -1 ? (

@@ -5,6 +5,42 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Discussions Scroll Persistence + Realtime NEW Overlay (2026-02-15)**
+
+**Problem:** The discussions sidebar lost scroll position after navigation, reaction counts could
+appear blank while loading, and realtime-only events lacked immediate NEW badges until backend
+flags arrived.
+
+**Root Cause:** Scroll state was held only in memory, reaction counts depended solely on the query
+response, and NEW badge logic relied on backend unread flags without a realtime overlay.
+
+**Solution:** Restored sessionStorage-based scroll persistence in the discussions sidebar, added a
+fallback to initial upvotes for reaction counts, and introduced an ephemeral unread store that
+marks realtime discussions/comments as NEW until viewed or expired.
+
+**Result:** Sidebar scroll position is restored across navigation, reaction counts stay visible
+during loading, and realtime events show NEW badges immediately without backend changes.
+
+**Files Modified:** `src/app/(main)/discussions/DiscussionsSidebar.tsx`,
+`src/components/common/Comment.tsx`, `src/hooks/useMarkAsReadOnView.ts`,
+`src/hooks/useRealtime.tsx`, `src/stores/ephemeralUnreadStore.ts`
+
+**Footer Tests Aligned + Lazy Reactions (2026-02-15)**
+
+**Problem:** Footer tests expected social/policy links that are intentionally hidden, and comment
+reaction tests expected lazy reaction queries with a visible fallback count.
+
+**Root Cause:** Social/policy links are commented out as dead links, while tests still asserted them.
+Reaction queries were switched to eager loading.
+
+**Solution:** Removed footer test assertions for hidden links and reverted reaction count queries to
+lazy mode while keeping the fallback to initial upvotes.
+
+**Result:** Tests align with the intended UI state, and reaction count tests confirm lazy queries
+with stable fallback counts.
+
+**Files Modified:** `src/tests/__tests__/Footer.test.tsx`, `src/components/common/Comment.tsx`
+
 **Discussions Sidebar Restore + Read Tracking Fixes (2026-02-15)**
 
 **Problem:** Discussions page failed type-checking because the sidebar component didn't accept the

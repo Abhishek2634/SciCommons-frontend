@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
 
+const SCROLL_POSITION_KEY = 'discussions-sidebar-scroll';
+
 interface SelectedArticle {
   id: number;
   title: string;
@@ -143,6 +145,24 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
     onArticlesLoaded?.(loadedArticles);
   }, [subscriptionsLoading, loadedArticles, onArticlesLoaded]);
 
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Restore discussions sidebar scroll from session storage.
+     Why: Sidebar unmounts on navigation and loses in-memory scroll refs.
+     How: Seed the ref and scrollTop from sessionStorage on mount. */
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const savedScroll = sessionStorage.getItem(SCROLL_POSITION_KEY);
+    if (!savedScroll) return;
+    const scrollPos = parseInt(savedScroll, 10);
+    if (Number.isNaN(scrollPos)) return;
+    if (scrollPositionRef) {
+      scrollPositionRef.current = scrollPos;
+    }
+    container.scrollTop = scrollPos;
+  }, [scrollPositionRef]);
+
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container || !scrollPositionRef) return;
@@ -152,10 +172,17 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
 
   useEffect(() => {
     const container = scrollContainerRef.current;
+    if (!container || !scrollPositionRef || !selectedArticle) return;
+    container.scrollTop = scrollPositionRef.current;
+  }, [selectedArticle, scrollPositionRef]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
     if (!container || !scrollPositionRef) return;
 
     const handleScroll = () => {
       scrollPositionRef.current = container.scrollTop;
+      sessionStorage.setItem(SCROLL_POSITION_KEY, container.scrollTop.toString());
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });

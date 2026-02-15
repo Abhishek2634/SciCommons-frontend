@@ -12,6 +12,7 @@ import NavBar from '@/components/common/NavBar';
 //   AccordionTrigger,
 // } from '@/components/ui/accordian';
 import { Button, ButtonTitle } from '@/components/ui/button';
+
 // import { TypewriterEffectSmooth } from '@/components/ui/typewriter-effect';
 
 // import { faqs } from '@/constants/common.constants';
@@ -52,7 +53,7 @@ const Home = () => {
             Problem: The hero content was sitting too high and overlapping the navbar.
             Solution: Added top padding to the hero content wrapper to push the group down.
             Result: The title and CTAs clear the navbar without changing layout elsewhere. */}
-        <div className="z-10 -mt-6 flex w-full flex-col items-center justify-center backdrop-blur-xl pt-14 sm:pt-20">
+        <div className="z-10 -mt-6 flex w-full flex-col items-center justify-center pt-14 backdrop-blur-xl sm:pt-20">
           <div className="flex w-full flex-col items-center justify-center pb-0">
             {/* Fixed by Codex on 2026-02-10
                 Problem: The hero title used a typewriter animation with a cursor line that felt like a movie-style effect.
@@ -84,9 +85,7 @@ const Home = () => {
               </Link>
             </div>
             <div className="mt-10 flex w-full flex-col items-center justify-center gap-6 sm:flex-row sm:gap-8">
-              <p className="text-sm font-bold text-text-secondary md:text-base">
-                Our Supporters
-              </p>
+              <p className="text-sm font-bold text-text-secondary md:text-base">Our Supporters</p>
               <div className="flex flex-col items-center justify-center gap-8 sm:flex-row">
                 {/* KCDHA Logo - CSS-based theme switching */}
                 <Image
