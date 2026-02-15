@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 
 import Link from 'next/link';
 
@@ -39,13 +39,29 @@ interface FlattenedArticle {
 interface DiscussionsSidebarProps {
   onArticleSelect: (article: SelectedArticle) => void;
   selectedArticle: SelectedArticle | null;
+  onArticlesLoaded?: (
+    articles: Array<{
+      articleId: number;
+      articleTitle: string;
+      articleSlug: string;
+      articleAbstract: string;
+      communityArticleId: number | null;
+      communityId: number;
+      communityName: string;
+      isAdmin: boolean;
+    }>
+  ) => void;
+  scrollPositionRef?: React.MutableRefObject<number>;
 }
 
 const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
   onArticleSelect,
   selectedArticle,
+  onArticlesLoaded,
+  scrollPositionRef,
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Subscribe to articlesWithNewEvents directly to trigger re-renders when new events arrive
   const articlesWithNewEvents = useSubscriptionUnreadStore((s) => s.articlesWithNewEvents);
@@ -63,7 +79,29 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
       },
     });
 
-  const communities = subscriptionsData?.data?.communities || [];
+  /* Fixed by Codex on 2026-02-15
+     Problem: Hook deps warned because communities reference re-created every render.
+     Solution: Memoize communities from the subscriptions payload for stable dependencies.
+     Result: useMemo dependencies stay stable and lint warnings are resolved. */
+  const communities = useMemo(() => {
+    return subscriptionsData?.data?.communities || [];
+  }, [subscriptionsData?.data?.communities]);
+
+  // Base list used for URL restore (stable across realtime unread changes)
+  const loadedArticles = useMemo(() => {
+    return communities.flatMap((community) =>
+      community.articles.map((article) => ({
+        articleId: article.article_id,
+        articleTitle: article.article_title,
+        articleSlug: article.article_slug,
+        articleAbstract: article.article_abstract || '',
+        communityArticleId: article.community_article_id || null,
+        communityId: community.community_id,
+        communityName: community.community_name,
+        isAdmin: community.is_admin || false,
+      }))
+    );
+  }, [communities]);
 
   // Flatten the data: each article becomes its own item with community info
   // Compute effective unread state using the store (handles optimistic updates and realtime events)
@@ -95,6 +133,35 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [communities, isArticleUnread, articlesWithNewEvents]);
 
+  /* Fixed by Codex on 2026-02-15
+     Problem: Discussions sidebar couldn't restore selected article or scroll position after navigation.
+     Solution: Report loaded articles to the parent and keep scroll position in a shared ref.
+     Result: URL-based restoration and sidebar scroll persistence work consistently. */
+  useEffect(() => {
+    if (subscriptionsLoading) return;
+    if (loadedArticles.length === 0) return;
+    onArticlesLoaded?.(loadedArticles);
+  }, [subscriptionsLoading, loadedArticles, onArticlesLoaded]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !scrollPositionRef) return;
+    if (subscriptionsLoading) return;
+    container.scrollTop = scrollPositionRef.current;
+  }, [scrollPositionRef, subscriptionsLoading, loadedArticles.length]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !scrollPositionRef) return;
+
+    const handleScroll = () => {
+      scrollPositionRef.current = container.scrollTop;
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [scrollPositionRef]);
+
   // Handle article selection - mark as read immediately when user clicks
   const handleArticleSelect = (article: FlattenedArticle) => {
     // Mark article as read when user clicks on it (assume user will read everything)
@@ -113,7 +180,7 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
   };
 
   return (
-    <div className="h-full overflow-y-auto p-4">
+    <div ref={scrollContainerRef} className="h-full overflow-y-auto p-4">
       <div className="mb-4">
         <h2 className="flex items-center gap-2 text-lg font-bold text-text-primary">Discussions</h2>
       </div>

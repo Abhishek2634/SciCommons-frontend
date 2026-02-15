@@ -5,6 +5,31 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Discussions Sidebar Restore + Read Tracking Fixes (2026-02-15)**
+
+**Problem:** Discussions page failed type-checking because the sidebar component didn't accept the
+props required for URL-based restoration. Discussion cards also referenced undefined unread state,
+breaking lint checks and risking incorrect mark-as-read behavior.
+
+**Root Cause:** `DiscussionsSidebar` lacked `onArticlesLoaded` and `scrollPositionRef` props, so the
+page couldn't receive loaded article data or persist scroll position. `DiscussionCard` used
+nonexistent `isUnread`/`markItemRead` symbols and called the read store with an incorrect argument
+order.
+
+**Solution:** Added optional restore props to `DiscussionsSidebar`, reporting a stable list of loaded
+articles to the parent and tracking scroll position via a shared ref. Updated `DiscussionCard` to
+use the read/unread stores directly, keying read actions off the NEW tag and fixing the argument
+order while clearing article unread badges.
+
+**Result:** Type-checking passes, sidebar restoration hooks are wired up, and clicking a discussion
+reliably marks it as read without ESLint dependency warnings. Follow-up memoization removed a
+react-hooks dependency warning in the discussions sidebar.
+Follow-up updates also enabled the discussion subscribe/unsubscribe control in panel and
+discussions views when community context is available.
+
+**Files Modified:** `src/app/(main)/discussions/DiscussionsSidebar.tsx`,
+`src/components/articles/DiscussionCard.tsx`
+
 **Home Hero Title Normalization (2026-02-10)**
 
 **Problem:** The homepage "Welcome to SciCommons" title used a typewriter animation with a cursor

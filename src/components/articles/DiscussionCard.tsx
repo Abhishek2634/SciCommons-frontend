@@ -8,12 +8,14 @@ import { Check, ChevronDown, ChevronUp, MessageCircle, MoreVertical } from 'luci
 import { toast } from 'sonner';
 
 import { useArticlesDiscussionApiToggleDiscussionResolved } from '@/api/discussions/discussions';
-import { DiscussionOut } from '@/api/schemas';
+import { DiscussionOut, EntityType } from '@/api/schemas';
 import { useMarkAsReadOnView } from '@/hooks/useMarkAsReadOnView';
 import { hasUnreadFlag } from '@/hooks/useUnreadFlags';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
+import { useReadItemsStore } from '@/stores/readItemsStore';
+import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
 
 import RenderParsedHTML from '../common/RenderParsedHTML';
 import { BlockSkeleton, Skeleton, TextSkeleton } from '../common/Skeleton';
@@ -50,6 +52,8 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
   dayjs.extend(relativeTime);
 
   const accessToken = useAuthStore((state) => state.accessToken);
+  const markItemRead = useReadItemsStore((state) => state.markItemRead);
+  const clearNewEvent = useSubscriptionUnreadStore((state) => state.clearNewEvent);
   const [displayComments, setDisplayComments] = useState<boolean>(false);
   const [isResolved, setIsResolved] = useState<boolean>(discussion.is_resolved || false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -70,14 +74,27 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
     setDisplayComments((prev) => !prev);
   }, []);
 
+  /* Fixed by Codex on 2026-02-15
+     Problem: Discussion clicks referenced undefined unread state and skipped proper read tracking.
+     Solution: Use stored read/unread actions keyed off the NEW tag to mark the discussion read and clear article badges.
+     Result: Clicking a discussion reliably clears unread state without hook dependency warnings. */
   const handleOpenThread = useCallback(() => {
     if (discussion.id) {
       handleDiscussionClick(Number(discussion.id));
     }
-    if (isUnread && communityId && articleId) {
-      markItemRead(communityId, articleId, Number(discussion.id), 'discussion');
+    if (showNewTag && communityId && articleId) {
+      markItemRead(Number(discussion.id), EntityType.discussion, communityId, articleId);
+      clearNewEvent(communityId, articleId);
     }
-  }, [handleDiscussionClick, discussion.id, isUnread, communityId, articleId, markItemRead]);
+  }, [
+    handleDiscussionClick,
+    discussion.id,
+    showNewTag,
+    communityId,
+    articleId,
+    markItemRead,
+    clearNewEvent,
+  ]);
 
   // Check if user can resolve/unresolve (admin or discussion author)
   const canResolve = isCommunityArticle && (isAdmin || discussion.is_author);

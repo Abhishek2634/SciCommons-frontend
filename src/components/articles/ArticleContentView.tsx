@@ -118,6 +118,12 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
   // Check if user has reviewed
   const hasUserReviewed = reviewsData?.data.items.some((review) => review.is_author) || false;
 
+  /* Fixed by Codex on 2026-02-15
+     Problem: Subscribe/unsubscribe control was missing in panel/discussions views.
+     Solution: Enable the discussion subscription button when community context exists.
+     Result: Panel and discussions views match the full article page behavior. */
+  const shouldShowSubscribeButton = !!communityArticleId && !!communityId;
+
   // Create tabs configuration
   const tabs = articleData
     ? [
@@ -163,6 +169,7 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
                 articleId={Number(articleData.data.id)}
                 communityId={communityId}
                 communityArticleId={communityArticleId}
+                showSubscribeButton={shouldShowSubscribeButton}
                 isAdmin={isAdmin}
               />
             ) : null,
