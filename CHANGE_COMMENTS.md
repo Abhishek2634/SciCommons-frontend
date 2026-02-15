@@ -5,6 +5,18 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Empty State Icon Removed (2026-02-15)**
+
+**Problem:** Empty states (reviews/discussions and others) showed a scary exclamation mark icon.
+
+**Root Cause:** The shared `EmptyState` component rendered a default `AlertCircle` icon when no logo was supplied.
+
+**Solution:** Commented out the default icon so empty states only show a logo when one is explicitly provided.
+
+**Result:** No-data states now display cleanly without the alarming icon across the app.
+
+**Files Modified:** `src/components/common/EmptyState.tsx`
+
 **NavBar Create Button Firefox Cutoff (2026-02-15)**
 
 **Problem:** The "Create" button in the top bar appeared as a circle in Firefox and clipped the label.
