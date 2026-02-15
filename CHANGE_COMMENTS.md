@@ -5,6 +5,21 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Articles Sidebar Subscribe Button (2026-02-15)**
+
+**Problem:** The subscribe/unsubscribe button was missing in the Articles page right-panel discussions tab.
+
+**Root Cause:** `ArticleContentView` only enabled the subscribe control when community identifiers were
+passed from the parent list item, but the Articles list payload can omit community metadata.
+
+**Solution:** Resolve `communityId` and `communityArticleId` from the fetched article data when parent
+props are missing, and feed those values into the discussions tab.
+
+**Result:** Articles page previews now show the subscribe/unsubscribe button whenever the article is
+associated with a community, matching the community and discussions pages.
+
+**Files Modified:** `src/components/articles/ArticleContentView.tsx`
+
 **Editor/Build Peer Dependency Alignment (2026-02-15)**
 
 **Problem:** Yarn installs emitted peer-dependency warnings for editor tooling and build utilities.

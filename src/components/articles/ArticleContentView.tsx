@@ -119,10 +119,16 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
   const hasUserReviewed = reviewsData?.data.items.some((review) => review.is_author) || false;
 
   /* Fixed by Codex on 2026-02-15
-     Problem: Subscribe/unsubscribe control was missing in panel/discussions views.
-     Solution: Enable the discussion subscription button when community context exists.
-     Result: Panel and discussions views match the full article page behavior. */
-  const shouldShowSubscribeButton = !!communityArticleId && !!communityId;
+     Who: Codex
+     What: Resolve community identifiers from fetched article data when parent lacks them.
+     Why: Articles tab previews may not include community metadata, hiding the subscribe button.
+     How: Fall back to articleData.community_article values and pass them into discussions. */
+  const resolvedCommunityArticleId =
+    communityArticleId ?? articleData?.data?.community_article?.id ?? null;
+  const resolvedCommunityId =
+    communityId ?? articleData?.data?.community_article?.community?.id ?? null;
+
+  const shouldShowSubscribeButton = !!resolvedCommunityArticleId && !!resolvedCommunityId;
 
   // Create tabs configuration
   const tabs = articleData
@@ -174,8 +180,8 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
             articleData.data.id ? (
               <DiscussionForum
                 articleId={Number(articleData.data.id)}
-                communityId={communityId}
-                communityArticleId={communityArticleId}
+                communityId={resolvedCommunityId}
+                communityArticleId={resolvedCommunityArticleId}
                 showSubscribeButton={shouldShowSubscribeButton}
                 isAdmin={isAdmin}
               />
