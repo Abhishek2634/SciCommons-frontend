@@ -5,6 +5,22 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Editor/Build Peer Dependency Alignment (2026-02-15)**
+
+**Problem:** Yarn installs emitted peer-dependency warnings for editor tooling and build utilities.
+
+**Root Cause:** Several peer dependencies (Tiptap core, CodeMirror/Lezer, Yjs, Webpack, OpenAPI types) were
+not declared at the app level, and `slate`/`slate-react` were newer than the `@yoopta/editor` peer range.
+
+**Solution:** Added the missing peer dependencies at the app level and aligned `slate`/`slate-react` to
+`^0.102.0` so they match `@yoopta/editor`'s declared range. Updated the lockfile to reflect the new
+direct dependencies.
+
+**Result:** Editor/build peer dependency warnings are cleared, keeping the dependency tree aligned with
+declared peer requirements.
+
+**Files Modified:** `package.json`, `yarn.lock`
+
 **Empty State Icon Removed (2026-02-15)**
 
 **Problem:** Empty states (reviews/discussions and others) showed a scary exclamation mark icon.
