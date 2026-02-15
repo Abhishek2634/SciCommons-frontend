@@ -11,6 +11,11 @@ interface RenderCommentsProps {
   onUpdateComment: (id: number, content: string) => void;
   onDeleteComment: (id: number) => void;
   contentType: ContentTypeEnum;
+  /** Article context for tracking read state */
+  articleContext?: {
+    communityId: number;
+    articleId: number;
+  };
 }
 
 const RenderComments: React.FC<RenderCommentsProps> = ({
@@ -22,6 +27,7 @@ const RenderComments: React.FC<RenderCommentsProps> = ({
   onUpdateComment,
   onDeleteComment,
   contentType,
+  articleContext,
 }) => {
   return comments.map((comment, index) => (
     <div className="relative" key={`${comment.id}_${index}`}>
@@ -37,6 +43,7 @@ const RenderComments: React.FC<RenderCommentsProps> = ({
         onUpdateComment={onUpdateComment}
         onDeleteComment={onDeleteComment}
         contentType={contentType}
+        articleContext={articleContext}
       />
     </div>
   ));

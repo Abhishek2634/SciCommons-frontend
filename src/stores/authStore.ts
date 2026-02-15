@@ -4,7 +4,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { clearRegisteredQueryCache } from '@/api/queryClientRegistry';
 
-import { useUnreadNotificationsStore } from './unreadNotificationsStore';
+import { useReadItemsStore } from './readItemsStore';
+import { useSubscriptionUnreadStore } from './subscriptionUnreadStore';
 import { useUserSettingsStore } from './userSettingsStore';
 
 // NOTE(bsureshkrishna, 2026-02-07): Auth bootstrap was hardened vs baseline 5271498.
@@ -194,7 +195,9 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         clearCookies();
         clearRegisteredQueryCache();
-        useUnreadNotificationsStore.getState().clearAll();
+        // Clear read items and subscription unread state on logout
+        useReadItemsStore.getState().reset();
+        useSubscriptionUnreadStore.getState().reset();
         // NOTE(Codex for bsureshkrishna, 2026-02-09): Clear persisted settings
         // to avoid showing a prior user's preferences after logout.
         useUserSettingsStore.getState().clearSettings();

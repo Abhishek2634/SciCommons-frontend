@@ -11,8 +11,9 @@ import {
   myappRealtimeApiRegisterQueue,
 } from '../api/real-time/real-time';
 import { useAuthStore } from '../stores/authStore';
+import { startSyncTimer, stopSyncTimer } from '../stores/readItemsStore';
 import { useRealtimeContextStore } from '../stores/realtimeStore';
-import { useUnreadNotificationsStore } from '../stores/unreadNotificationsStore';
+import { useSubscriptionUnreadStore } from '../stores/subscriptionUnreadStore';
 import { isSoundOnDiscussionNotificationEnabled } from './useUserSettings';
 
 type RealtimeEventType =
@@ -645,19 +646,13 @@ export function useRealtime() {
             });
           }
 
-          // Show notification and track unread
+          // Show notification and mark subscription as having new event
           if (event.type === 'new_discussion' && event.data.discussion) {
             const username = event.data.discussion.user?.username || 'Unknown user';
             const topic = event.data.discussion.topic || 'Untitled discussion';
-            const discussionId = event.data.discussion.id;
 
-            // Add to unread notifications store
-            if (discussionId !== undefined) {
-              useUnreadNotificationsStore.getState().addUnreadItem(communityId, articleId, {
-                id: discussionId,
-                type: 'discussion',
-              });
-            }
+            // Mark subscription as having new unread event (for sidebar)
+            useSubscriptionUnreadStore.getState().markArticleHasNewEvent(communityId, articleId);
 
             toast.warning(
               <div className="flex items-start gap-3">
@@ -695,21 +690,13 @@ export function useRealtime() {
             }
           }
 
-          // Show notification and track unread
+          // Show notification and mark subscription as having new event
           if (event.type === 'new_comment' && event.data.comment) {
             const username = event.data.comment.author?.username || 'Unknown user';
             const content = event.data.comment.content || 'No content';
-            const commentId = event.data.comment.id;
 
-            // Add to unread notifications store
-            if (commentId !== undefined) {
-              useUnreadNotificationsStore.getState().addUnreadItem(communityId, articleId, {
-                id: commentId,
-                type: event.data.parent_id ? 'reply' : 'comment',
-                discussionId: event.data.discussion_id,
-                parentId: event.data.parent_id,
-              });
-            }
+            // Mark subscription as having new unread event (for sidebar)
+            useSubscriptionUnreadStore.getState().markArticleHasNewEvent(communityId, articleId);
 
             toast.warning(
               <div className="flex items-start gap-3">
@@ -1133,6 +1120,9 @@ export function useRealtime() {
       retryCountRef.current = 0;
       backoffRef.current = 1000;
       void registerQueue(true);
+
+      // Start the read items sync timer (syncs read flags with backend every 2 minutes)
+      startSyncTimer(() => useAuthStore.getState().accessToken);
     } else {
       // User logged out - stop everything
       stoppedRef.current = true;
@@ -1151,6 +1141,9 @@ export function useRealtime() {
       // to avoid a stale heartbeat holding the leader slot.
       releaseLeadership();
       setStatus('disabled');
+
+      // Stop the sync timer
+      stopSyncTimer();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, accessToken]);

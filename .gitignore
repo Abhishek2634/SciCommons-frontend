@@ -45,11 +45,17 @@ next-env.d.ts
 /public/swe-worker-*.js
 /public/workbox-*.js
 /public/workbox-*.js.map
-# Claude Code local memory and config
+# AI tool directories and config
 .claude/
+.openai/
+.anthropic/
 
 # Test images
 fig*.jpg
 inp.jpg
 bkm.jpg
 Nul
+
+# Environment files (comprehensive)
+.env
+.env.*

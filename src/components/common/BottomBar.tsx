@@ -7,7 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { BookOpenText, Home, Newspaper, Plus, Users } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { useUnreadNotificationsStore } from '@/stores/unreadNotificationsStore';
+import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
 
 // Dynamically import Drawer components
 const Drawer = lazy(() => import('../ui/drawer').then((mod) => ({ default: mod.Drawer })));
@@ -22,8 +22,8 @@ const BottomBar = () => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Get total unread count for discussions badge
-  const totalUnread = useUnreadNotificationsStore((state) => state.getTotalUnreadCount());
+  // Get count of articles with new realtime events for discussions badge
+  const newEventsCount = useSubscriptionUnreadStore((state) => state.getNewEventsCount());
 
   const navLinks = [
     { name: 'Home', route: '/', icon: <Home size={20} /> },
@@ -75,11 +75,9 @@ const BottomBar = () => {
           >
             <div className="relative">
               {link.icon}
-              {/* Unread badge for Discussions */}
-              {link.name === 'Discussions' && totalUnread > 0 && !isOnDiscussionsPage && (
-                <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-functional-red px-1 text-[8px] font-bold text-white">
-                  {totalUnread > 99 ? '99+' : totalUnread}
-                </span>
+              {/* Unread indicator dot for Discussions */}
+              {link.name === 'Discussions' && newEventsCount > 0 && !isOnDiscussionsPage && (
+                <span className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-functional-red" />
               )}
             </div>
             <span className="mt-1 select-none text-[10px]">{link.name}</span>

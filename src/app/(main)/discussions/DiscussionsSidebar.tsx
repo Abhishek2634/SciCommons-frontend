@@ -11,10 +11,8 @@ import { BlockSkeleton, Skeleton, TextSkeleton } from '@/components/common/Skele
 import { FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
-import { useUnreadNotificationsStore } from '@/stores/unreadNotificationsStore';
+import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
 
-// NOTE(bsureshkrishna, 2026-02-07): Sidebar now merges subscriptions with unread state
-// to sort by recent activity and show unread badges (post-baseline 5271498 behavior).
 interface SelectedArticle {
   id: number;
   title: string;
@@ -35,32 +33,24 @@ interface FlattenedArticle {
   communityId: number;
   communityName: string;
   isAdmin: boolean;
-}
-
-interface FlattenedArticleWithUnread extends FlattenedArticle {
-  unreadCount: number;
-  lastActivityAt: number;
+  hasUnreadEvent: boolean;
 }
 
 interface DiscussionsSidebarProps {
   onArticleSelect: (article: SelectedArticle) => void;
   selectedArticle: SelectedArticle | null;
-  onArticlesLoaded?: (articles: FlattenedArticleWithUnread[]) => void;
-  scrollPositionRef?: React.MutableRefObject<number>;
 }
 
 const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
   onArticleSelect,
   selectedArticle,
-  onArticlesLoaded,
-  scrollPositionRef,
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
-  const sidebarRef = React.useRef<HTMLDivElement>(null);
 
-  // Get unread state from store
-  const articleUnreads = useUnreadNotificationsStore((state) => state.articleUnreads);
-  const getUnreadCount = useUnreadNotificationsStore((state) => state.getUnreadCount);
+  // Subscribe to articlesWithNewEvents directly to trigger re-renders when new events arrive
+  const articlesWithNewEvents = useSubscriptionUnreadStore((s) => s.articlesWithNewEvents);
+  const isArticleUnread = useSubscriptionUnreadStore((s) => s.isArticleUnread);
+  const markArticleAsRead = useSubscriptionUnreadStore((s) => s.markArticleAsRead);
 
   // Fetch user subscriptions
   const { data: subscriptionsData, isPending: subscriptionsLoading } =
@@ -73,111 +63,43 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
       },
     });
 
-  // Flatten the data: each article becomes its own item with community info
-  const flattenedArticles = useMemo<FlattenedArticle[]>(() => {
-    const communities = subscriptionsData?.data?.communities || [];
-    return communities.flatMap((community) =>
-      community.articles.map((article) => ({
-        articleId: article.article_id,
-        articleTitle: article.article_title,
-        articleSlug: article.article_slug,
-        articleAbstract: article.article_abstract || '',
-        communityArticleId: article.community_article_id || null,
-        communityId: community.community_id,
-        communityName: community.community_name,
-        isAdmin: community.is_admin || false,
-      }))
-    );
-  }, [subscriptionsData?.data?.communities]);
+  const communities = subscriptionsData?.data?.communities || [];
 
-  // Merge with unread state and sort by activity
-  const sortedArticles = useMemo<FlattenedArticleWithUnread[]>(() => {
-    return flattenedArticles
-      .map((article) => {
-        const key = `${article.communityId}-${article.articleId}`;
-        const unreadState = articleUnreads[key];
+  // Flatten the data: each article becomes its own item with community info
+  // Compute effective unread state using the store (handles optimistic updates and realtime events)
+  const flattenedArticles = useMemo<FlattenedArticle[]>(() => {
+    return communities.flatMap((community) =>
+      community.articles.map((article) => {
+        // Use the store to determine effective unread state
+        // This combines: API value, optimistic clears, and realtime events
+        const effectiveUnread = isArticleUnread(
+          community.community_id,
+          article.article_id,
+          article.has_unread_event || false
+        );
+
         return {
-          ...article,
-          unreadCount: getUnreadCount(article.communityId, article.articleId),
-          lastActivityAt: unreadState?.lastActivityAt || 0,
+          articleId: article.article_id,
+          articleTitle: article.article_title,
+          articleSlug: article.article_slug,
+          articleAbstract: article.article_abstract || '',
+          communityArticleId: article.community_article_id || null,
+          communityId: community.community_id,
+          communityName: community.community_name,
+          isAdmin: community.is_admin || false,
+          hasUnreadEvent: effectiveUnread,
         };
       })
-      .sort((a, b) => {
-        // Sort by lastActivityAt descending (most recent first)
-        // Articles with no activity go to the bottom
-        if (a.lastActivityAt === 0 && b.lastActivityAt === 0) return 0;
-        if (a.lastActivityAt === 0) return 1;
-        if (b.lastActivityAt === 0) return -1;
-        return b.lastActivityAt - a.lastActivityAt;
-      });
-  }, [flattenedArticles, articleUnreads, getUnreadCount]);
-
-  // Notify parent when articles are loaded
-  React.useEffect(() => {
-    if (sortedArticles.length > 0 && onArticlesLoaded) {
-      onArticlesLoaded(sortedArticles);
-    }
-  }, [sortedArticles, onArticlesLoaded]);
-
-  /* Fixed by Claude Sonnet 4.5 on 2026-02-09
-     Problem: Scroll position resets when navigating to article page and back
-     Solution: Persist scroll position in sessionStorage, restore on mount
-     Result: Scroll position preserved across navigation, better UX */
-
-  const SCROLL_POSITION_KEY = 'discussions-sidebar-scroll';
-
-  // Restore scroll position from sessionStorage on mount
-  React.useEffect(() => {
-    const sidebar = sidebarRef.current;
-    if (!sidebar) return;
-
-    const savedScroll = sessionStorage.getItem(SCROLL_POSITION_KEY);
-    if (savedScroll) {
-      const scrollPos = parseInt(savedScroll, 10);
-      if (scrollPositionRef) {
-        scrollPositionRef.current = scrollPos;
-      }
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        sidebar.scrollTop = scrollPos;
-      }, 100);
-    }
+    );
+    // articlesWithNewEvents is intentionally included to trigger re-render when new realtime events arrive
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount - scrollPositionRef is a ref and doesn't need to be in deps
+  }, [communities, isArticleUnread, articlesWithNewEvents]);
 
-  // Save scroll position when scrolling (to both ref and sessionStorage)
-  React.useEffect(() => {
-    const sidebar = sidebarRef.current;
-    if (!sidebar || !scrollPositionRef) return;
+  // Handle article selection - mark as read immediately when user clicks
+  const handleArticleSelect = (article: FlattenedArticle) => {
+    // Mark article as read when user clicks on it (assume user will read everything)
+    markArticleAsRead(article.communityId, article.articleId);
 
-    const handleScroll = () => {
-      const scrollPos = sidebar.scrollTop;
-      if (scrollPositionRef) {
-        scrollPositionRef.current = scrollPos;
-      }
-      // Persist to sessionStorage for cross-navigation preservation
-      sessionStorage.setItem(SCROLL_POSITION_KEY, scrollPos.toString());
-    };
-
-    sidebar.addEventListener('scroll', handleScroll);
-    return () => sidebar.removeEventListener('scroll', handleScroll);
-  }, [scrollPositionRef]);
-
-  // Restore scroll position when selected article changes
-  React.useEffect(() => {
-    const sidebar = sidebarRef.current;
-    if (!sidebar || !scrollPositionRef || !selectedArticle) return;
-
-    // Small delay to ensure DOM is updated
-    const timeout = setTimeout(() => {
-      sidebar.scrollTop = scrollPositionRef.current;
-    }, 50);
-
-    return () => clearTimeout(timeout);
-  }, [selectedArticle, scrollPositionRef]);
-
-  // Handle article selection - don't mark as read here, let individual items be marked as read via Intersection Observer
-  const handleArticleSelect = (article: FlattenedArticleWithUnread) => {
     onArticleSelect({
       id: article.articleId,
       title: article.articleTitle,
@@ -191,7 +113,7 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
   };
 
   return (
-    <div ref={sidebarRef} className="h-full overflow-y-auto p-4">
+    <div className="h-full overflow-y-auto p-4">
       <div className="mb-4">
         <h2 className="flex items-center gap-2 text-lg font-bold text-text-primary">Discussions</h2>
       </div>
@@ -213,59 +135,59 @@ const DiscussionsSidebar: React.FC<DiscussionsSidebarProps> = ({
         </div>
       )}
 
-      {/* Flattened Articles List - Sorted by activity */}
-      {!subscriptionsLoading && sortedArticles.length > 0 && (
+      {/* Flattened Articles List */}
+      {!subscriptionsLoading && flattenedArticles.length > 0 && (
         <div className="space-y-4">
-          {sortedArticles.map((article) => {
-            const encodedCommunityName = encodeURIComponent(article.communityName);
-            return (
-              <button
-                key={`${article.communityId}-${article.articleId}`}
-                onClick={() => handleArticleSelect(article)}
+          {flattenedArticles.map((article) => (
+            <button
+              key={`${article.communityId}-${article.articleId}`}
+              onClick={() => handleArticleSelect(article)}
+              className={cn(
+                'relative flex w-full flex-col gap-1 text-left transition-colors',
+                'before:absolute before:-inset-x-2 before:-inset-y-1.5 before:rounded-sm before:transition-colors',
+                'hover:before:bg-common-minimal/50',
+                // Selected article styling
+                selectedArticle?.id === article.articleId &&
+                  'before:border-functional-green/30 before:bg-functional-green/10 hover:before:bg-functional-green/10',
+                // Unread article styling - dark background when has unread events
+                article.hasUnreadEvent &&
+                  selectedArticle?.id !== article.articleId &&
+                  'before:bg-common-contrast/80'
+              )}
+            >
+              {/* Unread indicator dot */}
+              {article.hasUnreadEvent && (
+                <span className="absolute -right-1 top-1 z-20 flex aspect-square h-1.5 items-center justify-center rounded-full bg-functional-red" />
+              )}
+              <div className="relative z-10 flex w-full flex-nowrap items-center">
+                <Link
+                  href={`/community/${article.communityName}`}
+                  className={cn(
+                    'line-clamp-1 truncate text-[9px] font-semibold text-text-tertiary hover:text-functional-blueLight hover:underline',
+                    selectedArticle?.id === article.articleId && 'text-text-secondary'
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {article.communityName}
+                </Link>
+                <ChevronRight size={12} className="flex-shrink-0 text-text-tertiary" />
+              </div>
+              <p
                 className={cn(
-                  'relative flex w-full flex-col gap-1 text-left transition-colors',
-                  'before:absolute before:-inset-x-2 before:-inset-y-1.5 before:rounded-sm before:transition-colors',
-                  'hover:before:bg-common-minimal/50',
-                  selectedArticle?.id === article.articleId &&
-                    'before:border-functional-green/30 before:bg-functional-green/10 hover:before:bg-functional-green/10'
+                  'relative z-10 line-clamp-2 text-xs font-medium text-text-secondary',
+                  selectedArticle?.id === article.articleId && 'text-text-primary',
+                  article.hasUnreadEvent && 'font-semibold'
                 )}
               >
-                {/* Unread count badge */}
-                {article.unreadCount > 0 && (
-                  <span className="absolute -right-3 -top-4 z-20 flex aspect-square h-4 min-w-4 items-center justify-center rounded-full bg-functional-red px-0.5 text-[10px] font-normal text-white">
-                    {article.unreadCount > 99 ? '99+' : article.unreadCount}
-                  </span>
-                )}
-                <div className="relative z-10 flex w-full flex-nowrap items-center">
-                  <Link
-                    href={`/community/${encodedCommunityName}`}
-                    className={cn(
-                      'line-clamp-1 truncate text-[9px] font-semibold text-text-tertiary hover:text-functional-blueLight hover:underline',
-                      selectedArticle?.id === article.articleId && 'text-text-secondary'
-                    )}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {article.communityName}
-                  </Link>
-                  <ChevronRight size={12} className="flex-shrink-0 text-text-tertiary" />
-                </div>
-                <p
-                  className={cn(
-                    'relative z-10 line-clamp-2 text-xs font-medium text-text-secondary',
-                    selectedArticle?.id === article.articleId && 'text-text-primary',
-                    article.unreadCount > 0 && 'font-semibold'
-                  )}
-                >
-                  {article.articleTitle}
-                </p>
-              </button>
-            );
-          })}
+                {article.articleTitle}
+              </p>
+            </button>
+          ))}
         </div>
       )}
 
       {/* Empty State */}
-      {!subscriptionsLoading && sortedArticles.length === 0 && (
+      {!subscriptionsLoading && flattenedArticles.length === 0 && (
         <div className="flex h-[calc(100vh-12rem)] flex-col items-center justify-center py-8 text-center">
           <Bell className="mb-4 h-16 w-16 text-text-tertiary" />
           <p className="text-lg font-semibold text-text-secondary">No subscriptions yet</p>
