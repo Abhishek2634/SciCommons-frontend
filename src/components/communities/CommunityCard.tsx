@@ -146,9 +146,17 @@ const CommunityCard: FC<CommunityCardProps> = ({ community }) => {
         )}
         <span
           className={cn('rounded-sm border px-2 py-1 !text-xxs font-normal capitalize', {
-            'border-emerald-500 bg-emerald-500/10 text-emerald-500': community.type === 'public',
-            'border-indigo-500 bg-indigo-500/10 text-indigo-500': community.type === 'private',
-            'border-red-500 bg-red-500/10 text-red-500': community.type === 'hidden',
+            /* Fixed by Codex on 2026-02-15
+               Who: Codex
+               What: Tokenize community type badges.
+               Why: Ensure badges respond to UI skin changes.
+               How: Replace emerald/indigo/red utilities with functional tokens. */
+            'border-functional-green bg-functional-green/10 text-functional-green':
+              community.type === 'public',
+            'border-functional-blue bg-functional-blue/10 text-functional-blue':
+              community.type === 'private',
+            'border-functional-red bg-functional-red/10 text-functional-red':
+              community.type === 'hidden',
           })}
         >
           {community.type}

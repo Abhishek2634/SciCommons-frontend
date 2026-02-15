@@ -103,7 +103,12 @@ const Footer: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="flex w-full flex-wrap items-center bg-gradient-to-r from-functional-green to-functional-blue p-4 text-xs font-semibold text-white dark:text-black sm:justify-center">
+      {/* Fixed by Codex on 2026-02-15
+          Who: Codex
+          What: Tokenize footer legal strip text color.
+          Why: Keep gradient text contrast aligned with skin palettes.
+          How: Replace white/black utilities with primary-foreground. */}
+      <div className="flex w-full flex-wrap items-center bg-gradient-to-r from-functional-green to-functional-blue p-4 text-xs font-semibold text-primary-foreground sm:justify-center">
         <span className="mr-2 sm:mr-4">© 2024 SciCommons. All rights reserved.</span>
         {/* Commented out dead links */}
         {/* <span className="mr-2 sm:mr-4">

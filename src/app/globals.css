@@ -503,6 +503,179 @@ body {
     --scrollbar-thumb-color: var(--Common-Contrast);
     --scrollbar-thumb-hover-color: var(--Common-HeavyContrast);
   }
+
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Add a warm "copper" skin palette for token overrides.
+     Why: Provide a contrasting sample skin to validate swappable theming.
+     How: Override core background/foreground + semantic token scales. */
+  :root[data-skin='copper'] {
+    --color-white-primary: #fffaf4;
+    --color-white-secondary: #ffffff;
+    --color-dark-primary: #2f231b;
+    --color-dark-secondary: #3d2f27;
+
+    --background: 30 40% 97%;
+    --foreground: 24 32% 14%;
+
+    --muted: 30 25% 93%;
+    --muted-foreground: 24 12% 40%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 32% 14%;
+
+    --border: 30 20% 86%;
+    --input: 30 20% 86%;
+
+    --card: 30 40% 99%;
+    --card-foreground: 24 32% 14%;
+
+    --primary: 24 55% 38%;
+    --primary-foreground: 30 40% 96%;
+
+    --secondary: 30 30% 92%;
+    --secondary-foreground: 24 32% 14%;
+
+    --accent: 28 35% 90%;
+    --accent-foreground: 24 32% 14%;
+
+    --destructive: 0 70% 48%;
+    --destructive-foreground: 0 0% 98%;
+
+    --brand-green: 24 55% 42%;
+    --brand-green-foreground: 30 45% 96%;
+
+    --ring: 28 20% 70%;
+
+    --Functional-Green-Green: 104, 133, 92;
+    --Functional-Green-GreenLight: 184, 214, 168;
+    --Functional-Green-Greencontrast: 86, 112, 74;
+
+    --Functional-Blue-Blue: 83, 120, 165;
+    --Functional-Blue-BlueLight: 156, 190, 224;
+    --Functional-Blue-Bluecontrast: 62, 97, 140;
+
+    --Functional-Yellow-Yellow: 208, 148, 76;
+    --Functional-Yellow-YellowLight: 242, 203, 140;
+    --Functional-Yellow-Yellowcontrast: 184, 124, 60;
+
+    --Functional-Red-Red: 186, 72, 64;
+    --Functional-Red-RedLight: 236, 156, 148;
+    --Functional-Red-Redcontrast: 160, 56, 50;
+
+    --Functional-Gray-Gray: 200, 190, 176;
+    --Functional-Gray-GrayLight: 224, 216, 206;
+    --Functional-Gray-Graycontrast: 176, 166, 152;
+
+    --Common-Background: 251, 247, 242;
+    --Common-CardBackground: 255, 252, 248;
+    --Common-Minimal: 243, 236, 228;
+    --Common-Contrast: 221, 210, 196;
+    --Common-HeavyContrast: 189, 172, 155;
+    --Common-Invert: 41, 30, 24;
+
+    --Accessory-Accessory1: 255, 252, 248;
+    --Accessory-Accessory2: 251, 247, 242;
+    --Accessory-Accessory3: 245, 238, 230;
+    --Accessory-Accessory4: 238, 228, 216;
+    --Accessory-Accessory5: 227, 216, 202;
+    --Accessory-Accessory6: 206, 192, 176;
+    --Accessory-Accessory7: 186, 168, 152;
+
+    --Text-Primary: 41, 30, 24;
+    --Text-Secondary: 96, 76, 64;
+    --Text-Tertiary: 120, 98, 85;
+
+    --loading: #f3eee8;
+
+    --scrollbar-track-color: var(--Common-Background);
+    --scrollbar-thumb-color: var(--Common-Contrast);
+    --scrollbar-thumb-hover-color: var(--Common-HeavyContrast);
+  }
+
+  .dark[data-skin='copper'] {
+    --color-white-primary: #1e1511;
+    --color-white-secondary: #2a1e19;
+    --color-dark-primary: #f6ede3;
+    --color-dark-secondary: #e5d8ca;
+
+    --background: 24 30% 8%;
+    --foreground: 30 25% 88%;
+
+    --muted: 24 24% 14%;
+    --muted-foreground: 28 12% 62%;
+
+    --accent: 26 24% 18%;
+    --accent-foreground: 30 25% 90%;
+
+    --popover: 24 30% 8%;
+    --popover-foreground: 30 25% 80%;
+
+    --border: 24 20% 18%;
+    --input: 24 20% 18%;
+
+    --card: 24 30% 8%;
+    --card-foreground: 30 25% 88%;
+
+    --primary: 30 30% 90%;
+    --primary-foreground: 24 30% 10%;
+
+    --secondary: 24 30% 12%;
+    --secondary-foreground: 30 25% 88%;
+
+    --destructive: 0 55% 30%;
+    --destructive-foreground: 30 25% 92%;
+
+    --brand-green: 24 55% 70%;
+    --brand-green-foreground: 24 30% 18%;
+
+    --ring: 24 20% 20%;
+
+    --Common-Background: 24, 18, 14;
+    --Common-CardBackground: 32, 24, 20;
+    --Common-Minimal: 42, 32, 26;
+    --Common-Contrast: 60, 48, 40;
+    --Common-HeavyContrast: 88, 72, 60;
+    --Common-Invert: 244, 233, 221;
+
+    --Accessory-Accessory1: 24, 18, 14;
+    --Accessory-Accessory2: 32, 24, 20;
+    --Accessory-Accessory3: 40, 30, 26;
+    --Accessory-Accessory4: 48, 38, 32;
+    --Accessory-Accessory5: 60, 48, 40;
+    --Accessory-Accessory6: 88, 72, 60;
+    --Accessory-Accessory7: 112, 92, 78;
+
+    --Text-Primary: 244, 233, 221;
+    --Text-Secondary: 196, 178, 162;
+    --Text-Tertiary: 166, 148, 132;
+
+    --Functional-Green-Green: 164, 196, 140;
+    --Functional-Green-GreenLight: 206, 226, 192;
+    --Functional-Green-Greencontrast: 132, 166, 112;
+
+    --Functional-Blue-Blue: 130, 176, 220;
+    --Functional-Blue-BlueLight: 172, 206, 234;
+    --Functional-Blue-Bluecontrast: 110, 150, 196;
+
+    --Functional-Yellow-Yellow: 230, 184, 106;
+    --Functional-Yellow-YellowLight: 246, 214, 158;
+    --Functional-Yellow-Yellowcontrast: 204, 156, 84;
+
+    --Functional-Red-Red: 232, 132, 120;
+    --Functional-Red-RedLight: 246, 184, 176;
+    --Functional-Red-Redcontrast: 204, 108, 98;
+
+    --Functional-Gray-Gray: 112, 92, 78;
+    --Functional-Gray-GrayLight: 142, 120, 104;
+    --Functional-Gray-Graycontrast: 94, 76, 64;
+
+    --loading: #2f241e;
+
+    --scrollbar-track-color: var(--Common-Background);
+    --scrollbar-thumb-color: var(--Common-Contrast);
+    --scrollbar-thumb-hover-color: var(--Common-HeavyContrast);
+  }
 }
 
 /* html {

@@ -66,7 +66,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
         </span>
       )}
       {communityName && (
-        <span className="ml-2 mt-1 inline-block rounded-full bg-purple-100 px-2 py-1 text-xs font-semibold text-purple-800">
+        <span className="ml-2 mt-1 inline-block rounded-full bg-common-minimal px-2 py-1 text-xs font-semibold text-text-secondary">
           {communityName}
         </span>
       )}

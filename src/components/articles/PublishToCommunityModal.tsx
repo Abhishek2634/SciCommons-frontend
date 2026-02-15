@@ -229,6 +229,10 @@ interface CommunityItemProps {
 }
 
 const CommunityItem: React.FC<CommunityItemProps> = ({ community, isSelected, onSelect }) => {
+  /* Fixed by Codex on 2026-02-15
+     Problem: Selected checkmark used a hard-coded white text color.
+     Solution: Use the semantic primary-foreground token for the check icon.
+     Result: Selected state adapts to skin foreground colors. */
   return (
     <button
       type="button"
@@ -275,7 +279,7 @@ const CommunityItem: React.FC<CommunityItemProps> = ({ community, isSelected, on
             : 'border-common-contrast bg-transparent'
         )}
       >
-        {isSelected && <Check className="h-3 w-3 text-white" />}
+        {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
       </div>
     </button>
   );

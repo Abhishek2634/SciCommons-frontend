@@ -92,7 +92,7 @@ const PostListContent = () => {
               How: Style the Link directly with the same visual treatment. */}
           <Link
             href="/posts/createpost"
-            className="flex items-center rounded-full bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+            className="flex items-center rounded-full bg-functional-green px-4 py-2 text-primary-foreground hover:bg-functional-greenContrast"
           >
             <span className="mr-2">+</span> New Post
           </Link>

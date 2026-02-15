@@ -48,6 +48,81 @@ text/caret colors.
 
 **Files Modified:** `src/components/ui/input.tsx`
 
+**Component Tokenization Pass (2026-02-15)**
+
+**Problem:** Several shared components still used fixed gray/blue/green/red utilities, so skin swaps left
+these areas visually inconsistent.
+
+**Root Cause:** These components were authored before the semantic token system and retained hard-coded
+utility colors.
+
+**Solution:** Replaced hard-coded utilities with semantic text/surface/functional tokens across comment
+controls, notifications, and upload experiences. Updated selection indicators to use tokenized
+foreground colors.
+
+**Result:** Shared components now inherit active skin palettes without layout or behavior changes.
+
+**Files Modified:** `src/components/common/PostComments.tsx`, `src/components/common/Notifications.tsx`,
+`src/components/common/ImageUpload.tsx`, `src/components/common/FileUpload.tsx`,
+`src/components/articles/PublishToCommunityModal.tsx`
+
+**App Page Tokenization Pass (2026-02-15)**
+
+**Problem:** Multiple app pages (dashboards, community screens, posts, invitations) still relied on
+hard-coded gray/blue/green/red utilities, causing mismatched visuals when switching skins.
+
+**Root Cause:** These routes predated the semantic token system and retained direct Tailwind color
+utilities for borders, backgrounds, and status controls.
+
+**Solution:** Replaced fixed utilities with semantic surface/text/functional tokens across article
+dashboards, community admin views, community display panels, invitations, and post flows. Updated
+status badges, buttons, skeletons, and form inputs to use tokenized colors.
+
+**Result:** Core app pages now inherit active skin palettes without layout changes, improving
+consistency during theme swaps.
+
+**Files Modified:** `src/app/(authentication)/auth/login/page.tsx`,
+`src/app/(main)/(articles)/article/[slug]/(articledashboard)/community-stats/page.tsx`,
+`src/app/(main)/(articles)/article/[slug]/(articledashboard)/official-stats/page.tsx`,
+`src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/AddFAQs.tsx`,
+`src/app/(main)/(articles)/article/[slug]/(articledashboard)/submit/ArticleSubmissionStatus.tsx`,
+`src/app/(main)/(articles)/article/[slug]/(articledashboard)/submit/SubmitToCommunity.tsx`,
+`src/app/(main)/(articles)/article/[slug]/(displayarticle)/ReactQuill.tsx`,
+`src/app/(main)/(communities)/community/[slug]/articles/[articleSlug]/ReactQuill.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(admin)/dashboard/page.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(admin)/invite/StatusList.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(admin)/requests/RequestsList.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(admin)/roles/UsersListItem.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(admin)/settings/About.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(admin)/layout.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(admin)/requests/RequestListItem.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(displaycommunity)/ArticleSubmission.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityAbout.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityStats.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(displaycommunity)/DisplayCommunity.tsx`,
+`src/app/(main)/(communities)/community/[slug]/(displaycommunity)/RelevantCommunities.tsx`,
+`src/app/(main)/(communities)/community/[slug]/invitations/registered/[invitation_id]/page.tsx`,
+`src/app/(main)/(communities)/community/[slug]/invitations/unregistered/[invitation_id]/[signed_email]/page.tsx`,
+`src/app/(main)/(posts)/posts/[postId]/page.tsx`,
+`src/app/(main)/(posts)/posts/createpost/page.tsx`,
+`src/app/(main)/(posts)/posts/page.tsx`,
+`src/app/(main)/(users)/mycontributions/ItemCard.tsx`,
+`src/app/(main)/(users)/mycontributions/ReputationBadge.tsx`,
+`src/app/(main)/(users)/myprofile/Profile.tsx`,
+`src/app/(main)/about/page.tsx`
+
+**Sign-Up Success JSX Fix (2026-02-15)**
+
+**Problem:** The sign-up success page failed to compile due to a JSX fragment mismatch.
+
+**Root Cause:** An extra closing `</div>` tag was left after the layout wrapper, producing invalid JSX.
+
+**Solution:** Removed the stray closing tag and documented the fix in the component.
+
+**Result:** The sign-up success screen now compiles and renders without TypeScript errors.
+
+**Files Modified:** `src/app/(authentication)/auth/register/SignUpSuccess.tsx`
+
 **NavBar JSX Syntax Fix (2026-02-15)**
 
 **Problem:** The navigation bar failed to compile with a syntax error at the start of the JSX return.
@@ -2103,3 +2178,27 @@ const { data: articleData, error, isPending } = useArticlesApiGetArticle(
 **Result**: The site can now switch skins by changing one environment value, with no component-level edits. Token-based surfaces update automatically; remaining hard-coded color utilities still bypass the skin until they are converted.
 
 **Files Modified**: `src/app/layout.tsx`, `src/app/globals.css`, `CHANGE_COMMENTS.md`
+
+**Auth + Legal Tokenization (2026-02-15)**
+
+**Problem**: Auth and legal pages relied on hard-coded black/white/gray/blue utilities, so skin swaps left them visually inconsistent.
+
+**Root Cause**: These routes were built before the token system and did not use semantic classes like `bg-common-*` or `text-text-*`.
+
+**Solution**: Replaced fixed color utilities with semantic token classes across auth flows (login, register, activation, reset, resend, success) and the privacy/terms pages. Adjusted form input overrides and password strength indicators to use functional token colors.
+
+**Result**: Auth and legal experiences now inherit palette changes from skins without component edits, keeping them consistent with the rest of the UI.
+
+**Files Modified**: `src/app/(authentication)/auth/login/page.tsx`, `src/app/(authentication)/auth/forgotpassword/page.tsx`, `src/app/(authentication)/auth/resetpassword/[token]/page.tsx`, `src/app/(authentication)/auth/activate/[token]/page.tsx`, `src/app/(authentication)/auth/resendverificationemail/page.tsx`, `src/app/(authentication)/auth/register/page.tsx`, `src/app/(authentication)/auth/register/SignUpSuccess.tsx`, `src/app/privacy-policy/page.tsx`, `src/app/terms-and-conditions/page.tsx`
+
+**Copper Skin Added (2026-02-15)**
+
+**Problem**: Only a single alternate skin existed, making it hard to validate skinability across a wider palette.
+
+**Root Cause**: Skin overrides were defined only for the default and "sage" palettes.
+
+**Solution**: Added a warm `data-skin="copper"` override set for both light and dark tokens.
+
+**Result**: A second, visually distinct skin is now available to test end-to-end palette swaps.
+
+**Files Modified**: `src/app/globals.css`

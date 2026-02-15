@@ -159,7 +159,9 @@ export default function UnRegisteredUsersInvitation({
                 </ButtonTitle>
               </Button>
             </div>
-            {respondError && <p className="text-red-500">{respondError.response?.data.message}</p>}
+            {respondError && (
+              <p className="text-functional-red">{respondError.response?.data.message}</p>
+            )}
           </>
         )}
       </div>

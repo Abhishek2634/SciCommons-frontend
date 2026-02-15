@@ -264,7 +264,16 @@ const FormInput = <TFieldValues extends FieldValues>({
       )}
 
       {!error && helperText && !isSubmitting && (
-        <p className={cn('mt-2 text-gray-500 res-text-xs', helperTextClassName)}>{helperText}</p>
+        <>
+          {/* Fixed by Codex on 2026-02-15
+              Who: Codex
+              What: Tokenize helper text color.
+              Why: Ensure input helper text adapts to skin palettes.
+              How: Replace gray utility with text-tertiary token. */}
+          <p className={cn('mt-2 text-text-tertiary res-text-xs', helperTextClassName)}>
+            {helperText}
+          </p>
+        </>
       )}
     </div>
   );

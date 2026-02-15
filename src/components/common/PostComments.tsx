@@ -167,6 +167,10 @@ const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
     // setComments(comments.filter(Boolean).map(removeComment));
   };
 
+  /* Fixed by Codex on 2026-02-15
+     Problem: Post comments used hard-coded gray/blue utilities that blocked skin swapping.
+     Solution: Replace fixed colors with semantic theme tokens for backgrounds, text, and accents.
+     Result: Comment controls and loading states now adapt to the active skin. */
   return (
     <div className="mx-auto max-w-2xl">
       <CommentInput
@@ -177,7 +181,7 @@ const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
       {isPending &&
         Array.from({ length: 5 }).map((_, index) => (
           <div
-            className="relative mb-4 h-20 w-full animate-pulse rounded bg-gray-300 dark:bg-gray-800"
+            className="relative mb-4 h-20 w-full animate-pulse rounded bg-common-contrast"
             key={index}
           ></div>
         ))}
@@ -187,14 +191,14 @@ const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
             <div className="flex items-center space-x-2">
               <label
                 htmlFor="depth-select"
-                className="flex items-center text-sm font-medium text-gray-500"
+                className="flex items-center text-sm font-medium text-text-tertiary"
               >
                 <Layers size={16} className="mr-1" />
                 <span>Depth:</span>
               </label>
               <select
                 id="depth-select"
-                className="rounded border p-1 text-sm text-gray-700 dark:text-gray-300"
+                className="rounded border border-common-contrast bg-common-cardBackground p-1 text-sm text-text-primary"
                 onChange={handleDepthChange}
                 value={maxDepth === Infinity ? 0 : maxDepth}
               >
@@ -208,7 +212,7 @@ const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
             </div>
             <button
               onClick={toggleAllComments}
-              className="flex items-center text-blue-500 transition-colors duration-200 hover:text-blue-600"
+              className="flex items-center text-functional-blue transition-colors duration-200 hover:text-functional-blueContrast"
             >
               {isAllCollapsed ? (
                 <>

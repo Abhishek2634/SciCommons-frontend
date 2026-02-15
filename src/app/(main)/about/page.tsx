@@ -289,7 +289,7 @@ const AboutPage = () => {
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <Link
                 href="/articles"
-                className="rounded-lg bg-functional-green px-8 py-3 font-semibold text-white transition-all hover:bg-functional-green/90 hover:shadow-lg hover:shadow-functional-green/30"
+                className="rounded-lg bg-functional-green px-8 py-3 font-semibold text-primary-foreground transition-all hover:bg-functional-green/90 hover:shadow-lg hover:shadow-functional-green/30"
               >
                 Explore Articles
               </Link>

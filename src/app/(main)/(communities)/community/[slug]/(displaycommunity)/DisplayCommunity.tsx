@@ -171,12 +171,12 @@ const DisplayCommunity: React.FC<DisplayCommunityProps> = ({ community, refetch 
                       <Link href={`/community/${params?.slug}/requests`}>
                         <Button
                           size="xs"
-                          className="border border-common-minimal/70 bg-white hover:bg-white dark:bg-black dark:hover:bg-black"
+                          className="border border-common-minimal/70 bg-common-cardBackground hover:bg-common-minimal"
                           withTooltip
                           tooltipData={`${pendingRequestsCount} pending requests`}
                         >
                           <ButtonTitle className="text-text-secondary">
-                            <span className="mr-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-medium text-white">
+                            <span className="mr-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-functional-red px-1 text-xs font-medium text-primary-foreground">
                               {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
                             </span>
                             Requests
@@ -187,7 +187,7 @@ const DisplayCommunity: React.FC<DisplayCommunityProps> = ({ community, refetch 
                     <Link href={`/community/${params?.slug}/settings`}>
                       <Button
                         size="xs"
-                        className="border border-common-minimal/70 bg-white hover:bg-white dark:bg-black dark:hover:bg-black"
+                        className="border border-common-minimal/70 bg-common-cardBackground hover:bg-common-minimal"
                         aria-label="Community settings"
                       >
                         <ButtonIcon>

@@ -30,9 +30,13 @@ const CommunityDashboard = ({ params }: { params: { slug: string } }) => {
 
   const dataFormatter = (number: number) => `${Intl.NumberFormat('us').format(number).toString()}`;
 
+  /* Fixed by Codex on 2026-02-15
+     Problem: Community admin dashboard used fixed gray/green/blue utilities.
+     Solution: Replace hard-coded colors with semantic tokens for text, surfaces, and actions.
+     Result: Admin dashboard now aligns with active skin palettes. */
   return (
     data && (
-      <div className="container mx-auto p-6 text-gray-900">
+      <div className="container mx-auto p-6 text-text-primary">
         {/* Header */}
         <header className="mb-6">
           <h1 className="font-bold res-heading-sm">{data.data.name}</h1>
@@ -41,7 +45,7 @@ const CommunityDashboard = ({ params }: { params: { slug: string } }) => {
             supportMarkdown={true}
             supportLatex={false}
             containerClassName="mb-0"
-            contentClassName="line-clamp-2 text-gray-500 res-text-xs"
+            contentClassName="line-clamp-2 text-text-tertiary res-text-xs"
           />
         </header>
 
@@ -52,8 +56,8 @@ const CommunityDashboard = ({ params }: { params: { slug: string } }) => {
               <Users size={32} />
               <div>
                 <h2 className="font-semibold res-heading-xs">{data.data.total_members}</h2>
-                <p className="text-gray-500 res-text-xs">Total Members</p>
-                <p className="text-green-500 res-text-xs">
+                <p className="text-text-tertiary res-text-xs">Total Members</p>
+                <p className="text-functional-green res-text-xs">
                   +{data.data.new_members_this_week} this week
                 </p>
               </div>
@@ -64,8 +68,8 @@ const CommunityDashboard = ({ params }: { params: { slug: string } }) => {
               <FileText size={32} />
               <div>
                 <h2 className="font-semibold res-heading-xs">{data.data.total_articles}</h2>
-                <p className="text-gray-500 res-text-xs">Total Articles</p>
-                <p className="text-green-500 res-text-xs">
+                <p className="text-text-tertiary res-text-xs">Total Articles</p>
+                <p className="text-functional-green res-text-xs">
                   +{data.data.new_articles_this_week} this week
                 </p>
               </div>
@@ -76,8 +80,8 @@ const CommunityDashboard = ({ params }: { params: { slug: string } }) => {
               <FilePlus size={32} />
               <div>
                 <h2 className="font-semibold res-heading-xs">{data.data.articles_published}</h2>
-                <p className="text-gray-500 res-text-xs">Articles Published</p>
-                <p className="text-green-500 res-text-xs">
+                <p className="text-text-tertiary res-text-xs">Articles Published</p>
+                <p className="text-functional-green res-text-xs">
                   +{data.data.new_published_articles_this_week} this week
                 </p>
               </div>
@@ -88,9 +92,9 @@ const CommunityDashboard = ({ params }: { params: { slug: string } }) => {
         {/* List of Recently Published Articles */}
         <section className="mb-6">
           <h2 className="mb-4 font-semibold res-heading-xs">Recently Published Articles</h2>
-          <div className="rounded bg-white-primary p-4 shadow">
+          <div className="rounded bg-common-cardBackground p-4 shadow">
             {data.data.recently_published_articles.length === 0 && (
-              <p className="text-gray-500 res-text-sm">No articles have been published yet.</p>
+              <p className="text-text-tertiary res-text-sm">No articles have been published yet.</p>
             )}
             <ul>
               {data.data.recently_published_articles.map((article, index) => (
@@ -105,11 +109,11 @@ const CommunityDashboard = ({ params }: { params: { slug: string } }) => {
         <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
           <Card>
             <h2 className="font-semibold res-heading-xs">{data.data.total_reviews}</h2>
-            <p className="text-gray-500 res-text-xs">Total Reviews</p>
+            <p className="text-text-tertiary res-text-xs">Total Reviews</p>
           </Card>
           <Card>
             <h2 className="font-semibold res-heading-xs">{data.data.total_discussions}</h2>
-            <p className="text-gray-500 res-text-xs">Total Discussions</p>
+            <p className="text-text-tertiary res-text-xs">Total Discussions</p>
           </Card>
         </section>
 
@@ -153,11 +157,11 @@ const CommunityDashboard = ({ params }: { params: { slug: string } }) => {
         {/* Community Engagement Actions */}
         <section className="mb-6">
           <h2 className="mb-4 font-semibold res-heading-xs">Community Engagement Actions</h2>
-          <div className="rounded p-4 shadow">
-            <button className="mr-2 rounded bg-blue-500 px-4 py-2 text-white res-text-sm hover:bg-blue-600">
+          <div className="rounded bg-common-cardBackground p-4 shadow">
+            <button className="mr-2 rounded bg-functional-blue px-4 py-2 text-primary-foreground res-text-sm hover:bg-functional-blueContrast">
               Share Community
             </button>
-            <button className="rounded bg-green-500 px-4 py-2 text-white res-text-sm hover:bg-green-600">
+            <button className="rounded bg-functional-green px-4 py-2 text-primary-foreground res-text-sm hover:bg-functional-greenContrast">
               Invite Members
             </button>
           </div>

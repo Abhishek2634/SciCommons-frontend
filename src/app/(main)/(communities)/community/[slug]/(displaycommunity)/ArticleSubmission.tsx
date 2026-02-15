@@ -95,7 +95,7 @@ const ArticleSubmission: React.FC<ArticleSubmissionProps> = ({ communityName }) 
         <DropdownMenuTrigger asChild>
           <Button className="py-1.5" withTooltip tooltipData="Create or Submit Article">
             <ButtonIcon>
-              <Plus className="size-4 text-white" />
+              <Plus className="size-4 text-primary-foreground" />
             </ButtonIcon>
             <ButtonTitle>Create</ButtonTitle>
           </Button>

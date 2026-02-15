@@ -102,18 +102,23 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
     }
   }, [review, selectedVersion]);
 
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Tokenize review type badges.
+     Why: Keep role pills consistent across skins.
+     How: Replace purple/blue utilities with functional tokens. */
   const getReviewTypeTag = (reviewType: string) => {
     switch (reviewType) {
       case 'reviewer':
         return (
-          <span className="ml-2 flex items-center rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800 dark:bg-purple-950 dark:text-purple-400">
+          <span className="ml-2 flex items-center rounded-full bg-functional-green/10 px-2 py-1 text-xs font-medium text-functional-green">
             <UserCircle className="mr-1 h-3 w-3" />
             Reviewer
           </span>
         );
       case 'moderator':
         return (
-          <span className="ml-2 flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+          <span className="ml-2 flex items-center rounded-full bg-functional-blue/10 px-2 py-1 text-xs font-medium text-functional-blue">
             <Shield className="mr-1 h-3 w-3" />
             Moderator
           </span>

@@ -205,9 +205,16 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
                 )}
                 {/* NEW badge - shown optimistically until 1s after viewing (2s visibility threshold) */}
                 {showNewTag && (
-                  <span className="ml-2 rounded bg-functional-blue px-1 text-[9px] font-semibold uppercase text-white">
-                    New
-                  </span>
+                  <>
+                    {/* Fixed by Codex on 2026-02-15
+                        Who: Codex
+                        What: Tokenize NEW badge foreground.
+                        Why: Keep unread badges aligned with skin palettes.
+                        How: Use primary-foreground instead of hard-coded white. */}
+                    <span className="ml-2 rounded bg-functional-blue px-1 text-[9px] font-semibold uppercase text-primary-foreground">
+                      New
+                    </span>
+                  </>
                 )}
               </div>
             </div>

@@ -102,93 +102,100 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({ discussionId, setDi
 
   return (
     discussion && (
-      <div className="text-gray-900 res-text-sm">
-        <button
-          onClick={() => setDiscussionId(null)}
-          className="mb-4 flex items-center text-gray-600 res-text-xs hover:text-blue-500 hover:underline"
-        >
-          <ArrowLeft className="mr-2" size={16} /> Back to Discussions
-        </button>
-        <div className="mb-4 rounded bg-white-secondary p-4 shadow">
-          <div className="mb-2 flex items-start justify-between">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2">
-                <Image
-                  src={
-                    discussion.user.profile_pic_url
-                      ? discussion.user.profile_pic_url?.startsWith('http')
-                        ? discussion.user.profile_pic_url
-                        : `data:image/png;base64,${discussion.user.profile_pic_url}`
-                      : `/images/assets/user-icon.webp`
-                  }
-                  alt={discussion.user.username}
-                  width={32}
-                  height={32}
-                  className="mr-2 rounded-full object-cover"
-                  quality={75}
-                  sizes="32px"
-                  unoptimized={!discussion.user.profile_pic_url}
-                />
-                <div>
-                  <span>{discussion.user.username}</span>
-                  <span className="ml-2 text-gray-500 res-text-xs">
-                    • {dayjs(discussion.created_at).fromNow()}
-                  </span>
+      <>
+        {/* Fixed by Codex on 2026-02-15
+            Who: Codex
+            What: Tokenize discussion thread colors.
+            Why: Keep thread styling aligned with UI skins.
+            How: Replace gray/blue utilities with semantic tokens. */}
+        <div className="text-text-primary res-text-sm">
+          <button
+            onClick={() => setDiscussionId(null)}
+            className="mb-4 flex items-center text-text-secondary res-text-xs hover:text-functional-blue hover:underline"
+          >
+            <ArrowLeft className="mr-2" size={16} /> Back to Discussions
+          </button>
+          <div className="mb-4 rounded bg-common-cardBackground p-4 shadow">
+            <div className="mb-2 flex items-start justify-between">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <Image
+                    src={
+                      discussion.user.profile_pic_url
+                        ? discussion.user.profile_pic_url?.startsWith('http')
+                          ? discussion.user.profile_pic_url
+                          : `data:image/png;base64,${discussion.user.profile_pic_url}`
+                        : `/images/assets/user-icon.webp`
+                    }
+                    alt={discussion.user.username}
+                    width={32}
+                    height={32}
+                    className="mr-2 rounded-full object-cover"
+                    quality={75}
+                    sizes="32px"
+                    unoptimized={!discussion.user.profile_pic_url}
+                  />
+                  <div>
+                    <span>{discussion.user.username}</span>
+                    <span className="ml-2 text-text-tertiary res-text-xs">
+                      • {dayjs(discussion.created_at).fromNow()}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="mr-4 flex-grow cursor-pointer font-bold res-text-base">
+                    <TruncateText text={discussion.topic} maxLines={2} />
+                  </div>
+                  <div>
+                    <TruncateText text={discussion.content} maxLines={3} />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center text-text-tertiary res-text-xs">
+                  <button type="button" className="mr-4 flex items-center space-x-1">
+                    <MessageSquare size={16} />
+                    <span>{discussion.comments_count} comments</span>
+                  </button>
+                  <button type="button" className="flex items-center space-x-1">
+                    <Share2 size={16} />
+                    <span>Share</span>
+                  </button>
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <div className="mr-4 flex-grow cursor-pointer font-bold res-text-base">
-                  <TruncateText text={discussion.topic} maxLines={2} />
-                </div>
-                <div>
-                  <TruncateText text={discussion.content} maxLines={3} />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center text-gray-500 res-text-xs">
-                <button type="button" className="mr-4 flex items-center space-x-1">
-                  <MessageSquare size={16} />
-                  <span>{discussion.comments_count} comments</span>
-                </button>
-                <button type="button" className="flex items-center space-x-1">
-                  <Share2 size={16} />
-                  <span>Share</span>
-                </button>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <MoreVertical className="text-gray-500" />
-              <div className="flex flex-col items-center">
-                {/* Fixed by Codex on 2026-02-15
+                <MoreVertical className="text-text-tertiary" />
+                <div className="flex flex-col items-center">
+                  {/* Fixed by Codex on 2026-02-15
                     Who: Codex
                     What: Add labels and pressed state to discussion vote buttons.
                     Why: Icon-only controls are silent to screen readers and lack state.
                     How: Provide aria-label/pressed and explicit button types. */}
-                <button
-                  type="button"
-                  className="text-gray-400 hover:text-gray-600"
-                  onClick={() => handleReaction('upvote')}
-                  aria-label="Upvote discussion"
-                  aria-pressed={reactions?.data.user_reaction === 1}
-                >
-                  <ChevronUp size={20} />
-                </button>
-                <span className="font-bold text-gray-700">{reactions?.data.likes}</span>
-                <button
-                  type="button"
-                  className="text-gray-400 hover:text-gray-600"
-                  onClick={() => handleReaction('downvote')}
-                  aria-label="Downvote discussion"
-                  aria-pressed={reactions?.data.user_reaction === -1}
-                >
-                  <ChevronDown size={20} />
-                </button>
+                  <button
+                    type="button"
+                    className="text-text-tertiary hover:text-text-secondary"
+                    onClick={() => handleReaction('upvote')}
+                    aria-label="Upvote discussion"
+                    aria-pressed={reactions?.data.user_reaction === 1}
+                  >
+                    <ChevronUp size={20} />
+                  </button>
+                  <span className="font-bold text-text-secondary">{reactions?.data.likes}</span>
+                  <button
+                    type="button"
+                    className="text-text-tertiary hover:text-text-secondary"
+                    onClick={() => handleReaction('downvote')}
+                    aria-label="Downvote discussion"
+                    aria-pressed={reactions?.data.user_reaction === -1}
+                  >
+                    <ChevronDown size={20} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
+          <h3 className="mb-2 font-bold res-text-base">Comments</h3>
+          <DiscussionComments discussionId={discussionId} />
         </div>
-        <h3 className="mb-2 font-bold res-text-base">Comments</h3>
-        <DiscussionComments discussionId={discussionId} />
-      </div>
+      </>
     )
   );
 };

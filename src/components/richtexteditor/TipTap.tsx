@@ -19,7 +19,12 @@ const Tiptap = ({ onChange }: TiptapProps) => {
     editorProps: {
       attributes: {
         class:
-          'flex flex-col px-4 py-3 justify-start border-b border-r border-l border-gray-700 text-gray-400 items-start w-full gap-3 font-medium text-[16px] pt-4 rounded-bl-md rounded-br-md outline-none',
+          /* Fixed by Codex on 2026-02-15
+             Who: Codex
+             What: Tokenize editor border and text colors.
+             Why: Keep the rich text editor in sync with UI skins.
+             How: Replace gray utilities with semantic token classes. */
+          'flex flex-col px-4 py-3 justify-start border-b border-r border-l border-common-contrast text-text-secondary items-start w-full gap-3 font-medium text-[16px] pt-4 rounded-bl-md rounded-br-md outline-none',
       },
     },
     onUpdate: ({ editor }) => {

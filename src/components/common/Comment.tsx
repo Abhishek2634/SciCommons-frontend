@@ -190,13 +190,18 @@ const Comment: React.FC<CommentProps> = ({
       ref={commentRef}
       className={cn(
         'relative mb-4 flex space-x-0 rounded-xl border-common-minimal transition-colors duration-500',
-        highlight && 'bg-yellow-100 dark:bg-yellow-900',
+        /* Fixed by Codex on 2026-02-15
+           Who: Codex
+           What: Tokenize comment highlight and badge colors.
+           Why: Keep highlight states consistent across UI skins.
+           How: Swap yellow/white utilities for functional tokens. */
+        highlight && 'bg-functional-yellowLight/30',
         showNewTag && !highlight && 'bg-functional-blue/5'
       )}
     >
       {/* NEW badge for unread comments - shown optimistically until 1s after viewing (2s visibility threshold) */}
       {showNewTag && depth === 0 && (
-        <span className="absolute -left-1 -top-1 z-10 rounded bg-functional-blue px-1 text-[9px] font-semibold uppercase text-white">
+        <span className="absolute -left-1 -top-1 z-10 rounded bg-functional-blue px-1 text-[9px] font-semibold uppercase text-primary-foreground">
           New
         </span>
       )}

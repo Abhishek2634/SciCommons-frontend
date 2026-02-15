@@ -255,6 +255,11 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({
         </div>
 
         <div className="mb-2 flex w-full items-center justify-end gap-2 sm:absolute sm:bottom-0 sm:right-0 sm:mb-0 sm:w-fit">
+          {/* Fixed by Codex on 2026-02-15
+              Who: Codex
+              What: Tokenize article action pill surfaces.
+              Why: Keep edit/settings controls aligned with skin palettes.
+              How: Replace hard-coded white/black utilities with semantic tokens. */}
           {article.is_submitter && (
             <Link
               href={
@@ -262,7 +267,7 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({
                   ? `/article/${article.slug}/settings?community=${encodeURIComponent(article.community_article.community.name)}&returnTo=community`
                   : `/article/${article.slug}/settings`
               }
-              className="rounded-md border border-common-contrast bg-white px-3 py-1.5 text-xs text-black dark:bg-black dark:text-white"
+              className="rounded-md border border-common-contrast bg-common-cardBackground px-3 py-1.5 text-xs text-text-primary"
             >
               {/* Fixed by Codex on 2026-02-15
                   Who: Codex
@@ -324,7 +329,7 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({
                     <button
                       type="button"
                       aria-label="Open article settings"
-                      className="rounded-lg border border-common-contrast bg-white px-4 py-2 text-black res-text-xs dark:bg-black dark:text-white"
+                      className="rounded-lg border border-common-contrast bg-common-cardBackground px-4 py-2 text-text-primary res-text-xs"
                     >
                       <Settings size={18} />
                     </button>
@@ -366,7 +371,7 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({
                     <button
                       type="button"
                       aria-label="Open article settings"
-                      className="rounded-lg border border-common-contrast bg-white px-4 py-2 text-black res-text-xs dark:bg-black dark:text-white"
+                      className="rounded-lg border border-common-contrast bg-common-cardBackground px-4 py-2 text-text-primary res-text-xs"
                     >
                       <Settings size={18} />
                     </button>

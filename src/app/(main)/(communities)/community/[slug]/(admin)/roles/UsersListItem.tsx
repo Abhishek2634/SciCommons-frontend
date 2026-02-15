@@ -151,7 +151,7 @@ const UsersListItem: React.FC<UsersListItemProps> = ({
       )}
       {/* {activeTab === 'Admins' && (
         <button
-          className="rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300"
+          className="rounded-md bg-common-minimal px-4 py-2 text-text-secondary hover:bg-common-contrast"
           onClick={() => handleAction(Action.DemoteAdmin)}
         >
           Demote
