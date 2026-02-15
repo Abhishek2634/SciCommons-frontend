@@ -1,17 +1,17 @@
-  Kept from Armaan (test):
-  - All new flag-based stores (readItemsStore, subscriptionUnreadStore, useUnreadFlags)
-  - New flags API (src/api/flags/)
-  - Updated Comment.tsx with useMarkAsReadOnView hook
-  - Updated DiscussionsSidebar.tsx with subscriptionUnreadStore-based unread dots
-  - All other auto-merged files (DiscussionCard, DiscussionComments, DiscussionSummary, BottomBar, NavBar, RenderComments, etc.)
-  - Deleted unreadNotificationsStore.ts
+Kept from Armaan (test):
 
-  Kept from your branch (non-conflicting):
-  - Auth hardening (race condition lock, server probing, JWT parsing, network error tolerance)
-  - clearRegisteredQueryCache() and useUserSettingsStore.clearSettings() in logout
-  - All your other non-conflicting work (front page, footer, about page, etc.)
+- All new flag-based stores (readItemsStore, subscriptionUnreadStore, useUnreadFlags)
+- New flags API (src/api/flags/)
+- Updated Comment.tsx with useMarkAsReadOnView hook
+- Updated DiscussionsSidebar.tsx with subscriptionUnreadStore-based unread dots
+- All other auto-merged files (DiscussionCard, DiscussionComments, DiscussionSummary, BottomBar, NavBar, RenderComments, etc.)
+- Deleted unreadNotificationsStore.ts
 
+Kept from your branch (non-conflicting):
 
+- Auth hardening (race condition lock, server probing, JWT parsing, network error tolerance)
+- clearRegisteredQueryCache() and useUserSettingsStore.clearSettings() in logout
+- All your other non-conflicting work (front page, footer, about page, etc.)
 
 # Delta From Commit 0732ee1e6ed6dcc57ef2ff32625b77504fa4c4fe
 

@@ -22,6 +22,7 @@ import { BlockSkeleton, Skeleton, TextSkeleton } from '../common/Skeleton';
 import PdfIcon from '../ui/Icons/PdfIcon';
 import { Button, ButtonTitle } from '../ui/button';
 import { Switch } from '../ui/switch';
+import AbstractText from './AbstractText';
 import ArticleStats from './ArticleStats';
 
 // Dynamically import Drawer components
@@ -178,11 +179,14 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({
           {/* <div className="text-base text-text-primary">
             <TruncateText text={article.abstract} maxLines={2} />
           </div> */}
-          <RenderParsedHTML
-            rawContent={article.abstract}
+          {/* Fixed by Codex on 2026-02-15
+              Who: Codex
+              What: Render the article abstract via AbstractText.
+              Why: Keep newline handling consistent across all abstract displays.
+              How: Replace RenderParsedHTML with the shared wrapper component. */}
+          <AbstractText
+            text={article.abstract}
             isShrinked={true}
-            supportMarkdown={false}
-            supportLatex={true}
             gradientClassName="sm:from-common-background"
           />
         </div>

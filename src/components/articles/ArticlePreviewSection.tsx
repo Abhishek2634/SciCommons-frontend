@@ -18,6 +18,7 @@ import TruncateText from '../common/TruncateText';
    Added TabNavigation and DiscussionForum imports to support tabbed Reviews/Discussions interface
    Matches the UX pattern used on the main article page */
 import TabNavigation from '../ui/tab-navigation';
+import AbstractText from './AbstractText';
 import DiscussionForum from './DiscussionForum';
 import ReviewCard, { ReviewCardSkeleton } from './ReviewCard';
 
@@ -104,13 +105,16 @@ const ArticlePreviewSection = ({
       />
       <div className="mb-8">
         <h3 className="mb-1 text-xs font-semibold text-text-secondary">Abstract</h3>
-        <RenderParsedHTML
-          rawContent={article.abstract}
+        {/* Fixed by Codex on 2026-02-15
+            Who: Codex
+            What: Route sidebar abstracts through AbstractText.
+            Why: Preserve line breaks and centralize abstract rendering rules.
+            How: Swap RenderParsedHTML for AbstractText with existing props. */}
+        <AbstractText
+          text={article.abstract}
           isShrinked={true}
-          supportMarkdown={false}
-          supportLatex={true}
           gradientClassName="sm:from-common-background"
-          contentClassName="text-sm"
+          className="text-sm"
         />
       </div>
       <div className="mb-4">

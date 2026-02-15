@@ -16,6 +16,7 @@ import {
 
 import RenderParsedHTML from '../common/RenderParsedHTML';
 import TruncateText from '../common/TruncateText';
+import AbstractText from './AbstractText';
 
 interface ArticlePreviewDrawerProps {
   article: ArticlesListOut | null;
@@ -48,11 +49,14 @@ const ArticlePreviewDrawer: React.FC<ArticlePreviewDrawerProps> = ({
         <div className="overflow-y-auto px-4 pb-6">
           <div className="mb-6">
             <h3 className="mb-2 font-semibold text-text-secondary res-text-sm">Abstract</h3>
-            <RenderParsedHTML
-              rawContent={article.abstract}
-              supportLatex={true}
-              supportMarkdown={false}
-              contentClassName="text-text-primary res-text-sm"
+            {/* Fixed by Codex on 2026-02-15
+                Who: Codex
+                What: Use AbstractText in the preview drawer.
+                Why: Keep newline preservation consistent with other abstract displays.
+                How: Replace the direct RenderParsedHTML call with AbstractText. */}
+            <AbstractText
+              text={article.abstract}
+              className="text-text-primary res-text-sm"
               containerClassName="mb-0"
             />
           </div>

@@ -18,6 +18,7 @@ import RenderParsedHTML from '../common/RenderParsedHTML';
 import { Skeleton, TextSkeleton } from '../common/Skeleton';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import AbstractText from './AbstractText';
 
 // NOTE(bsureshkrishna, 2026-02-07): Article cards gained bookmark toggles, preview hover,
 // and community-aware routing/LaTeX title rendering relative to baseline 5271498.
@@ -198,12 +199,15 @@ const ArticleCard: FC<ArticleCardProps> = memo(
                           contentClassName="text-sm font-semibold text-text-primary"
                           containerClassName="mb-0"
                         />
+                        {/* Fixed by Codex on 2026-02-15
+                            Who: Codex
+                            What: Switched abstract rendering to the AbstractText wrapper.
+                            Why: Preserve line breaks and avoid repeating RenderParsedHTML flags.
+                            How: Use AbstractText with the existing clamp styling. */}
                         {article.abstract && (
-                          <RenderParsedHTML
-                            rawContent={article.abstract}
-                            supportLatex={true}
-                            supportMarkdown={false}
-                            contentClassName="text-xs text-text-secondary line-clamp-4"
+                          <AbstractText
+                            text={article.abstract}
+                            className="line-clamp-4 text-xs text-text-secondary"
                             containerClassName="mb-0"
                           />
                         )}
@@ -230,11 +234,9 @@ const ArticleCard: FC<ArticleCardProps> = memo(
               </div>
             </div>
             {compactType === 'full' && (
-              <RenderParsedHTML
-                rawContent={article.abstract}
-                supportLatex={true}
-                supportMarkdown={false}
-                contentClassName={cn('mt-2 text-wrap text-xs text-text-primary line-clamp-2')}
+              <AbstractText
+                text={article.abstract}
+                className={cn('mt-2 line-clamp-2 text-wrap text-xs text-text-primary')}
                 containerClassName="mb-0"
               />
             )}

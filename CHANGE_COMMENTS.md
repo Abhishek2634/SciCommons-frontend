@@ -5,6 +5,25 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Abstract Newline Preservation via Wrapper (2026-02-15)**
+
+**Problem:** Line breaks entered in article abstracts were collapsed when displayed.
+
+**Root Cause:** Abstracts were rendered with default white-space handling, which collapses newlines.
+
+**Solution:** Introduced an `AbstractText` wrapper around `RenderParsedHTML` that applies
+`whitespace-pre-line` and standardizes abstract rendering flags. Updated abstract call sites
+to use the wrapper.
+
+**Result:** Abstracts now preserve author-entered line breaks across list cards, drawer previews,
+sidebar previews, and the article detail view, with a single shared abstraction.
+
+**Files Modified:** `src/components/articles/AbstractText.tsx`,
+`src/components/articles/ArticleCard.tsx`,
+`src/components/articles/ArticlePreviewDrawer.tsx`,
+`src/components/articles/ArticlePreviewSection.tsx`,
+`src/components/articles/DisplayArticle.tsx`
+
 **Discussion Subscribe Toast Removed (2026-02-15)**
 
 **Problem:** Subscribing to discussions showed a success toast even though the subscribe button
