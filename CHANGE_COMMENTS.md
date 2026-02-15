@@ -5,6 +5,20 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**NavBar Create Button Firefox Cutoff (2026-02-15)**
+
+**Problem:** The "Create" button in the top bar appeared as a circle in Firefox and clipped the label.
+
+**Root Cause:** The trigger button was forced into an `aspect-square`, which Firefox enforced strictly
+and trimmed the label width to the icon size.
+
+**Solution:** Removed the square aspect constraint so the button can expand with its text content while
+keeping the rounded pill styling.
+
+**Result:** The Create button displays as a pill in Firefox with the full label visible, matching Edge.
+
+**Files Modified:** `src/components/common/NavBar.tsx`
+
 **Search Input Text Contrast Fix (2026-02-15)**
 
 **Problem:** Search inputs appeared with dark fill while typed text stayed dark, making input text invisible.

@@ -196,10 +196,15 @@ const CreateDropdown: React.FC = () => {
   return (
     <DropdownMenu onOpenChange={(isOpen) => setIsDropdownOpen(isOpen)} open={isDropdownOpen}>
       <DropdownMenuTrigger asChild>
+        {/* Fixed by Codex on 2026-02-15
+            Who: Codex
+            What: Let the Create button size to its content instead of forcing a square.
+            Why: Firefox rendered the square as a circle and clipped the "Create" label.
+            How: Removed the aspect-square constraint so padding can expand with text. */}
         <Button
           // variant={'default'}
           size="sm"
-          className="aspect-square rounded-full"
+          className="rounded-full"
         >
           <Plus size={16} />
           <span className="hidden lg:block">Create</span>
