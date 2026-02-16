@@ -35,19 +35,12 @@ yarn build
 yarn start
 ```
 
-OR Running app in docker container
+# Running app in docker container -- (preferred test before pushing for alignment with deployment)
 
 ```bash
 # Build docker image locally
-docker build . --build-arg NEXT_PUBLIC_BACKEND_URL=http://localhost:8000 -t scicommons-frontend:latest
-
-# Before running docker compose, update the docker image name in docker-compose.dev.yml file
-docker compose -f docker-compose.dev.yml up
+docker compose -f docker-compose.dev.yml up  --build
 
 # detached mode
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml up -d --build
 ```
-
-# Theming
-
-![SciCommons_Design_Pattern](https://github.com/user-attachments/assets/f8b57cd7-6488-487a-b06f-b5775dc86891)
