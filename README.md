@@ -6,9 +6,9 @@
 
 ## 📢 Possibilities List is Now Available!
 
-- [Possibilities for contributors](Possibilities.md)
+- [Possibilities for contributors](notes/Possibilities.md)
 
-### **Please follow our [Contribution guide](CONTRIBUTING.md) to start contributing to this repo.**
+### **Please follow our [Contribution guide](notes/CONTRIBUTING.md) to start contributing to this repo.**
 
 ## Getting Started
 
