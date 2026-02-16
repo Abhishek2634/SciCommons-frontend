@@ -38,7 +38,7 @@ yarn start
 # Running app in docker container -- (preferred test before pushing for alignment with deployment)
 
 ```bash
-# Build docker image locally
+# Build docker image locally (for Powershell on Windows)
 docker compose -f docker-compose.dev.yml up  --build
 
 # detached mode
