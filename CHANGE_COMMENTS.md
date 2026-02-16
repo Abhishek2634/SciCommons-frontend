@@ -5,6 +5,20 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+## Hydration Safety Alignment from bugfix-hydration (2026-02-16)
+
+**Problem:** Merge attempts with `bugfix-hydration` conflicted in `layout.tsx` and `NavBar.tsx`, and the hydration-safety intent of that branch was not present on `sureshDev`.
+
+**Root Cause:** `sureshDev` evolved those files significantly (font/skin/theme/accessibility work), while the hydration branch carried a smaller focused fix on an older code shape.
+
+**Solution:** Applied the hydration-safe pieces directly on `sureshDev` without cherry-picking full history:
+- Added `suppressHydrationWarning` on the root `<html>` in layout while preserving existing `data-skin`.
+- Updated `ThemeSwitch` to use `resolvedTheme`, added a client-mount guard (`isMounted` + `useEffect`), and switched UI state/toggle logic to `currentTheme`.
+
+**Result:** Theme-dependent SSR/CSR mismatches in navbar rendering are prevented, and expected root hydration warnings are suppressed without dropping current UI/accessibility improvements.
+
+**Files Modified:** `src/app/layout.tsx`, `src/components/common/NavBar.tsx`, `CHANGE_COMMENTS.md`
+
 ## PWA Install Menu Reliability Fix (2026-02-16)
 
 **Problem:** The profile-menu Install action behaved inconsistently: sometimes it showed the PWA install dialog, other times clicking it did nothing.

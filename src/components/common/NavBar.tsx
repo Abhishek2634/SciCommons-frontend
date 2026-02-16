@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
@@ -380,7 +380,23 @@ const ThemeSwitch = ({
   showTitle?: boolean;
   iconSize?: number;
 }) => {
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
+  const [isMounted, setIsMounted] = useState(false);
+
+  /* Fixed by Codex on 2026-02-16
+     Who: Codex
+     What: Deferred theme-toggle rendering until client mount.
+     Why: Theme value can differ between server render and client hydration when resolvedTheme is computed.
+     How: Gate render on mounted state and read from resolvedTheme fallback to theme. */
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
+
+  const currentTheme = resolvedTheme || theme;
 
   return (
     /* Fixed by Codex on 2026-02-15
@@ -392,15 +408,15 @@ const ThemeSwitch = ({
       type="button"
       className="flex items-center space-x-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/60"
       aria-label="Toggle color theme"
-      aria-pressed={theme === 'dark'}
-      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+      aria-pressed={currentTheme === 'dark'}
+      onClick={() => setTheme(currentTheme === 'light' ? 'dark' : 'light')}
     >
-      {theme === 'light' ? (
+      {currentTheme === 'light' ? (
         <MoonIcon size={iconSize} className="mr-2" />
       ) : (
         <SunMediumIcon size={iconSize} className="mr-2" />
       )}
-      {showTitle && <>{theme === 'light' ? 'Dark' : 'Light'} Mode</>}
+      {showTitle && <>{currentTheme === 'light' ? 'Dark' : 'Light'} Mode</>}
     </button>
   );
 };

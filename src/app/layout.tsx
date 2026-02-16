@@ -66,7 +66,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-skin={uiSkin}>
+    /* Fixed by Codex on 2026-02-16
+       Who: Codex
+       What: Added root hydration-warning suppression on the html element.
+       Why: Theme and root-level attributes can differ during SSR/CSR handoff, creating expected warnings.
+       How: Keep existing skin attribute and add suppressHydrationWarning at the root tag. */
+    <html lang="en" data-skin={uiSkin} suppressHydrationWarning>
       <body
         className={cn(
           manrope.variable,
