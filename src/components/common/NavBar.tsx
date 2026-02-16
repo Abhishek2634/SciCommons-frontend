@@ -271,7 +271,7 @@ const CreateDropdown: React.FC = () => {
 const ProfileDropdown: React.FC = () => {
   const logout = useAuthStore((state) => state.logout);
   const imageData = useIdenticon(40);
-  const { handleAppInstall, isInstallAvailable } = usePWAInstallPrompt();
+  const { handleAppInstall, isInstallAvailable, handleOpenAppHelp } = usePWAInstallPrompt();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const router = useRouter();
 
@@ -333,9 +333,9 @@ const ProfileDropdown: React.FC = () => {
         </DropdownMenuItem>
         {/* Fixed by Codex on 2026-02-16
             Who: Codex
-            What: Moved PWA install action to the menu item's selection event.
-            Why: Nested button click handlers inside Radix dropdown items can be swallowed during close/unmount, causing silent no-op clicks.
-            How: Render install only when the deferred prompt exists, and trigger install from `onSelect` with menu-close sequencing. */}
+            What: Made PWA menu state explicit with either Install or Open app help.
+            Why: Hiding install entirely after first install can confuse users who do not realize the app is already available.
+            How: Show Install only when deferred prompt exists; otherwise show a help action with launch guidance. */}
         {isInstallAvailable && (
           <DropdownMenuItem
             onSelect={(event) => {
@@ -347,6 +347,19 @@ const ProfileDropdown: React.FC = () => {
           >
             <DownloadIcon size={16} className="mr-2" />
             Install
+          </DropdownMenuItem>
+        )}
+        {!isInstallAvailable && (
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              setIsDropdownOpen(false);
+              handleOpenAppHelp();
+            }}
+            className="text-text-secondary"
+          >
+            <DownloadIcon size={16} className="mr-2" />
+            Open app help
           </DropdownMenuItem>
         )}
         <DropdownMenuItem onClick={() => setIsDropdownOpen(false)}>

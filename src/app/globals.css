@@ -1013,3 +1013,110 @@ body {
 .mdxeditor-select-content:focus {
   border-color: rgb(var(--Functional-Green-Green)) !important;
 }
+
+/* Fixed by Codex on 2026-02-16
+   Who: Codex
+   What: Applied a custom Sonner toast theme aligned with app tokens.
+   Why: The default rich-color Sonner palette looked pale/orange and visually inconsistent.
+   How: Added dedicated toast classes and semantic state variants (success/info/warning/error/loading). */
+.sc-toast {
+  border: 1px solid rgba(var(--Common-Contrast), 0.95) !important;
+  background: rgba(var(--Common-CardBackground), 0.985) !important;
+  color: rgb(var(--Text-Primary)) !important;
+  border-radius: 0.75rem !important;
+  box-shadow:
+    0 18px 40px -26px rgba(2, 6, 23, 0.7),
+    inset 0 1px 0 rgba(var(--Common-Invert), 0.08) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.sc-toast-title {
+  color: rgb(var(--Text-Primary)) !important;
+  font-weight: 600 !important;
+}
+
+.sc-toast-description {
+  color: rgb(var(--Text-Secondary)) !important;
+}
+
+.sc-toast-success {
+  border-left: 4px solid rgba(var(--Functional-Green-Green), 0.95) !important;
+  border-color: rgba(var(--Functional-Green-Green), 0.6) !important;
+  background: linear-gradient(
+      0deg,
+      rgba(var(--Common-CardBackground), 0.97),
+      rgba(var(--Common-CardBackground), 0.97)
+    ),
+    linear-gradient(
+      90deg,
+      rgba(var(--Functional-Green-GreenLight), 0.28),
+      rgba(var(--Functional-Green-Green), 0.14)
+    ) !important;
+}
+
+.sc-toast-info {
+  border-left: 4px solid rgba(var(--Functional-Blue-Blue), 0.95) !important;
+  border-color: rgba(var(--Functional-Blue-Blue), 0.62) !important;
+  background: linear-gradient(
+      0deg,
+      rgba(var(--Common-CardBackground), 0.97),
+      rgba(var(--Common-CardBackground), 0.97)
+    ),
+    linear-gradient(
+      90deg,
+      rgba(var(--Functional-Blue-BlueLight), 0.24),
+      rgba(var(--Functional-Blue-Blue), 0.13)
+    ) !important;
+}
+
+.sc-toast-warning {
+  border-left: 4px solid rgba(var(--Functional-Yellow-Yellow), 0.95) !important;
+  border-color: rgba(var(--Functional-Yellow-Yellow), 0.64) !important;
+  background: linear-gradient(
+      0deg,
+      rgba(var(--Common-CardBackground), 0.97),
+      rgba(var(--Common-CardBackground), 0.97)
+    ),
+    linear-gradient(
+      90deg,
+      rgba(var(--Functional-Yellow-YellowLight), 0.28),
+      rgba(var(--Functional-Yellow-Yellow), 0.16)
+    ) !important;
+}
+
+.sc-toast-error {
+  border-left: 4px solid rgba(var(--Functional-Red-Red), 0.95) !important;
+  border-color: rgba(var(--Functional-Red-Red), 0.62) !important;
+  background: linear-gradient(
+      0deg,
+      rgba(var(--Common-CardBackground), 0.97),
+      rgba(var(--Common-CardBackground), 0.97)
+    ),
+    linear-gradient(
+      90deg,
+      rgba(var(--Functional-Red-RedLight), 0.3),
+      rgba(var(--Functional-Red-Red), 0.16)
+    ) !important;
+}
+
+.sc-toast-loading {
+  border-left: 4px solid rgba(var(--Functional-Gray-Graycontrast), 0.9) !important;
+  border-color: rgba(var(--Functional-Gray-Graycontrast), 0.72) !important;
+}
+
+.sc-toast-action {
+  background: rgb(var(--Functional-Green-Green)) !important;
+  color: rgb(var(--Common-CardBackground)) !important;
+  border: 1px solid rgba(var(--Functional-Green-Greencontrast), 0.7) !important;
+  border-radius: 0.5rem !important;
+  font-weight: 600 !important;
+}
+
+.sc-toast-cancel,
+.sc-toast-close {
+  background: rgba(var(--Common-Minimal), 0.95) !important;
+  color: rgb(var(--Text-Secondary)) !important;
+  border: 1px solid rgba(var(--Common-Contrast), 0.8) !important;
+  border-radius: 0.5rem !important;
+}

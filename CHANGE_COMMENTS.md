@@ -17,6 +17,30 @@ code now does, not a commit-by-commit history.
 
 **Files Modified:** `src/hooks/usePWAInstallPrompt.ts`, `src/components/common/NavBar.tsx`, `CHANGE_COMMENTS.md`
 
+## PWA Install/Open-App Menu Clarification (2026-02-16)
+
+**Problem:** After installation, hiding Install entirely could confuse users who were told to "get the PWA" but no longer saw an install action.
+
+**Root Cause:** The previous reliability fix intentionally hid Install when `beforeinstallprompt` was unavailable, but did not provide a fallback affordance.
+
+**Solution:** Updated profile menu behavior to show `Install` when eligible, otherwise show `Open app help`, and added a shared help handler that explains where to launch the already-installed app.
+
+**Result:** Users now always get a clear path in the menu: install when possible, and guidance when already installed or otherwise non-eligible.
+
+**Files Modified:** `src/hooks/usePWAInstallPrompt.ts`, `src/components/common/NavBar.tsx`, `CHANGE_COMMENTS.md`
+
+## Sonner Toast Visual Theme Refresh (2026-02-16)
+
+**Problem:** Toasts appeared with a pale/orange default look that clashed with the site token palette.
+
+**Root Cause:** Global `SonnerToaster` used default rich-color rendering without project-specific style overrides.
+
+**Solution:** Removed `richColors` from `SonnerToaster`, mapped toast semantic types to custom class names, and added token-based Sonner styles in `globals.css` for base/success/info/warning/error/loading states plus action/cancel/close buttons. Follow-up pass strengthened state contrast with left-accent rails, richer gradient tints, and tighter button styling so toast intent reads clearly at a glance.
+
+**Result:** Toasts now match the app’s visual system and have clearer state differentiation with improved contrast.
+
+**Files Modified:** `src/app/layout.tsx`, `src/app/globals.css`, `CHANGE_COMMENTS.md`
+
 **Discussion Editing Enabled (2026-02-15)**
 
 **Problem:** Discussion authors could edit comments but had no way to edit their own discussion topic

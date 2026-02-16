@@ -56,7 +56,18 @@ const usePWAInstallPrompt = () => {
     }
   }, [installPrompt]);
 
-  return { handleAppInstall, isInstallAvailable };
+  const handleOpenAppHelp = useCallback(() => {
+    /* Fixed by Codex on 2026-02-16
+       Who: Codex
+       What: Added explicit "open app" guidance when install is unavailable.
+       Why: Users may not realize the PWA is already installed and can be confused when asked to "install" again.
+       How: Expose a helper action that shows concise cross-platform launch guidance via toast. */
+    toast.info(
+      'If you already installed SciCommons, open it from your desktop or Start menu. On mobile, use the home screen app icon.'
+    );
+  }, []);
+
+  return { handleAppInstall, isInstallAvailable, handleOpenAppHelp };
 };
 
 export default usePWAInstallPrompt;

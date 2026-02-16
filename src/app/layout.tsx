@@ -101,11 +101,25 @@ export default function RootLayout({
               Result: The indicator no longer appears while realtime continues in the background. */}
           <BottomBar />
           <SonnerToaster
-            richColors
             position="top-center"
             className="top-16"
             closeButton
             duration={3000}
+            toastOptions={{
+              classNames: {
+                toast: 'sc-toast',
+                title: 'sc-toast-title',
+                description: 'sc-toast-description',
+                actionButton: 'sc-toast-action',
+                cancelButton: 'sc-toast-cancel',
+                closeButton: 'sc-toast-close',
+                success: 'sc-toast-success',
+                error: 'sc-toast-error',
+                info: 'sc-toast-info',
+                warning: 'sc-toast-warning',
+                loading: 'sc-toast-loading',
+              },
+            }}
           />
         </ReactQueryClientProvider>
       </body>
