@@ -5,6 +5,18 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+## Right-Panel Review Submission + Mobile Review Text Fixes (2026-02-16)
+
+**Problem:** In right-panel article previews, users could open the Reviews tab but could not actually submit reviews. In addition, the review subject field appeared with a dark/black fill in light mode, and some review text surfaced as ellipsis-only (`...`) on phones.
+
+**Root Cause:** `ArticleContentView` depended on parent-provided review-form toggle state and had no internal fallback for preview contexts. `ReviewForm` overrode the subject input with `bg-common-invert`, which produces a dark surface in light mode. `TruncateText` always applied WebKit clamp display primitives even when truncation was disabled, which can misrender on mobile browsers.
+
+**Solution:** Added internal review-form state fallback inside `ArticleContentView` so Add review works even without parent callbacks. Switched review subject input styling to `bg-common-cardBackground` for light-mode consistency. Updated `TruncateText` to apply line-clamp CSS only when truncation is active, and added pre-submit review-content normalization/validation to block empty payloads.
+
+**Result:** Review creation now works in right-panel contexts, the review subject field uses a correct light surface, and mobile text rendering no longer collapses into ellipsis-only output from clamp side effects.
+
+**Files Modified:** `src/components/articles/ArticleContentView.tsx`, `src/components/articles/ReviewForm.tsx`, `src/components/common/TruncateText.tsx`, `src/tests/__tests__/ArticleContentView.test.tsx`, `notes/CHANGE_COMMENTS.md`
+
 ## Mobile BottomBar Center-Action Alignment Fix (2026-02-16)
 
 **Problem:** On phones, the bottom `+` create action did not appear visually centered, weakening the mobile visual hierarchy.

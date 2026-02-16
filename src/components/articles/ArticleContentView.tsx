@@ -2,7 +2,7 @@
    Problem: Article display logic duplicated between ArticleDisplayPageClient and DiscussionsPageClient
    Solution: Extracted shared logic into reusable ArticleContentView component
    Result: ~180 lines of shared logic, eliminated ~100 lines of duplication, single source of truth */
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useArticlesApiGetArticle } from '@/api/articles/articles';
 import { useArticlesReviewApiListReviews } from '@/api/reviews/reviews';
@@ -15,6 +15,7 @@ import TabNavigation from '../ui/tab-navigation';
 import DiscussionForum from './DiscussionForum';
 import DisplayArticle, { DisplayArticleSkeleton } from './DisplayArticle';
 import ReviewCard, { ReviewCardSkeleton } from './ReviewCard';
+import ReviewForm from './ReviewForm';
 
 interface ArticleContentViewProps {
   articleSlug: string;
@@ -62,6 +63,7 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
   tabResetKey,
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
+  const [submitReviewInternal, setSubmitReviewInternal] = useState(false);
 
   // Fetch full article data
   const isQueryEnabled = !!articleSlug && !!accessToken;
@@ -133,6 +135,27 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
     communityArticleId ?? articleData?.data?.community_article?.id ?? null;
   const resolvedCommunityId =
     communityId ?? articleData?.data?.community_article?.community?.id ?? null;
+  const isReviewFormControlled = typeof submitReviewExternal === 'boolean';
+  const isReviewFormOpen = isReviewFormControlled ? !!submitReviewExternal : submitReviewInternal;
+
+  /* Fixed by Codex on 2026-02-16
+     Who: Codex
+     What: Added an internal review-form fallback for right-panel article previews.
+     Why: Preview contexts do not always provide parent-controlled review toggle state, so Add review did nothing.
+     How: Track local review-form state when external control is absent and unify toggle handling. */
+  const handleReviewFormToggle = () => {
+    const nextState = !isReviewFormOpen;
+    if (isReviewFormControlled && onReviewFormToggle) {
+      onReviewFormToggle(nextState);
+      return;
+    }
+    setSubmitReviewInternal(nextState);
+  };
+
+  useEffect(() => {
+    // Reset local form-open state when switching articles to avoid stale UI carryover.
+    setSubmitReviewInternal(false);
+  }, [articleSlug]);
 
   const shouldShowSubscribeButton = !!resolvedCommunityArticleId && !!resolvedCommunityId;
   /* Fixed by Codex on 2026-02-15
@@ -149,7 +172,7 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
           title: 'Reviews',
           content: () => (
             <div className="flex flex-col">
-              {!hasUserReviewed && onReviewFormToggle && (
+              {!hasUserReviewed && (
                 <div className="flex items-center justify-between rounded-md bg-functional-green/5 px-4 py-2">
                   <span className="text-sm font-semibold text-text-secondary">
                     Have your reviews? (You can add a review only once.)
@@ -162,14 +185,30 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
                   <button
                     type="button"
                     className="text-xs text-functional-green hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"
-                    onClick={() => onReviewFormToggle(!submitReviewExternal)}
-                    aria-expanded={!!submitReviewExternal}
+                    onClick={handleReviewFormToggle}
+                    aria-expanded={isReviewFormOpen}
                   >
-                    {submitReviewExternal ? 'Cancel' : 'Add review'}
+                    {isReviewFormOpen ? 'Cancel' : 'Add review'}
                   </button>
                 </div>
               )}
-              {/* Note: Review form is handled externally in ArticleDisplayPageClient */}
+              {isReviewFormOpen && !hasUserReviewed && (
+                <div id="article-content-view-review-form">
+                  <ReviewForm
+                    articleId={Number(articleId)}
+                    refetch={reviewsRefetch}
+                    communityId={resolvedCommunityId}
+                    is_submitter={articleData.data.is_submitter}
+                    onSubmitSuccess={() => {
+                      if (isReviewFormControlled && onReviewFormToggle) {
+                        onReviewFormToggle(false);
+                        return;
+                      }
+                      setSubmitReviewInternal(false);
+                    }}
+                  />
+                </div>
+              )}
               <span className="mb-4 border-b border-common-minimal pb-2 text-base font-bold text-text-secondary">
                 Reviews
               </span>

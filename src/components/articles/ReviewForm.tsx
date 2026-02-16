@@ -95,10 +95,21 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   useSubmitOnCtrlEnter(formRef, isPending || editPending || deletePending);
 
   const onSubmit: SubmitHandler<FormValues> = (data) => {
+    /* Fixed by Codex on 2026-02-16
+       Who: Codex
+       What: Added explicit review-content validation before API submission.
+       Why: Empty markdown payloads could slip through and render as placeholder-like "..." text.
+       How: Normalize and trim markdown content from editor ref, then block submission if empty. */
+    const normalizedMarkdown = markdownRef.current.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+    if (!normalizedMarkdown) {
+      toast.error('Review content is required');
+      return;
+    }
+
     const reviewData = {
       ...data,
       article_id: articleId,
-      content: markdownRef.current,
+      content: normalizedMarkdown,
     };
 
     if (action === 'edit' && reviewId) {
@@ -207,7 +218,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
               info="Please provide a clear and concise title for your article."
               errors={errors}
               labelClassName="text-text-secondary"
-              inputClassName="bg-common-invert text-text-primary ring-common-contrast"
+              inputClassName="bg-common-cardBackground text-text-primary ring-common-contrast"
             />
             {/* <Controller
               name="content"
