@@ -54,13 +54,19 @@ const NavBar: React.FC = () => {
 
   const isAshokaUser = user?.email?.endsWith('ashoka.edu.in') ?? false;
   const router = useRouter();
+  /* Fixed by Codex on 2026-02-16
+     Who: Codex
+     What: Hid the top-navbar "Articles" link while preserving it in code.
+     Why: The IA currently emphasizes communities and discussion flows, and a top-level Articles link
+     reads as a parallel content silo that confuses navigation hierarchy.
+     How: Commented out the `/articles` entry in the primary navLinks array. */
   /* Fixed by Codex on 2026-02-09
      What: Add a Bookmarks nav link for authenticated users
      Why: Bookmarks were buried under Contributions and took too many clicks
      How: Link to the contributions page with the bookmarks tab preselected */
   const navLinks = [
     { href: '/', label: 'Home' },
-    { href: '/articles', label: 'Articles', altHref: '/article' },
+    // { href: '/articles', label: 'Articles', altHref: '/article' },
     { href: '/communities', label: 'Communities', altHref: '/community' },
     { href: '/discussions', label: 'Discussions', altHref: '/discussion' },
     ...(isAuthenticated

@@ -26,10 +26,16 @@ describe('Footer', () => {
 
   it('displays all navigation links', () => {
     render(<Footer />);
-    const links = ['Home', 'Articles', 'Communities', 'About', 'Login', 'Register', 'Docs'];
+    /* Fixed by Codex on 2026-02-16
+       Who: Codex
+       What: Updated footer link expectations to exclude Articles.
+       Why: Articles is intentionally suppressed from user-facing footer navigation for now.
+       How: Removed "Articles" from expected links and added a negative assertion. */
+    const links = ['Home', 'Communities', 'About', 'Login', 'Register', 'Docs'];
     links.forEach((link) => {
       expect(screen.getByText(link)).toBeInTheDocument();
     });
+    expect(screen.queryByText('Articles')).not.toBeInTheDocument();
   });
 
   it('displays copyright information', () => {

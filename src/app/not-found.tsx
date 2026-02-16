@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { ArrowLeft, Home, Search } from 'lucide-react';
+import { ArrowLeft, Home } from 'lucide-react';
 
 export default function NotFound() {
   const router = useRouter();
@@ -98,7 +98,12 @@ export default function NotFound() {
                 <Home className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
                 Back to Home
               </Link>
-
+              {/* Fixed by Codex on 2026-02-16
+                  Who: Codex
+                  What: Hid the 404 "Explore Articles" CTA.
+                  Why: Prevent accidental re-entry to /articles from fallback navigation.
+                  How: Commented out the /articles action while retaining it for later restore. */}
+              {/*
               <Link
                 href="/articles"
                 className="group relative inline-flex items-center gap-2 rounded-lg border-2 border-functional-green px-8 py-3 text-base font-semibold text-functional-green transition-all hover:border-functional-greenContrast hover:bg-functional-green/10 hover:text-functional-greenContrast active:scale-95"
@@ -106,6 +111,7 @@ export default function NotFound() {
                 <Search className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
                 Explore Articles
               </Link>
+              */}
             </div>
 
             {/* Additional info */}
@@ -124,7 +130,12 @@ export default function NotFound() {
                   <h3 className="font-semibold text-text-primary">Home</h3>
                   <p className="text-xs text-text-tertiary">Return to homepage</p>
                 </Link>
-
+                {/* Fixed by Codex on 2026-02-16
+                    Who: Codex
+                    What: Hid the Articles quick-link card on 404.
+                    Why: Keep fallback navigation aligned with temporary /articles de-emphasis.
+                    How: Commented out the /articles card block for easy re-enable later. */}
+                {/*
                 <Link
                   href="/articles"
                   className="group rounded-lg border border-common-contrast bg-common-cardBackground p-4 text-left transition-all hover:border-functional-green/40 hover:shadow-md"
@@ -135,6 +146,7 @@ export default function NotFound() {
                   <h3 className="font-semibold text-text-primary">Articles</h3>
                   <p className="text-xs text-text-tertiary">Browse our collection</p>
                 </Link>
+                */}
 
                 <button
                   onClick={() => router.back()}

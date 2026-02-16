@@ -2330,3 +2330,27 @@ const { data: articleData, error, isPending } = useArticlesApiGetArticle(
 **Result**: A second, visually distinct skin is now available to test end-to-end palette swaps.
 
 **Files Modified**: `src/app/globals.css`
+
+## Articles Nav Entry Suppression (2026-02-16)
+
+**Problem:** The top-level "Articles" navbar destination made the content model feel ambiguous versus community-first browsing and discussion workflows.
+
+**Root Cause:** `/articles` was promoted as a primary navigation destination in both desktop and mobile nav bars, which implied an equal hierarchy with Communities/Discussions.
+
+**Solution:** Commented out the "Articles" nav item in `NavBar` and `BottomBar` while leaving the `/articles` route and page implementation intact.
+
+**Result:** Primary navigation now emphasizes community and discussion entry points; `/articles` still exists and can be reached through direct URL and remaining in-app links.
+
+**Files Modified:** `src/components/common/NavBar.tsx`, `src/components/common/BottomBar.tsx`, `CHANGE_COMMENTS.md`
+
+## Articles Link Suppression In Footer/About/404 (2026-02-16)
+
+**Problem:** Users could still land on `/articles` through secondary UI links after navbar removal.
+
+**Root Cause:** Footer navigation, About CTA, and 404 recovery links still included direct `/articles` destinations after navbar suppression.
+
+**Solution:** Commented out `/articles` links in `Footer`, `About`, and `NotFound` while preserving route code and comments for quick restoration.
+
+**Result:** The articles framework remains in code, but routine user navigation no longer funnels into `/articles`.
+
+**Files Modified:** `src/components/common/Footer.tsx`, `src/app/(main)/about/page.tsx`, `src/app/not-found.tsx`, `CHANGE_COMMENTS.md`

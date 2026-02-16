@@ -4,7 +4,7 @@ import React, { Suspense, lazy, useState } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
-import { BookOpenText, Home, Newspaper, Plus, Users } from 'lucide-react';
+import { BookOpenText, Home, Plus, Users } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
@@ -25,9 +25,14 @@ const BottomBar = () => {
   // Get count of articles with new realtime events for discussions badge
   const newEventsCount = useSubscriptionUnreadStore((state) => state.getNewEventsCount());
 
+  /* Fixed by Codex on 2026-02-16
+     Who: Codex
+     What: Hid the bottom-navbar "Articles" destination while preserving it in code.
+     Why: Keeping Articles in only one navbar variant creates inconsistent IA across breakpoints.
+     How: Commented out the `/articles` nav item and adjusted the mobile grid column count to match. */
   const navLinks = [
     { name: 'Home', route: '/', icon: <Home size={20} /> },
-    { name: 'Articles', route: '/articles', altRoute: '/article', icon: <Newspaper size={20} /> },
+    // { name: 'Articles', route: '/articles', altRoute: '/article', icon: <Newspaper size={20} /> },
     { name: '', route: '', icon: <CreateDropdown /> },
     {
       name: 'Communities',
@@ -64,7 +69,7 @@ const BottomBar = () => {
           What: Tokenize bottom bar inactive icon text color.
           Why: Keep inactive states aligned with skin text scales.
           How: Replace gray utilities with text-tertiary token. */}
-      <main className="fixed bottom-0 left-0 z-[1000] grid h-16 w-screen select-none grid-cols-5 border-t border-common-minimal bg-common-background/70 text-text-secondary backdrop-blur-md md:hidden">
+      <main className="fixed bottom-0 left-0 z-[1000] grid h-16 w-screen select-none grid-cols-4 border-t border-common-minimal bg-common-background/70 text-text-secondary backdrop-blur-md md:hidden">
         {navLinks.map((link, index) => {
           const isActive = isLinkActive(link);
           const isOnDiscussionsPage = pathname?.startsWith('/discussion');

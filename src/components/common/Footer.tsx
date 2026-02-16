@@ -8,7 +8,12 @@ import { useAuthStore } from '@/stores/authStore';
 
 const navLinks = [
   { name: 'Home', path: '/' },
-  { name: 'Articles', path: '/articles' },
+  /* Fixed by Codex on 2026-02-16
+     Who: Codex
+     What: Hid the footer Articles entry without deleting route support.
+     Why: Prevent casual user entry into /articles while keeping the framework for later re-enable.
+     How: Commented out the Articles nav item in footer links. */
+  // { name: 'Articles', path: '/articles' },
   { name: 'Communities', path: '/communities' },
   { name: 'About', path: '/about' },
   { name: 'Login', path: '/auth/login' },

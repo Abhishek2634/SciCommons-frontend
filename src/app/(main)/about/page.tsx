@@ -287,12 +287,19 @@ const AboutPage = () => {
               and free for everyone.
             </p>
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
+              {/* Fixed by Codex on 2026-02-16
+                  Who: Codex
+                  What: Hid the "Explore Articles" CTA in About.
+                  Why: Keep users from landing on /articles until IA is revisited.
+                  How: Commented out the /articles Link while preserving markup for later restore. */}
+              {/*
               <Link
                 href="/articles"
                 className="rounded-lg bg-functional-green px-8 py-3 font-semibold text-primary-foreground transition-all hover:bg-functional-green/90 hover:shadow-lg hover:shadow-functional-green/30"
               >
                 Explore Articles
               </Link>
+              */}
               <Link
                 href="/communities"
                 className="rounded-lg border border-functional-green bg-transparent px-8 py-3 font-semibold text-functional-green transition-all hover:bg-functional-green/10 hover:shadow-lg hover:shadow-functional-green/30"
