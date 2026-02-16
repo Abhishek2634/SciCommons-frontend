@@ -1,13 +1,17 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import Image from 'next/image';
 
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { Check, ChevronDown, ChevronUp, MessageCircle, MoreVertical } from 'lucide-react';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { useArticlesDiscussionApiToggleDiscussionResolved } from '@/api/discussions/discussions';
+import {
+  useArticlesDiscussionApiToggleDiscussionResolved,
+  useArticlesDiscussionApiUpdateDiscussion,
+} from '@/api/discussions/discussions';
 import { DiscussionOut, EntityType } from '@/api/schemas';
 import { useMarkAsReadOnView } from '@/hooks/useMarkAsReadOnView';
 import { hasUnreadFlag } from '@/hooks/useUnreadFlags';
@@ -17,8 +21,10 @@ import { useAuthStore } from '@/stores/authStore';
 import { useReadItemsStore } from '@/stores/readItemsStore';
 import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
 
+import FormInput from '../common/FormInput';
 import RenderParsedHTML from '../common/RenderParsedHTML';
 import { BlockSkeleton, Skeleton, TextSkeleton } from '../common/Skeleton';
+import { Button, ButtonTitle } from '../ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +46,11 @@ interface DiscussionCardProps {
   communityId?: number | null;
 }
 
+interface DiscussionEditFormValues {
+  topic: string;
+  content: string;
+}
+
 const DiscussionCard: React.FC<DiscussionCardProps> = ({
   discussion,
   handleDiscussionClick,
@@ -56,7 +67,26 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
   const clearNewEvent = useSubscriptionUnreadStore((state) => state.clearNewEvent);
   const [displayComments, setDisplayComments] = useState<boolean>(false);
   const [isResolved, setIsResolved] = useState<boolean>(discussion.is_resolved || false);
+  const [isEditing, setIsEditing] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Allow editing discussions directly from the list card.
+     Why: Authors could edit comments but not their own discussion without opening the thread.
+     How: Add an inline edit form with update mutation and reset state from card data. */
+  const {
+    control,
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<DiscussionEditFormValues>({
+    defaultValues: {
+      topic: '',
+      content: '',
+    },
+  });
 
   // Check if this discussion has the unread flag from API response
   const hasUnread = hasUnreadFlag(discussion.flags);
@@ -98,6 +128,8 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
 
   // Check if user can resolve/unresolve (admin or discussion author)
   const canResolve = isCommunityArticle && (isAdmin || discussion.is_author);
+  const canEditDiscussion = !!discussion.is_author;
+  const shouldShowActions = (canResolve || canEditDiscussion) && !isEditing;
 
   const { mutate: toggleResolved, isPending: isToggling } =
     useArticlesDiscussionApiToggleDiscussionResolved({
@@ -117,9 +149,45 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
       },
     });
 
+  const { mutate: updateDiscussion, isPending: isUpdating } =
+    useArticlesDiscussionApiUpdateDiscussion({
+      request: { headers: { Authorization: `Bearer ${accessToken}` } },
+      mutation: {
+        onSuccess: () => {
+          toast.success('Discussion updated successfully.');
+          setIsEditing(false);
+          refetch?.();
+        },
+        onError: (error) => {
+          showErrorToast(error);
+        },
+      },
+    });
+
   const handleToggleResolved = () => {
     if (!discussion.id || isToggling) return;
     toggleResolved({ discussionId: Number(discussion.id) });
+  };
+
+  useEffect(() => {
+    if (!isEditing) {
+      reset({ topic: discussion.topic, content: discussion.content });
+    }
+  }, [discussion.content, discussion.topic, isEditing, reset]);
+
+  const handleEditStart = () => {
+    reset({ topic: discussion.topic, content: discussion.content });
+    setIsEditing(true);
+  };
+
+  const handleEditCancel = () => {
+    reset({ topic: discussion.topic, content: discussion.content });
+    setIsEditing(false);
+  };
+
+  const handleEditSubmit = (values: DiscussionEditFormValues) => {
+    if (!discussion.id) return;
+    updateDiscussion({ discussionId: Number(discussion.id), data: values });
   };
 
   // const { data, refetch: refetchReactions } = useUsersCommonApiGetReactionCount(
@@ -218,7 +286,7 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
                 )}
               </div>
             </div>
-            {canResolve && (
+            {shouldShowActions && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -230,9 +298,14 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleToggleResolved} disabled={isToggling}>
-                    {isResolved ? 'Mark as Unresolved' : 'Mark as Resolved'}
-                  </DropdownMenuItem>
+                  {canEditDiscussion && (
+                    <DropdownMenuItem onClick={handleEditStart}>Edit discussion</DropdownMenuItem>
+                  )}
+                  {canResolve && (
+                    <DropdownMenuItem onClick={handleToggleResolved} disabled={isToggling}>
+                      {isResolved ? 'Mark as Unresolved' : 'Mark as Resolved'}
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -243,24 +316,61 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
                What: Make discussion titles keyboard accessible.
                Why: Clickable spans are not focusable for keyboard users.
                How: Swap to a button with aria-label and preserved styling. */}
-            <button
-              type="button"
-              aria-label="Open discussion"
-              onClick={handleOpenThread}
-              className="line-clamp-2 flex-grow cursor-pointer text-left text-sm font-semibold text-text-primary hover:text-functional-blue hover:underline"
-            >
-              {discussion.topic}
-            </button>
-            {/* <span className="text-text-secondary res-text-xs">{discussion.content}</span> */}
-            <RenderParsedHTML
-              rawContent={discussion.content}
-              isShrinked={true}
-              containerClassName="mb-0"
-              supportMarkdown={true}
-              supportLatex={true}
-              contentClassName="text-xs sm:text-sm"
-              gradientClassName="sm:from-common-background"
-            />
+            {isEditing ? (
+              <form onSubmit={handleSubmit(handleEditSubmit)} className="mb-2 flex flex-col gap-3">
+                <FormInput<DiscussionEditFormValues>
+                  label="Topic"
+                  name="topic"
+                  type="text"
+                  placeholder="Enter discussion topic"
+                  register={register}
+                  requiredMessage="Topic is required"
+                  errors={errors}
+                  autoFocus
+                />
+                <FormInput<DiscussionEditFormValues>
+                  label="Content"
+                  name="content"
+                  type="text"
+                  placeholder="Enter discussion content"
+                  register={register}
+                  control={control}
+                  requiredMessage="Content is required"
+                  errors={errors}
+                  textArea={true}
+                  supportMarkdown={true}
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="submit" variant="blue" loading={isUpdating} showLoadingSpinner>
+                    <ButtonTitle>{isUpdating ? 'Saving...' : 'Save changes'}</ButtonTitle>
+                  </Button>
+                  <Button type="button" variant="outline" onClick={handleEditCancel}>
+                    <ButtonTitle>Cancel</ButtonTitle>
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  aria-label="Open discussion"
+                  onClick={handleOpenThread}
+                  className="line-clamp-2 flex-grow cursor-pointer text-left text-sm font-semibold text-text-primary hover:text-functional-blue hover:underline"
+                >
+                  {discussion.topic}
+                </button>
+                {/* <span className="text-text-secondary res-text-xs">{discussion.content}</span> */}
+                <RenderParsedHTML
+                  rawContent={discussion.content}
+                  isShrinked={true}
+                  containerClassName="mb-0"
+                  supportMarkdown={true}
+                  supportLatex={true}
+                  contentClassName="text-xs sm:text-sm"
+                  gradientClassName="sm:from-common-background"
+                />
+              </>
+            )}
           </div>
           <div className="ml-auto flex items-center text-xs text-text-tertiary">
             <button

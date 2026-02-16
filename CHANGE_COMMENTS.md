@@ -5,6 +5,25 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+**Discussion Editing Enabled (2026-02-15)**
+
+**Problem:** Discussion authors could edit comments but had no way to edit their own discussion topic
+or content directly from the discussions list or thread view.
+
+**Root Cause:** Discussion cards and the thread header only rendered read-only text and did not wire
+the update discussion API or expose edit actions.
+
+**Solution:** Added edit action menus for discussion authors in both the list card and thread views,
+introduced inline edit forms with topic/content fields, and wired the update mutation to refresh the
+thread and discussions list.
+
+**Result:** Authors can now edit their discussions from the list card or the thread view without
+leaving the discussions tab.
+
+**Files Modified:** `src/components/articles/DiscussionThread.tsx`,
+`src/components/articles/DiscussionForum.tsx`,
+`src/components/articles/DiscussionCard.tsx`
+
 **Discussions View Default Tab (2026-02-15)**
 
 **Problem:** Opening an item from the discussions sidebar showed the article on the Reviews tab instead

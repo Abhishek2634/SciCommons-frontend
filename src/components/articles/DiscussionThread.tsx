@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import Image from 'next/image';
 
@@ -12,8 +12,13 @@ import {
   MoreVertical,
   Share2,
 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
-import { useArticlesDiscussionApiGetDiscussion } from '@/api/discussions/discussions';
+import {
+  useArticlesDiscussionApiGetDiscussion,
+  useArticlesDiscussionApiUpdateDiscussion,
+} from '@/api/discussions/discussions';
 import {
   useUsersCommonApiGetReactionCount,
   useUsersCommonApiPostReaction,
@@ -24,17 +29,54 @@ import { useAuthStore } from '@/stores/authStore';
 import { useRealtimeContextStore } from '@/stores/realtimeStore';
 import { Reaction } from '@/types';
 
+import FormInput from '../common/FormInput';
 import TruncateText from '../common/TruncateText';
+import { Button, ButtonTitle } from '../ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import DiscussionComments from './DiscussionComments';
 
 interface DiscussionThreadProps {
   discussionId: number;
   setDiscussionId: (discussionId: React.SetStateAction<number | null>) => void;
+  refetchDiscussions?: () => void;
 }
 
-const DiscussionThread: React.FC<DiscussionThreadProps> = ({ discussionId, setDiscussionId }) => {
+interface DiscussionEditFormValues {
+  topic: string;
+  content: string;
+}
+
+const DiscussionThread: React.FC<DiscussionThreadProps> = ({
+  discussionId,
+  setDiscussionId,
+  refetchDiscussions,
+}) => {
   dayjs.extend(relativeTime);
   const accessToken = useAuthStore((state) => state.accessToken);
+  const [isEditing, setIsEditing] = useState(false);
+
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Add discussion editing controls for authors.
+     Why: Authors could edit comments but not their own discussion topics/content.
+     How: Add an edit form with update mutation and reset it with discussion data. */
+  const {
+    control,
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<DiscussionEditFormValues>({
+    defaultValues: {
+      topic: '',
+      content: '',
+    },
+  });
 
   useEffect(() => {
     const store = useRealtimeContextStore.getState();
@@ -49,7 +91,7 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({ discussionId, setDi
     };
   }, [discussionId]);
 
-  const { data, error } = useArticlesDiscussionApiGetDiscussion(discussionId, {
+  const { data, error, refetch } = useArticlesDiscussionApiGetDiscussion(discussionId, {
     query: { enabled: discussionId !== null && !!accessToken },
     request: { headers: { Authorization: `Bearer ${accessToken}` } },
   });
@@ -99,6 +141,48 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({ discussionId, setDi
   };
 
   const discussion = data?.data;
+  const canEditDiscussion = !!discussion?.is_author;
+
+  useEffect(() => {
+    if (discussion && !isEditing) {
+      reset({ topic: discussion.topic, content: discussion.content });
+    }
+  }, [discussion, isEditing, reset]);
+
+  const { mutate: updateDiscussion, isPending: isUpdating } =
+    useArticlesDiscussionApiUpdateDiscussion({
+      request: { headers: { Authorization: `Bearer ${accessToken}` } },
+      mutation: {
+        onSuccess: () => {
+          toast.success('Discussion updated successfully.');
+          setIsEditing(false);
+          refetch();
+          refetchDiscussions?.();
+        },
+        onError: (error) => {
+          showErrorToast(error);
+        },
+      },
+    });
+
+  const handleEditStart = () => {
+    if (discussion) {
+      reset({ topic: discussion.topic, content: discussion.content });
+      setIsEditing(true);
+    }
+  };
+
+  const handleEditCancel = () => {
+    if (discussion) {
+      reset({ topic: discussion.topic, content: discussion.content });
+    }
+    setIsEditing(false);
+  };
+
+  const handleEditSubmit = (values: DiscussionEditFormValues) => {
+    if (!discussion?.id) return;
+    updateDiscussion({ discussionId: Number(discussion.id), data: values });
+  };
 
   return (
     discussion && (
@@ -143,12 +227,52 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({ discussionId, setDi
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <div className="mr-4 flex-grow cursor-pointer font-bold res-text-base">
-                    <TruncateText text={discussion.topic} maxLines={2} />
-                  </div>
-                  <div>
-                    <TruncateText text={discussion.content} maxLines={3} />
-                  </div>
+                  {isEditing ? (
+                    <form
+                      onSubmit={handleSubmit(handleEditSubmit)}
+                      className="mr-4 flex flex-col gap-3"
+                    >
+                      <FormInput<DiscussionEditFormValues>
+                        label="Topic"
+                        name="topic"
+                        type="text"
+                        placeholder="Enter discussion topic"
+                        register={register}
+                        requiredMessage="Topic is required"
+                        errors={errors}
+                        autoFocus
+                      />
+                      <FormInput<DiscussionEditFormValues>
+                        label="Content"
+                        name="content"
+                        type="text"
+                        placeholder="Enter discussion content"
+                        register={register}
+                        control={control}
+                        requiredMessage="Content is required"
+                        errors={errors}
+                        textArea
+                        supportMarkdown
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button type="submit" variant="blue" loading={isUpdating} showLoadingSpinner>
+                          <ButtonTitle>{isUpdating ? 'Saving...' : 'Save changes'}</ButtonTitle>
+                        </Button>
+                        <Button type="button" variant="outline" onClick={handleEditCancel}>
+                          <ButtonTitle>Cancel</ButtonTitle>
+                        </Button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <div className="mr-4 flex-grow cursor-pointer font-bold res-text-base">
+                        <TruncateText text={discussion.topic} maxLines={2} />
+                      </div>
+                      <div>
+                        <TruncateText text={discussion.content} maxLines={3} />
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="mt-4 flex items-center text-text-tertiary res-text-xs">
                   <button type="button" className="mr-4 flex items-center space-x-1">
@@ -162,7 +286,24 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({ discussionId, setDi
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <MoreVertical className="text-text-tertiary" />
+                {canEditDiscussion && !isEditing && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="rounded-md p-1 text-text-tertiary hover:bg-common-minimal hover:text-text-primary focus:outline-none"
+                        aria-label="Discussion actions"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleEditStart}>
+                        Edit discussion
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
                 <div className="flex flex-col items-center">
                   {/* Fixed by Codex on 2026-02-15
                     Who: Codex

@@ -186,7 +186,13 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
   };
 
   if (discussionId) {
-    return <DiscussionThread discussionId={discussionId} setDiscussionId={setDiscussionId} />;
+    return (
+      <DiscussionThread
+        discussionId={discussionId}
+        setDiscussionId={setDiscussionId}
+        refetchDiscussions={refetch}
+      />
+    );
   }
 
   return (
