@@ -2,7 +2,7 @@
 
 - A Zotero-like extension, and making use of the possibilities of such an extension for additional features and local storage. Zotero's technology is outdated now, but it has many powerful components that could be cool to have.
 - Setting up a PlayWright-based suite for automated testing of the web-site; also increasing code test-coverage.
-    - Once we have a Playwright suite, we can get an open-source account on BrowserStack. (also testing markdown with this comment; found an issue with src/components/common/RenderParsedHTML.tsx and fixed it in my in-progress branch so that local routes are resolved with https and not as relative links).
+  - Once we have a Playwright suite, we can get an open-source account on BrowserStack. (also testing markdown with this comment; found an issue with src/components/common/RenderParsedHTML.tsx and fixed it in my in-progress branch so that local routes are resolved with https and not as relative links).
 - BrowserUse is another option.
 - Creating the possibility of skins for personalizing the look and feel of the front-end.
 - Implementing a preprint-server viewer, much like AlphaXiv, and including several of those features. Would work across multiple pre-print servers -- anythign that has an API really. OpenReview as well. Idea is to take in a DOI or a preprint-server url and display the article, and add the possibility for commenting and reviewing. Once an article receives a comment/review, it is stored in our datbase as well. So when user inputs (in some way) an article ID that is new and not already in the database, then there are no comments/reviews/discussions to display since our store related to that article is currently empty.

@@ -18,7 +18,8 @@ jest.mock('@/api/articles/articles', () => ({
 }));
 
 jest.mock('@/api/reviews/reviews', () => ({
-  useArticlesReviewApiListReviews: (...args: unknown[]) => mockUseArticlesReviewApiListReviews(...args),
+  useArticlesReviewApiListReviews: (...args: unknown[]) =>
+    mockUseArticlesReviewApiListReviews(...args),
 }));
 
 jest.mock('@/components/articles/DisplayArticle', () => ({
@@ -96,4 +97,3 @@ describe('ArticleContentView', () => {
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 });
-
