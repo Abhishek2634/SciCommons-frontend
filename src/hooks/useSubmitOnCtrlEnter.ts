@@ -2,9 +2,16 @@ import { useEffect } from 'react';
 
 export function useSubmitOnCtrlEnter(
   formRef: React.RefObject<HTMLFormElement>,
-  isLoading: boolean | undefined = false
+  isLoading: boolean | undefined = false,
+  isEnabled: boolean = true
 ) {
   useEffect(() => {
+    /* Fixed by Codex on 2026-02-15
+       Who: Codex
+       What: Allow opting out of Ctrl/Cmd+Enter listeners for inactive forms.
+       Why: Avoid registering global key handlers for forms that are not currently editable.
+       How: Add an enable flag and skip the listener when it is false. */
+    if (!isEnabled) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
         (e.ctrlKey || e.metaKey) &&
@@ -20,5 +27,5 @@ export function useSubmitOnCtrlEnter(
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [formRef, isLoading]);
+  }, [formRef, isEnabled, isLoading]);
 }

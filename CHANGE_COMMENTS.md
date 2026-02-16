@@ -24,6 +24,24 @@ leaving the discussions tab.
 `src/components/articles/DiscussionForum.tsx`,
 `src/components/articles/DiscussionCard.tsx`
 
+**Ctrl/Cmd+Enter Discussion Submit (2026-02-15)**
+
+**Problem:** Discussion inputs lacked keyboard submit support even though comments and reviews already
+accepted Ctrl/Cmd+Enter, making keyboard workflows inconsistent.
+
+**Root Cause:** Discussion forms and edit surfaces did not use the shared submit-on-ctrl-enter hook.
+
+**Solution:** Added form refs and the shared Ctrl/Cmd+Enter submit hook to new discussion, discussion
+editing, and discussion summary forms.
+
+**Result:** Discussion inputs now submit with Ctrl/Cmd+Enter, matching comment and review behavior.
+
+**Files Modified:** `src/components/articles/DiscussionForm.tsx`,
+`src/components/articles/DiscussionThread.tsx`,
+`src/components/articles/DiscussionCard.tsx`,
+`src/components/articles/DiscussionSummary.tsx`,
+`src/hooks/useSubmitOnCtrlEnter.ts`
+
 **Discussions View Default Tab (2026-02-15)**
 
 **Problem:** Opening an item from the discussions sidebar showed the article on the Reviews tab instead

@@ -21,6 +21,7 @@ import FormInput from '@/components/common/FormInput';
 import RenderParsedHTML from '@/components/common/RenderParsedHTML';
 import { Button, ButtonTitle } from '@/components/ui/button';
 import { FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
+import { useSubmitOnCtrlEnter } from '@/hooks/useSubmitOnCtrlEnter';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
@@ -41,6 +42,7 @@ interface FormValues {
 const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleId, isAdmin }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
   const queryClient = useQueryClient();
+  const formRef = React.useRef<HTMLFormElement>(null);
 
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -130,6 +132,13 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
         },
       },
     });
+
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Enable Ctrl/Cmd+Enter to submit discussion summary edits.
+     Why: Keep keyboard submit behavior consistent across discussion inputs.
+     How: Attach the shared submit-on-ctrl-enter hook to the summary form ref. */
+  useSubmitOnCtrlEnter(formRef, isCreating || isUpdating);
 
   // Delete mutation
   const { mutate: deleteSummary, isPending: isDeleting } =
@@ -248,7 +257,11 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
         >
           {/* Editing mode */}
           {isAdmin && isEditing ? (
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
+            <form
+              ref={formRef}
+              onSubmit={handleSubmit(onSubmit)}
+              className="flex flex-col gap-3"
+            >
               <FormInput<FormValues>
                 label=""
                 name="content"
@@ -325,7 +338,11 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
             isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
           )}
         >
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
+          <form
+            ref={formRef}
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-3"
+          >
             <FormInput<FormValues>
               label=""
               name="content"

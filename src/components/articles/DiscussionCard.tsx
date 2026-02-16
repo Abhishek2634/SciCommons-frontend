@@ -15,6 +15,7 @@ import {
 import { DiscussionOut, EntityType } from '@/api/schemas';
 import { useMarkAsReadOnView } from '@/hooks/useMarkAsReadOnView';
 import { hasUnreadFlag } from '@/hooks/useUnreadFlags';
+import { useSubmitOnCtrlEnter } from '@/hooks/useSubmitOnCtrlEnter';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
@@ -68,6 +69,7 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
   const [displayComments, setDisplayComments] = useState<boolean>(false);
   const [isResolved, setIsResolved] = useState<boolean>(discussion.is_resolved || false);
   const [isEditing, setIsEditing] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
   /* Fixed by Codex on 2026-02-15
@@ -163,6 +165,12 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
         },
       },
     });
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Enable Ctrl/Cmd+Enter to submit discussion edits from cards.
+     Why: Provide the same keyboard submit behavior as other discussion inputs.
+     How: Bind the shared submit-on-ctrl-enter hook to the card edit form ref. */
+  useSubmitOnCtrlEnter(formRef, isUpdating, isEditing);
 
   const handleToggleResolved = () => {
     if (!discussion.id || isToggling) return;
@@ -317,7 +325,11 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
                Why: Clickable spans are not focusable for keyboard users.
                How: Swap to a button with aria-label and preserved styling. */}
             {isEditing ? (
-              <form onSubmit={handleSubmit(handleEditSubmit)} className="mb-2 flex flex-col gap-3">
+              <form
+                ref={formRef}
+                onSubmit={handleSubmit(handleEditSubmit)}
+                className="mb-2 flex flex-col gap-3"
+              >
                 <FormInput<DiscussionEditFormValues>
                   label="Topic"
                   name="topic"

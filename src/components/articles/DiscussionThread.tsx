@@ -24,6 +24,7 @@ import {
   useUsersCommonApiPostReaction,
 } from '@/api/users-common-api/users-common-api';
 import { TEN_MINUTES_IN_MS } from '@/constants/common.constants';
+import { useSubmitOnCtrlEnter } from '@/hooks/useSubmitOnCtrlEnter';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { useAuthStore } from '@/stores/authStore';
 import { useRealtimeContextStore } from '@/stores/realtimeStore';
@@ -58,6 +59,7 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
 }) => {
   dayjs.extend(relativeTime);
   const accessToken = useAuthStore((state) => state.accessToken);
+  const formRef = React.useRef<HTMLFormElement>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   /* Fixed by Codex on 2026-02-15
@@ -164,6 +166,12 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
         },
       },
     });
+  /* Fixed by Codex on 2026-02-15
+     Who: Codex
+     What: Enable Ctrl/Cmd+Enter to submit discussion edits.
+     Why: Provide the same keyboard submit behavior as comments and reviews.
+     How: Bind the shared submit-on-ctrl-enter hook to the edit form ref. */
+  useSubmitOnCtrlEnter(formRef, isUpdating, isEditing);
 
   const handleEditStart = () => {
     if (discussion) {
@@ -229,6 +237,7 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
                 <div className="flex flex-col gap-2">
                   {isEditing ? (
                     <form
+                      ref={formRef}
                       onSubmit={handleSubmit(handleEditSubmit)}
                       className="mr-4 flex flex-col gap-3"
                     >
@@ -255,7 +264,12 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
                         supportMarkdown
                       />
                       <div className="flex flex-wrap items-center gap-2">
-                        <Button type="submit" variant="blue" loading={isUpdating} showLoadingSpinner>
+                        <Button
+                          type="submit"
+                          variant="blue"
+                          loading={isUpdating}
+                          showLoadingSpinner
+                        >
                           <ButtonTitle>{isUpdating ? 'Saving...' : 'Save changes'}</ButtonTitle>
                         </Button>
                         <Button type="button" variant="outline" onClick={handleEditCancel}>
@@ -298,9 +312,7 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleEditStart}>
-                        Edit discussion
-                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleEditStart}>Edit discussion</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
