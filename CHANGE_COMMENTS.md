@@ -2354,3 +2354,15 @@ const { data: articleData, error, isPending } = useArticlesApiGetArticle(
 **Result:** The articles framework remains in code, but routine user navigation no longer funnels into `/articles`.
 
 **Files Modified:** `src/components/common/Footer.tsx`, `src/app/(main)/about/page.tsx`, `src/app/not-found.tsx`, `CHANGE_COMMENTS.md`
+
+## Bookmarks Dead-Link Routing Fix (2026-02-16)
+
+**Problem:** Items in the My Contributions bookmarks tab could open dead links, often navigating to `/posts/...` even when the bookmarked item was not a post.
+
+**Root Cause:** Bookmark route selection in `ItemCard` relied on strict TitleCase matches (`'Article'`, `'Community'`). API payloads can return lowercase or namespaced type values, so unmatched types fell through to the `/posts/...` default.
+
+**Solution:** Normalized bookmark `type` values to lowercase and switched to case-insensitive route mapping with explicit article/community/post detection. Also encoded community path segments when building `/community/...` links.
+
+**Result:** Bookmarked items now route to the intended destination type more reliably instead of defaulting to incorrect post URLs.
+
+**Files Modified:** `src/app/(main)/(users)/mycontributions/ItemCard.tsx`, `CHANGE_COMMENTS.md`
