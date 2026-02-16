@@ -5,6 +5,18 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+## PWA Install Menu Reliability Fix (2026-02-16)
+
+**Problem:** The profile-menu Install action behaved inconsistently: sometimes it showed the PWA install dialog, other times clicking it did nothing.
+
+**Root Cause:** The install flow depended on direct DOM show/hide via an element id and nested a `<button>` inside a Radix `DropdownMenuItem`, which could race with dropdown close/unmount timing.
+
+**Solution:** Reworked `usePWAInstallPrompt` to track deferred install availability in React state (`beforeinstallprompt` + `appinstalled`) and expose `isInstallAvailable`. Updated the profile menu to render a single install menu item only when available and trigger installation from the item `onSelect` handler.
+
+**Result:** Install interaction is now deterministic: the menu option appears only when install can be prompted, and selecting it consistently triggers the browser install flow (or surfaces explicit feedback on failure/dismissal).
+
+**Files Modified:** `src/hooks/usePWAInstallPrompt.ts`, `src/components/common/NavBar.tsx`, `CHANGE_COMMENTS.md`
+
 **Discussion Editing Enabled (2026-02-15)**
 
 **Problem:** Discussion authors could edit comments but had no way to edit their own discussion topic

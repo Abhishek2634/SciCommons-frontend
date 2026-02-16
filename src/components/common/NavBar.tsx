@@ -271,7 +271,7 @@ const CreateDropdown: React.FC = () => {
 const ProfileDropdown: React.FC = () => {
   const logout = useAuthStore((state) => state.logout);
   const imageData = useIdenticon(40);
-  const { handleAppInstall } = usePWAInstallPrompt('install');
+  const { handleAppInstall, isInstallAvailable } = usePWAInstallPrompt();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const router = useRouter();
 
@@ -331,17 +331,24 @@ const ProfileDropdown: React.FC = () => {
             <Settings size={16} className="mr-2" /> Settings
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setIsDropdownOpen(false)}>
-          <button
-            onClick={handleAppInstall}
-            id="install"
-            hidden
-            className="flex items-center text-functional-green"
+        {/* Fixed by Codex on 2026-02-16
+            Who: Codex
+            What: Moved PWA install action to the menu item's selection event.
+            Why: Nested button click handlers inside Radix dropdown items can be swallowed during close/unmount, causing silent no-op clicks.
+            How: Render install only when the deferred prompt exists, and trigger install from `onSelect` with menu-close sequencing. */}
+        {isInstallAvailable && (
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              setIsDropdownOpen(false);
+              void handleAppInstall();
+            }}
+            className="text-functional-green"
           >
             <DownloadIcon size={16} className="mr-2" />
             Install
-          </button>
-        </DropdownMenuItem>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={() => setIsDropdownOpen(false)}>
           <button onClick={handleLogout} className="flex items-center text-functional-red">
             <LogOut size={16} className="mr-2" />
