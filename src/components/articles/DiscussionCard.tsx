@@ -14,8 +14,8 @@ import {
 } from '@/api/discussions/discussions';
 import { DiscussionOut, EntityType } from '@/api/schemas';
 import { useMarkAsReadOnView } from '@/hooks/useMarkAsReadOnView';
-import { hasUnreadFlag } from '@/hooks/useUnreadFlags';
 import { useSubmitOnCtrlEnter } from '@/hooks/useSubmitOnCtrlEnter';
+import { hasUnreadFlag } from '@/hooks/useUnreadFlags';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';

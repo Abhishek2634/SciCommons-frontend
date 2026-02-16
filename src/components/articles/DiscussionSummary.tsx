@@ -257,11 +257,7 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
         >
           {/* Editing mode */}
           {isAdmin && isEditing ? (
-            <form
-              ref={formRef}
-              onSubmit={handleSubmit(onSubmit)}
-              className="flex flex-col gap-3"
-            >
+            <form ref={formRef} onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
               <FormInput<FormValues>
                 label=""
                 name="content"
@@ -338,11 +334,7 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
             isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
           )}
         >
-          <form
-            ref={formRef}
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-3"
-          >
+          <form ref={formRef} onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
             <FormInput<FormValues>
               label=""
               name="content"
