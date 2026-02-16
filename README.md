@@ -4,20 +4,20 @@
 
 ---
 
-## 📢 Feature List for SciCommons GSoC 2025 is Now Available!
+## 📢 Possibilities List is Now Available!
 
-> You can access it here:  
-> 🔗 [GSoC 2025 Feature List](https://github.com/m2b3/SciCommons-frontend/blob/main/gsoc/GSoC_2025_Feature_List.md)
+- [Possibilities for contributors](Possibilities.md)
 
-### **Please follow our [Contribution guide](https://github.com/m2b3/SciCommons-frontend/blob/main/CONTRIBUTING.md) to start contributing to this repo.**
+### **Please follow our [Contribution guide](CONTRIBUTING.md) to start contributing to this repo.**
 
 ## Getting Started
 
 Create .env file with following environments:
 
 ```bash
-NEXT_PUBLIC_BACKEND_URL="http://127.0.0.1:8000"
-NEXT_PUBLIC_REALTIME_URL="http://localhost:8888"
+NEXT_PUBLIC_BACKEND_URL="https://backendtest.scicommons.org"
+NEXT_PUBLIC_REALTIME_URL="https://backendtest.scicommons.org"
+NEXT_PUBLIC_UI_SKIN="sage"
 ```
 
 Run the development server:
@@ -26,8 +26,13 @@ Run the development server:
 # Install dependencies
 yarn install
 
-# Run server
+# Run server for development
 yarn dev
+
+# Testing and deploy
+yarn test:fix
+yarn build
+yarn start
 ```
 
 OR Running app in docker container
