@@ -33,7 +33,6 @@ const BottomBar = () => {
   const navLinks = [
     { name: 'Home', route: '/', icon: <Home size={20} /> },
     // { name: 'Articles', route: '/articles', altRoute: '/article', icon: <Newspaper size={20} /> },
-    { name: '', route: '', icon: <CreateDropdown /> },
     {
       name: 'Communities',
       route: '/communities',
@@ -49,6 +48,11 @@ const BottomBar = () => {
     // { name: 'Contributions', route: '/mycontributions', icon: <NotebookTabs size={20} /> },
     // { name: 'Posts', route: '/posts', altRoute: '/post', icon: <NotebookPen size={18} /> },
   ];
+  const navSlotClassByName: Record<string, string> = {
+    Home: 'col-start-1',
+    Communities: 'col-start-3',
+    Discussions: 'col-start-4',
+  };
 
   const hideBottomBarPaths = ['login', 'register', 'forgotpassword', 'resetpassword'];
 
@@ -69,24 +73,15 @@ const BottomBar = () => {
           What: Tokenize bottom bar inactive icon text color.
           Why: Keep inactive states aligned with skin text scales.
           How: Replace gray utilities with text-tertiary token. */}
+      {/* Fixed by Codex on 2026-02-16
+          Who: Codex
+          What: Repositioned the mobile create (+) action to true screen center.
+          Why: A four-column grid places the create button in a column, not at the viewport midpoint.
+          How: Keep nav links in assigned grid slots and render create as an absolute centered overlay. */}
       <main className="fixed bottom-0 left-0 z-[1000] grid h-16 w-screen select-none grid-cols-4 border-t border-common-minimal bg-common-background/70 text-text-secondary backdrop-blur-md md:hidden">
         {navLinks.map((link, index) => {
           const isActive = isLinkActive(link);
           const isOnDiscussionsPage = pathname?.startsWith('/discussion');
-
-          if (!link.name) {
-            return (
-              <div
-                key={index}
-                aria-hidden="true"
-                className={cn('relative flex flex-col items-center justify-center', {
-                  'text-text-tertiary': !isActive,
-                })}
-              >
-                {link.icon}
-              </div>
-            );
-          }
 
           return (
             /* Fixed by Codex on 2026-02-15
@@ -99,8 +94,9 @@ const BottomBar = () => {
               type="button"
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'relative flex flex-col items-center justify-center',
+                'relative col-span-1 flex flex-col items-center justify-center',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/60',
+                navSlotClassByName[link.name],
                 {
                   'border-t-2 border-functional-green/70 bg-gradient-to-b from-functional-green/10 to-transparent text-functional-green':
                     isActive,
@@ -126,6 +122,11 @@ const BottomBar = () => {
             </button>
           );
         })}
+        <div className="pointer-events-none absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center">
+          <div className="pointer-events-auto">
+            <CreateDropdown />
+          </div>
+        </div>
       </main>
     </>
   );
@@ -141,7 +142,7 @@ const CreateDropdown: React.FC = () => {
     // "component suspended while rendering" on first mobile render.
     <Suspense
       fallback={
-        <div className="rounded-full bg-common-minimal p-2">
+        <div className="rounded-full border border-common-contrast/60 bg-common-cardBackground p-2 shadow-md">
           <Plus size={24} />
         </div>
       }
@@ -156,7 +157,7 @@ const CreateDropdown: React.FC = () => {
           <button
             type="button"
             aria-label="Create"
-            className="rounded-full bg-common-minimal p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/60"
+            className="rounded-full border border-common-contrast/60 bg-common-cardBackground p-2 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/60"
           >
             <Plus size={24} />
           </button>

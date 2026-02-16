@@ -5,6 +5,30 @@ commit `5271498` (the commit immediately before the first `bsureshkrishna` chang
 and the current working tree. It is intentionally high-level: it focuses on what the current
 code now does, not a commit-by-commit history.
 
+## Mobile BottomBar Center-Action Alignment Fix (2026-02-16)
+
+**Problem:** On phones, the bottom `+` create action did not appear visually centered, weakening the mobile visual hierarchy.
+
+**Root Cause:** The create action was rendered as a normal item inside a four-column grid, which anchors it to a grid cell rather than the viewport midpoint.
+
+**Solution:** Removed the create action from grid-cell flow, assigned nav tabs to explicit grid slots, and rendered `CreateDropdown` as an absolute centered overlay (`left-1/2` + translate).
+
+**Result:** The `+` action now stays centered on mobile while preserving stable tap targets for Home/Communities/Discussions.
+
+**Files Modified:** `src/components/common/BottomBar.tsx`, `notes/CHANGE_COMMENTS.md`
+
+## Footer Logo/Links Alignment Polish (2026-02-16)
+
+**Problem:** In the footer, the SC logo block and links appeared slightly misaligned across breakpoints, with the offset more obvious in mobile stacked layout.
+
+**Root Cause:** The footer container lacked explicit mobile alignment rules for stacked sections, and desktop links needed a small optical offset relative to logo height.
+
+**Solution:** Center-aligned stacked footer sections on mobile, restored left alignment from `sm` upward, and kept a subtle desktop top padding for links to fine-tune visual balance.
+
+**Result:** The SC logo and navigation links now align more consistently on both mobile and desktop, improving footer balance at all viewport sizes.
+
+**Files Modified:** `src/components/common/Footer.tsx`, `notes/CHANGE_COMMENTS.md`
+
 ## Hydration Safety Alignment from bugfix-hydration (2026-02-16)
 
 **Problem:** Merge attempts with `bugfix-hydration` conflicted in `layout.tsx` and `NavBar.tsx`, and the hydration-safety intent of that branch was not present on `sureshDev`.

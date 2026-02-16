@@ -45,8 +45,13 @@ const Footer: React.FC = () => {
          What: Rebalanced the footer colors to match the cooler, modern palette.
          Why: The solid green footer block felt heavy against the new lighter hero.
          How: Swapped to neutral backgrounds with accent gradients for the legal strip. */}
-      <div className="sm-gap-0 flex w-full flex-col justify-between gap-10 p-8 pt-12 sm:flex-row sm:p-16 md:px-44 md:py-12">
-        <div className="flex flex-col items-start gap-12">
+      {/* Fixed by Codex on 2026-02-16
+         Who: Codex
+         What: Aligned footer logo and nav blocks across both mobile and desktop layouts.
+         Why: The navigation block looked visually offset from the SC logo, especially in stacked mobile view.
+         How: Center-align stacked mobile sections, restore left alignment from `sm` onward, and keep a small desktop optical offset. */}
+      <div className="sm-gap-0 flex w-full flex-col items-center justify-between gap-10 p-8 pt-12 sm:flex-row sm:items-center sm:p-16 md:px-44 md:py-12">
+        <div className="flex flex-col items-center gap-12 sm:items-start">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center">
               <Image
@@ -84,8 +89,8 @@ const Footer: React.FC = () => {
           </div> */}
         </div>
 
-        <div className="flex gap-6 text-xs font-semibold leading-6 text-text-secondary sm:gap-14">
-          <div className="flex flex-col gap-2">
+        <div className="flex justify-center gap-6 text-xs font-semibold leading-6 text-text-secondary sm:justify-start sm:gap-14 sm:pt-1">
+          <div className="flex flex-col items-center gap-2 sm:items-start">
             {firstColLinks.map((link) => (
               <Link
                 key={link.name}
@@ -96,7 +101,7 @@ const Footer: React.FC = () => {
               </Link>
             ))}
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col items-center gap-2 sm:items-start">
             {secondColLinks.map((link) => (
               <Link
                 key={link.name}
