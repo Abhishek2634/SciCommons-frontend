@@ -96,4 +96,13 @@ describe('ArticleContentView', () => {
     expect(screen.getByTestId('review-form')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
+
+  it('requests reviews with community scope when community context is provided', () => {
+    render(<ArticleContentView articleSlug="preview-article" articleId={101} communityId={8} />);
+
+    expect(mockUseArticlesReviewApiListReviews).toHaveBeenCalled();
+    const firstCallArgs = mockUseArticlesReviewApiListReviews.mock.calls[0];
+    expect(firstCallArgs[0]).toBe(101);
+    expect(firstCallArgs[1]).toEqual({ community_id: 8 });
+  });
 });

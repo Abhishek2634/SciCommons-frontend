@@ -17,6 +17,8 @@ code now does, not a commit-by-commit history.
 
 **Files Modified:** `src/components/articles/ArticleContentView.tsx`, `src/components/articles/ReviewForm.tsx`, `src/components/common/TruncateText.tsx`, `src/tests/__tests__/ArticleContentView.test.tsx`, `notes/CHANGE_COMMENTS.md`
 
+**Follow-up (2026-02-16):** Fixed a sidebar-specific issue where newly submitted reviews were reflected in counts only after refresh but were missing from the list. Review listing is now community-scoped (when community context exists) and review mutations invalidate article review-list queries to force immediate sidebar updates.
+
 ## Mobile BottomBar Center-Action Alignment Fix (2026-02-16)
 
 **Problem:** On phones, the bottom `+` create action did not appear visually centered, weakening the mobile visual hierarchy.

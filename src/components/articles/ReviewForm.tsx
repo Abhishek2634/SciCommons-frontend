@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { MDXEditorMethods } from '@mdxeditor/editor';
+import { useQueryClient } from '@tanstack/react-query';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -55,6 +56,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   is_submitter = false,
   onSubmitSuccess,
 }) => {
+  const queryClient = useQueryClient();
   const accessToken = useAuthStore((state) => state.accessToken);
   const axiosConfig = { headers: { Authorization: `Bearer ${accessToken}` } };
 
@@ -94,6 +96,15 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   const formRef = React.useRef<HTMLFormElement>(null);
   useSubmitOnCtrlEnter(formRef, isPending || editPending || deletePending);
 
+  /* Fixed by Codex on 2026-02-16
+     Who: Codex
+     What: Added explicit invalidation for article review-list queries after review mutations.
+     Why: Refetch callbacks alone can miss other subscribed instances or stale keys in split-view/sidebar layouts.
+     How: Invalidate all queries under `/api/articles/{articleId}/reviews/` prefix post-mutation success. */
+  const invalidateReviewQueries = React.useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: [`/api/articles/${articleId}/reviews/`] });
+  }, [queryClient, articleId]);
+
   const onSubmit: SubmitHandler<FormValues> = (data) => {
     /* Fixed by Codex on 2026-02-16
        Who: Codex
@@ -119,6 +130,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
           onSuccess: () => {
             toast.success('Review updated successfully');
             refetch && refetch();
+            invalidateReviewQueries();
             setEdit && setEdit(false);
           },
           onError: (error) => {
@@ -133,6 +145,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
           onSuccess: () => {
             toast.success('Review deleted successfully');
             refetch && refetch();
+            invalidateReviewQueries();
             setEdit && setEdit(false);
           },
           onError: (error) => {
@@ -150,6 +163,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             setMarkdown('');
             reviewEditorRef.current?.setMarkdown?.('');
             refetch && refetch();
+            invalidateReviewQueries();
             toast.success('Review submitted successfully');
             onSubmitSuccess && onSubmitSuccess();
           },

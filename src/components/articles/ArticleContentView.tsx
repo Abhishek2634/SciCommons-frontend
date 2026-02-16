@@ -94,25 +94,30 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
   // Use external articleId if provided, otherwise use fetched data
   const articleId = externalArticleId || articleData?.data?.id;
 
+  /* Fixed by Codex on 2026-02-16
+     Who: Codex
+     What: Keep review listing in the same community scope used for review creation.
+     Why: Sidebar submissions can be community-scoped; listing without community_id can omit the new review.
+     How: Derive list params from resolved community context and pass them into the reviews query key/request. */
+  const resolvedCommunityId =
+    communityId ?? articleData?.data?.community_article?.community?.id ?? null;
+  const reviewListParams = resolvedCommunityId ? { community_id: resolvedCommunityId } : {};
+
   // Fetch reviews for the article
   const {
     data: reviewsData,
     error: reviewsError,
     isPending: reviewsIsPending,
     refetch: reviewsRefetch,
-  } = useArticlesReviewApiListReviews(
-    articleId || 0,
-    {},
-    {
-      query: {
-        enabled: !!articleId && !!accessToken,
-        staleTime: FIVE_MINUTES_IN_MS,
-        refetchOnWindowFocus: true,
-        refetchOnMount: true,
-      },
-      request: { headers: { Authorization: `Bearer ${accessToken}` } },
-    }
-  );
+  } = useArticlesReviewApiListReviews(articleId || 0, reviewListParams, {
+    query: {
+      enabled: !!articleId && !!accessToken,
+      staleTime: FIVE_MINUTES_IN_MS,
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+    },
+    request: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
 
   // Show errors
   useEffect(() => {
@@ -133,8 +138,6 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
      How: Fall back to articleData.community_article values and pass them into discussions. */
   const resolvedCommunityArticleId =
     communityArticleId ?? articleData?.data?.community_article?.id ?? null;
-  const resolvedCommunityId =
-    communityId ?? articleData?.data?.community_article?.community?.id ?? null;
   const isReviewFormControlled = typeof submitReviewExternal === 'boolean';
   const isReviewFormOpen = isReviewFormControlled ? !!submitReviewExternal : submitReviewInternal;
 
