@@ -167,49 +167,45 @@ const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
     // setComments(comments.filter(Boolean).map(removeComment));
   };
 
+  const postComments = data?.data ?? [];
+  const hasComments = postComments.length > 0;
+  const depthSelectId = `post-${postId}-depth-select`;
+
   /* Fixed by Codex on 2026-02-15
      Problem: Post comments used hard-coded gray/blue utilities that blocked skin swapping.
      Solution: Replace fixed colors with semantic theme tokens for backgrounds, text, and accents.
      Result: Comment controls and loading states now adapt to the active skin. */
   return (
     <div className="mx-auto max-w-2xl">
-      <CommentInput
-        onSubmit={addNewComment}
-        placeholder="Write a new comment..."
-        buttonText="Post Comment"
-      />
-      {isPending &&
-        Array.from({ length: 5 }).map((_, index) => (
-          <div
-            className="relative mb-4 h-20 w-full animate-pulse rounded bg-common-contrast"
-            key={index}
-          ></div>
-        ))}
-      {data && (
-        <>
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <label
-                htmlFor="depth-select"
-                className="flex items-center text-sm font-medium text-text-tertiary"
-              >
-                <Layers size={16} className="mr-1" />
-                <span>Depth:</span>
-              </label>
-              <select
-                id="depth-select"
-                className="rounded border border-common-contrast bg-common-cardBackground p-1 text-sm text-text-primary"
-                onChange={handleDepthChange}
-                value={maxDepth === Infinity ? 0 : maxDepth}
-              >
-                <option value="0">All</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </div>
+      {/* Fixed by Codex on 2026-02-17
+          Who: Codex
+          What: Align post-comment depth and expand controls with the add-comment toolbar row.
+          Why: Stacking controls in a separate row wastes space and feels inconsistent with discussion/review threads.
+          How: Add a compact toolbar with "Add Comment" on the left and depth + expand/collapse controls on the right when comments exist. */}
+      <div className="mb-2 flex w-full flex-wrap items-center justify-between gap-2">
+        <span className="text-xs font-bold text-text-tertiary">Add Comment:</span>
+        {hasComments && (
+          <div className="ml-auto flex items-center gap-2">
+            <label
+              htmlFor={depthSelectId}
+              className="flex items-center text-sm font-medium text-text-tertiary"
+            >
+              <Layers size={16} className="mr-1" />
+              <span>Depth:</span>
+            </label>
+            <select
+              id={depthSelectId}
+              className="rounded border border-common-contrast bg-common-cardBackground p-1 text-sm text-text-primary"
+              onChange={handleDepthChange}
+              value={maxDepth === Infinity ? 0 : maxDepth}
+            >
+              <option value="0">All</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
             <button
               onClick={toggleAllComments}
               className="flex items-center text-functional-blue transition-colors duration-200 hover:text-functional-blueContrast"
@@ -227,8 +223,24 @@ const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
               )}
             </button>
           </div>
+        )}
+      </div>
+      <CommentInput
+        onSubmit={addNewComment}
+        placeholder="Write a new comment..."
+        buttonText="Post Comment"
+      />
+      {isPending &&
+        Array.from({ length: 5 }).map((_, index) => (
+          <div
+            className="relative mb-4 h-20 w-full animate-pulse rounded bg-common-contrast"
+            key={index}
+          ></div>
+        ))}
+      {hasComments && (
+        <>
           <RenderComments
-            comments={data.data.map((comment: CommentOut) => convertToCommentData(comment))}
+            comments={postComments.map((comment: CommentOut) => convertToCommentData(comment))}
             maxDepth={maxDepth}
             isAllCollapsed={isAllCollapsed}
             onAddReply={addReply}

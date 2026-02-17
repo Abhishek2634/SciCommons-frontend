@@ -1,14 +1,14 @@
-## 2026-02-17 - Discussion Comments Toolbar Compaction
+## 2026-02-17 - Comment Toolbars Compaction (Discussion/Review/Post)
 
-Problem: Discussion threads used extra vertical space because the `Comments:` heading and depth/expand controls sat on a separate row below the add-comment control.
+Problem: Comment sections consumed extra vertical space because controls were split across multiple rows (including a redundant `Comments:` heading in discussion/review views).
 
-Root Cause: `DiscussionComments` rendered the comments title and thread controls in a dedicated block under the add-comment row, creating redundant spacing in both right-panel and full-page discussion contexts.
+Root Cause: Comment UIs were implemented with separate header and control rows instead of a single compact toolbar, and spacing patterns diverged across discussion, review, and post contexts.
 
-Solution: Refactored `DiscussionComments` to a single compact toolbar row: kept `Add Comment` on the left, moved `Depth` + `Expand/Collapse All` to the right when comments exist, and removed the superfluous `Comments:` heading.
+Solution: Refactored comment toolbars to a compact single-row pattern: keep `Add Comment` on the left and place `Depth` + `Expand/Collapse All` controls on the same row when comments exist; removed the superfluous `Comments:` heading where present. Followed up with a small margin tweak above expanded review comments so the toolbar sits with clearer separation from the review card's `{n} comments` toggle row.
 
-Result: The discussion comments UI now uses less vertical space while preserving all existing comment-thread controls and behavior.
+Result: Discussion, review, and post comment panes now use less vertical space and behave more consistently while preserving all existing thread controls.
 
-Files Modified: `src/components/articles/DiscussionComments.tsx`
+Files Modified: `src/components/articles/DiscussionComments.tsx`, `src/components/articles/ReviewComments.tsx`, `src/components/common/PostComments.tsx`, `src/components/articles/ReviewCard.tsx`
 
 ## 2026-02-17 - Discussions/Comments NEW Auto-Expand Hardening (Phase 1)
 
