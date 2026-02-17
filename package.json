@@ -124,5 +124,8 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5",
     "webpack": "^5.91.0"
+  },
+  "resolutions": {
+    "canvas": "3.2.1"
   }
 }
