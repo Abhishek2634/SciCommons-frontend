@@ -1,3 +1,15 @@
+## 2026-02-17 - Realtime Logout Abort for In-Flight Poll
+
+Problem: Logging out could still leave one realtime long-poll request active for up to the poll timeout window.
+
+Root Cause: `useRealtime` logout teardown disabled future polling and cleared queue state, but did not abort the currently in-flight poll `fetch` request or clear the pending poll timeout callback.
+
+Solution: Updated logout teardown in `useRealtime` to explicitly abort the active `AbortController` and clear/reset `pollTimeoutRef` before releasing leadership and marking realtime disabled.
+
+Result: Logout now cuts the realtime poll connection immediately instead of waiting for the server response or timeout.
+
+Files Modified: `src/hooks/useRealtime.tsx`
+
 ## 2026-02-17 - Comment Toolbars Compaction (Discussion/Review/Post)
 
 Problem: Comment sections consumed extra vertical space because controls were split across multiple rows (including a redundant `Comments:` heading in discussion/review views).

@@ -1108,6 +1108,21 @@ export function useRealtime() {
       stoppedRef.current = true;
       queueIdRef.current = null;
       lastEventIdRef.current = null;
+      /* Fixed by Codex on 2026-02-17
+         Who: Codex
+         What: Abort any in-flight realtime poll and clear queued poll reruns on logout.
+         Why: Auth-state teardown previously stopped future loops but could leave one long-poll
+         request open until timeout, which looked like a lingering realtime connection.
+         How: Abort the active AbortController and clear pending poll timeout before leadership
+         release and status reset. */
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
+      if (pollTimeoutRef.current !== null) {
+        clearTimeout(pollTimeoutRef.current);
+        pollTimeoutRef.current = null;
+      }
       try {
         localStorage.removeItem(STORAGE_KEYS.QUEUE_ID);
         localStorage.removeItem(STORAGE_KEYS.LAST_EVENT_ID);
