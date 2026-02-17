@@ -1,3 +1,15 @@
+## 2026-02-17 - Discussion Comments Toolbar Compaction
+
+Problem: Discussion threads used extra vertical space because the `Comments:` heading and depth/expand controls sat on a separate row below the add-comment control.
+
+Root Cause: `DiscussionComments` rendered the comments title and thread controls in a dedicated block under the add-comment row, creating redundant spacing in both right-panel and full-page discussion contexts.
+
+Solution: Refactored `DiscussionComments` to a single compact toolbar row: kept `Add Comment` on the left, moved `Depth` + `Expand/Collapse All` to the right when comments exist, and removed the superfluous `Comments:` heading.
+
+Result: The discussion comments UI now uses less vertical space while preserving all existing comment-thread controls and behavior.
+
+Files Modified: `src/components/articles/DiscussionComments.tsx`
+
 ## 2026-02-17 - Discussions/Comments NEW Auto-Expand Hardening (Phase 1)
 
 Problem: NEW badges were visible in discussion/comment flows, but unread discussion threads were not consistently auto-expanding to reveal new activity.

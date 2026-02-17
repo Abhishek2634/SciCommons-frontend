@@ -131,71 +131,61 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({
     deleteComment({ commentId });
   };
 
+  const comments = data?.data ?? [];
+  const hasComments = comments.length > 0;
+  const depthSelectId = `discussion-${discussionId}-depth-select`;
+
   return (
     <div className="mt-2 flex flex-col">
-      <div className="mb-2 flex items-center gap-2">
-        <span className="text-xs font-bold text-text-tertiary">Add Comment:</span>
-        {/* Fixed by Codex on 2026-02-15
-            Who: Codex
-            What: Replace icon-only toggles with real buttons.
-            Why: Clickable SVGs are not keyboard accessible or announced to screen readers.
-            How: Wrap the icons in buttons with aria-labels and focus-visible styling. */}
-        <button
-          type="button"
-          onClick={() => setIsCommentFormCollapsed(!isCommentFormCollapsed)}
-          className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"
-          aria-label={isCommentFormCollapsed ? 'Add a comment' : 'Collapse comment form'}
-          aria-expanded={!isCommentFormCollapsed}
-        >
-          {isCommentFormCollapsed ? (
-            <SquarePlus size={14} className={cn('text-text-secondary')} aria-hidden="true" />
-          ) : (
-            <SquareMinus size={14} className={cn('text-text-secondary')} aria-hidden="true" />
-          )}
-        </button>
-      </div>
-      {!isCommentFormCollapsed && (
-        <CommentInput
-          onSubmit={addNewComment}
-          placeholder="Write a new comment..."
-          buttonText="Post Comment"
-          isPending={isCreateCommentPending}
-        />
-      )}
-      {isPending && (
-        <div className="mt-4 flex w-full animate-pulse items-center justify-center gap-2">
-          <div className="w-5">
-            <InfiniteSpinnerAnimation color="#737373" strokeWidth={16} />
-          </div>
-          <span className="text-xs text-text-secondary">Loading Comments</span>
+      {/* Fixed by Codex on 2026-02-17
+          Who: Codex
+          What: Consolidate comment controls into a single compact toolbar row.
+          Why: The standalone "Comments:" heading and separate depth/expand row consumed vertical space in discussion panes.
+          How: Keep "Add Comment" on the left and render depth + expand/collapse controls on the same row when comments exist. */}
+      <div className="mb-2 flex w-full flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-text-tertiary">Add Comment:</span>
+          {/* Fixed by Codex on 2026-02-15
+              Who: Codex
+              What: Replace icon-only toggles with real buttons.
+              Why: Clickable SVGs are not keyboard accessible or announced to screen readers.
+              How: Wrap the icons in buttons with aria-labels and focus-visible styling. */}
+          <button
+            type="button"
+            onClick={() => setIsCommentFormCollapsed(!isCommentFormCollapsed)}
+            className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"
+            aria-label={isCommentFormCollapsed ? 'Add a comment' : 'Collapse comment form'}
+            aria-expanded={!isCommentFormCollapsed}
+          >
+            {isCommentFormCollapsed ? (
+              <SquarePlus size={14} className={cn('text-text-secondary')} aria-hidden="true" />
+            ) : (
+              <SquareMinus size={14} className={cn('text-text-secondary')} aria-hidden="true" />
+            )}
+          </button>
         </div>
-      )}
-      {data && data.data.length > 0 && (
-        <div className="flex flex-col border-common-minimal">
-          <span className="mb-2 text-sm font-bold text-text-tertiary">Comments:</span>
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <label
-                htmlFor="depth-select"
-                className="flex items-center text-xxs font-medium text-text-secondary"
-              >
-                <Layers size={12} className="mr-1" />
-                <span>Depth:</span>
-              </label>
-              <select
-                id="depth-select"
-                className="rounded border border-common-minimal bg-common-background p-1 text-[10px]"
-                onChange={handleDepthChange}
-                value={maxDepth === Infinity ? 0 : maxDepth}
-              >
-                <option value="0">All</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </div>
+        {hasComments && (
+          <div className="ml-auto flex items-center gap-2">
+            <label
+              htmlFor={depthSelectId}
+              className="flex items-center text-xxs font-medium text-text-secondary"
+            >
+              <Layers size={12} className="mr-1" />
+              <span>Depth:</span>
+            </label>
+            <select
+              id={depthSelectId}
+              className="rounded border border-common-minimal bg-common-background p-1 text-[10px]"
+              onChange={handleDepthChange}
+              value={maxDepth === Infinity ? 0 : maxDepth}
+            >
+              <option value="0">All</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
             <button
               onClick={toggleAllComments}
               className="flex items-center text-xs text-functional-blue transition-colors duration-200 hover:text-functional-blueContrast"
@@ -213,8 +203,28 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({
               )}
             </button>
           </div>
+        )}
+      </div>
+      {!isCommentFormCollapsed && (
+        <CommentInput
+          onSubmit={addNewComment}
+          placeholder="Write a new comment..."
+          buttonText="Post Comment"
+          isPending={isCreateCommentPending}
+        />
+      )}
+      {isPending && (
+        <div className="mt-4 flex w-full animate-pulse items-center justify-center gap-2">
+          <div className="w-5">
+            <InfiniteSpinnerAnimation color="#737373" strokeWidth={16} />
+          </div>
+          <span className="text-xs text-text-secondary">Loading Comments</span>
+        </div>
+      )}
+      {hasComments && (
+        <div className="flex flex-col border-common-minimal">
           <RenderComments
-            comments={data.data.map((comment: DiscussionCommentOut) =>
+            comments={comments.map((comment: DiscussionCommentOut) =>
               convertToDiscussionCommentData(comment)
             )}
             maxDepth={maxDepth}
