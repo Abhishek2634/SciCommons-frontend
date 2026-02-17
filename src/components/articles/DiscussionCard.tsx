@@ -69,6 +69,7 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
   const [displayComments, setDisplayComments] = useState<boolean>(false);
   const [isResolved, setIsResolved] = useState<boolean>(discussion.is_resolved || false);
   const [isEditing, setIsEditing] = useState(false);
+  const hasAutoExpandedCommentsRef = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -105,6 +106,22 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
   const handleToggleComments = useCallback(() => {
     setDisplayComments((prev) => !prev);
   }, []);
+
+  useEffect(() => {
+    /* Fixed by Codex on 2026-02-17
+       Who: Codex
+       What: Harden unread auto-open behavior for discussion comment panels.
+       Why: Auto-expand could be skipped when `comments_count` was missing, even though NEW badges showed unread activity.
+       How: Treat only an explicit `0` comment count as non-expandable and reset the one-time guard when unread clears. */
+    if (!showNewTag) {
+      hasAutoExpandedCommentsRef.current = false;
+      return;
+    }
+    if (hasAutoExpandedCommentsRef.current) return;
+    if (discussion.comments_count === 0) return;
+    setDisplayComments(true);
+    hasAutoExpandedCommentsRef.current = true;
+  }, [showNewTag, discussion.comments_count]);
 
   /* Fixed by Codex on 2026-02-15
      Problem: Discussion clicks referenced undefined unread state and skipped proper read tracking.

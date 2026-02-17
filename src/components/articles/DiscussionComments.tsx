@@ -219,6 +219,12 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({
             )}
             maxDepth={maxDepth}
             isAllCollapsed={isAllCollapsed}
+            /* Fixed by Codex on 2026-02-16
+               Who: Codex
+               What: Enable unread-aware expansion in discussion threads.
+               Why: Discussions use unread flags; auto-expansion should guide users to new replies.
+               How: Pass unread auto-expand mode into the shared comment renderer. */
+            autoExpandOnUnread={true}
             onAddReply={addReply}
             onUpdateComment={updateComment}
             onDeleteComment={deleteCommentbyId}

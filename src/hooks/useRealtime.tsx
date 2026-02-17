@@ -674,6 +674,14 @@ export function useRealtime() {
               const commentType = event.data.parent_id ? 'reply' : 'comment';
               const ephemeralStore = useEphemeralUnreadStore.getState();
               ephemeralStore.markItemUnread(commentType, event.data.comment.id);
+              /* Fixed by Codex on 2026-02-17
+                 Who: Codex
+                 What: Propagate realtime comment unread state to the parent discussion.
+                 Why: Discussion cards should show NEW and auto-open when unread activity is inside their comment tree.
+                 How: Mark the event's `discussion_id` as ephemeral unread alongside the comment/reply entry. */
+              if (event.data.discussion_id !== undefined) {
+                ephemeralStore.markItemUnread('discussion', event.data.discussion_id);
+              }
               ephemeralStore.cleanupExpired();
             }
           }

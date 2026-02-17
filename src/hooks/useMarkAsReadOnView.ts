@@ -71,8 +71,16 @@ export function useMarkAsReadOnView(
     cleanupEphemeralUnread();
   }, [cleanupEphemeralUnread]);
 
-  // Item is unread if: has unread flag from API AND not marked as read locally
-  const isUnread = (hasUnreadFlag || isEphemeralUnread) && !isAlreadyRead;
+  /* Fixed by Codex on 2026-02-17
+     Who: Codex
+     What: Scope realtime re-open behavior to discussion cards.
+     Why: Parent discussion NEW/auto-open must trigger on fresh comment activity even after prior reads,
+          while comment/reply behavior should remain unchanged.
+     How: For `discussion`, let realtime unread bypass historical read state; for other entities keep the original gate. */
+  const isUnreadByApi = hasUnreadFlag && !isAlreadyRead;
+  const isUnreadByRealtime =
+    entityType === 'discussion' ? isEphemeralUnread : isEphemeralUnread && !isAlreadyRead;
+  const isUnread = isUnreadByApi || isUnreadByRealtime;
 
   // State for NEW tag visibility
   const [showNewTag, setShowNewTag] = useState(isUnread);
@@ -115,7 +123,16 @@ export function useMarkAsReadOnView(
               hasProcessedRef.current = true;
 
               // Mark as read in local storage (immediate)
-              if (articleContext) {
+              const isRealtimeOnlyDiscussionUnread =
+                entityType === 'discussion' && isEphemeralUnread && !hasUnreadFlag;
+
+              /* Fixed by Codex on 2026-02-17
+                 Who: Codex
+                 What: Avoid clearing article-level NEW from passive discussion-card visibility.
+                 Why: Users rely on the article left-panel NEW badge as a stable summary signal.
+                 How: Skip mark-as-read + sidebar clear for realtime-only discussion unread;
+                      still clear the ephemeral discussion marker after the visibility dwell. */
+              if (articleContext && !isRealtimeOnlyDiscussionUnread) {
                 markItemRead(
                   entityId,
                   apiEntityType,
@@ -165,6 +182,8 @@ export function useMarkAsReadOnView(
     markItemRead,
     clearNewEvent,
     clearEphemeralUnread,
+    isEphemeralUnread,
+    hasUnreadFlag,
   ]);
 
   // Cleanup on unmount

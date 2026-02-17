@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import Image from 'next/image';
 
@@ -25,6 +25,7 @@ import { useMarkAsReadOnView } from '@/hooks/useMarkAsReadOnView';
 import { hasUnreadFlag } from '@/hooks/useUnreadFlags';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
+import { useEphemeralUnreadStore } from '@/stores/ephemeralUnreadStore';
 
 import { Ratings } from '../ui/ratings';
 import CommentInput from './CommentInput';
@@ -59,6 +60,7 @@ export interface CommentProps extends CommentData {
   depth: number;
   maxDepth: number;
   isAllCollapsed: boolean;
+  autoExpandOnUnread?: boolean;
   onAddReply: (parentId: number, content: string, rating?: number) => void;
   onUpdateComment: (id: number, content: string, rating?: number) => void;
   onDeleteComment: (id: number) => void;
@@ -83,6 +85,7 @@ const Comment: React.FC<CommentProps> = ({
   depth,
   maxDepth,
   isAllCollapsed,
+  autoExpandOnUnread = false,
   is_author,
   is_deleted,
   rating,
@@ -132,6 +135,10 @@ const Comment: React.FC<CommentProps> = ({
   const [highlight, setHighlight] = useState(isNew);
   const hasReplies = replies && replies.length > 0;
   const commentRef = useRef<HTMLDivElement>(null);
+  const wasUnreadInSubtreeRef = useRef(false);
+  const hasInitializedUnreadAutoExpandRef = useRef(false);
+  const wasAllCollapsedRef = useRef(isAllCollapsed);
+  const isEphemeralUnread = useEphemeralUnreadStore((s) => s.isItemUnread);
 
   // Check if this comment has the unread flag from API response
   const hasUnread = hasUnreadFlag(flags);
@@ -144,9 +151,80 @@ const Comment: React.FC<CommentProps> = ({
     articleContext,
   });
 
+  /* Fixed by Codex on 2026-02-16
+     Who: Codex
+     What: Detect unread activity anywhere in a comment subtree.
+     Why: Users need parent-level cues before expanding deep reply chains.
+     How: Recursively scan this node + descendants for unread flags. */
+  const hasUnreadInSubtree = useMemo(() => {
+    const hasUnreadBranch = (
+      comment: Pick<CommentData, 'id' | 'flags' | 'replies'>,
+      treeDepth: number
+    ): boolean => {
+      const unreadByFlag = hasUnreadFlag(comment.flags);
+      const unreadByRealtime =
+        comment.id !== undefined
+          ? isEphemeralUnread(treeDepth === 0 ? 'comment' : 'reply', Number(comment.id))
+          : false;
+      if (unreadByFlag || unreadByRealtime) return true;
+      return comment.replies?.some((reply) => hasUnreadBranch(reply, treeDepth + 1)) ?? false;
+    };
+    return hasUnreadBranch({ id, flags, replies }, depth);
+  }, [id, flags, replies, depth, isEphemeralUnread]);
+
   useEffect(() => {
-    setIsCollapsed(depth >= maxDepth || isAllCollapsed);
+    /* Fixed by Codex on 2026-02-16
+       Who: Codex
+       What: Keep collapse state driven by depth/global controls only.
+       Why: Continuous unread-driven rewrites made collapse behavior feel unreliable.
+       How: Apply depth/all-collapsed rules here and handle unread auto-open in a separate transition effect. */
+    if (isAllCollapsed) {
+      setIsCollapsed(true);
+      return;
+    }
+    setIsCollapsed(depth >= maxDepth);
   }, [depth, maxDepth, isAllCollapsed]);
+
+  useEffect(() => {
+    /* Fixed by Codex on 2026-02-16
+       Who: Codex
+       What: Expand unread branches on initial load and unread transitions.
+       Why: Backend unread flags can lag while realtime unread is immediate; expansion should react once, not fight manual toggles.
+       How: Merge backend+ephemeral unread subtree checks and only auto-open when unread first appears. */
+    const wasAllCollapsed = wasAllCollapsedRef.current;
+
+    if (!autoExpandOnUnread || isAllCollapsed) {
+      wasUnreadInSubtreeRef.current = hasUnreadInSubtree;
+      wasAllCollapsedRef.current = isAllCollapsed;
+      return;
+    }
+
+    if (!hasInitializedUnreadAutoExpandRef.current) {
+      hasInitializedUnreadAutoExpandRef.current = true;
+      if (hasUnreadInSubtree) {
+        setIsCollapsed(false);
+      }
+      wasUnreadInSubtreeRef.current = hasUnreadInSubtree;
+      wasAllCollapsedRef.current = isAllCollapsed;
+      return;
+    }
+
+    /* Fixed by Codex on 2026-02-16
+       Who: Codex
+       What: Re-open unread branches after Collapse All is toggled off.
+       Why: Users expect Expand All to reveal unread paths again without waiting for new events.
+       How: Detect the `true -> false` transition of `isAllCollapsed` and expand unread branches immediately. */
+    if (wasAllCollapsed && hasUnreadInSubtree) {
+      setIsCollapsed(false);
+    }
+
+    if (!wasUnreadInSubtreeRef.current && hasUnreadInSubtree) {
+      setIsCollapsed(false);
+    }
+
+    wasUnreadInSubtreeRef.current = hasUnreadInSubtree;
+    wasAllCollapsedRef.current = isAllCollapsed;
+  }, [autoExpandOnUnread, isAllCollapsed, hasUnreadInSubtree]);
 
   useEffect(() => {
     if (isNew) {
@@ -200,7 +278,12 @@ const Comment: React.FC<CommentProps> = ({
       )}
     >
       {/* NEW badge for unread comments - shown optimistically until 1s after viewing (2s visibility threshold) */}
-      {showNewTag && depth === 0 && (
+      {/* Fixed by Codex on 2026-02-16
+          Who: Codex
+          What: Show NEW badges on replies as well as top-level comments.
+          Why: Nested unread activity was hard to locate without per-level cues.
+          How: Remove depth gating so each unread node can display a badge. */}
+      {showNewTag && (
         <span className="absolute -left-1 -top-1 z-10 rounded bg-functional-blue px-1 text-[9px] font-semibold uppercase text-primary-foreground">
           New
         </span>
@@ -408,6 +491,7 @@ const Comment: React.FC<CommentProps> = ({
               depth={depth + 1}
               maxDepth={maxDepth}
               isAllCollapsed={isAllCollapsed}
+              autoExpandOnUnread={autoExpandOnUnread}
               onAddReply={onAddReply}
               onUpdateComment={onUpdateComment}
               onDeleteComment={onDeleteComment}
