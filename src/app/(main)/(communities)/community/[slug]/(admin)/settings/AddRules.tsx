@@ -48,12 +48,19 @@ const AddRules: React.FC<AddRulesProps> = ({ data, isPending }) => {
   });
 
   const onSubmit = (rules: Rule[]) => {
+    const hasEmptyRule = rules.map((r) => r.rule?.trim() ?? '');
+
+    if (hasEmptyRule.some((r) => r.length === 0)) {
+      toast.error('Rules cannot be empty.');
+      return;
+    }
+
     if (data) {
       const dataToSend = {
         description: data.data.description,
         tags: data.data.tags,
         type: data.data.type,
-        rules: rules.map((rule) => rule.rule),
+        rules: hasEmptyRule,
         about: data.data.about,
       };
       mutate({ communityId: data.data.id, data: { payload: { details: dataToSend } } });
