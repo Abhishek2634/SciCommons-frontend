@@ -111,6 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({ baseHref, links }) => {
                     ? 'bg-common-invert text-common-cardBackground' 
                     : 'text-text-primary hover:bg-common-minimal'
                 )}
+                onClick={handleSheetClose}  
               >
                 {React.cloneElement(link.icon, {
                   className: cn(
