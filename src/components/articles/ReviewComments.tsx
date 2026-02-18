@@ -276,7 +276,9 @@ const ReviewComments: React.FC<ReviewCommentsProps> = ({
       {hasComments && (
         <div className="flex flex-col border-common-minimal">
           <RenderComments
-            comments={reviewComments.map((comment: ReviewCommentOut) => convertToCommentData(comment))}
+            comments={reviewComments.map((comment: ReviewCommentOut) =>
+              convertToCommentData(comment)
+            )}
             maxDepth={maxDepth}
             isAllCollapsed={isAllCollapsed}
             onAddReply={addReply}

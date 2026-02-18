@@ -62,14 +62,14 @@ const Sidebar: React.FC<SidebarProps> = ({ baseHref, links }) => {
             className={cn(
               'flex items-center rounded-md px-4 py-2 text-sm',
               pathname === link.href
-                ? 'bg-common-invert text-common-cardBackground' 
+                ? 'bg-common-invert text-common-cardBackground'
                 : 'text-text-primary hover:bg-common-minimal'
             )}
           >
             {React.cloneElement(link.icon, {
               className: cn(
                 'mr-3 size-4',
-                pathname === link.href ? 'text-common-cardBackground' : 'text-text-primary' 
+                pathname === link.href ? 'text-common-cardBackground' : 'text-text-primary'
               ),
             })}
             {link.label}
@@ -108,10 +108,10 @@ const Sidebar: React.FC<SidebarProps> = ({ baseHref, links }) => {
                 className={cn(
                   'flex items-center rounded-md px-4 py-2 text-sm',
                   pathname === link.href
-                    ? 'bg-common-invert text-common-cardBackground' 
+                    ? 'bg-common-invert text-common-cardBackground'
                     : 'text-text-primary hover:bg-common-minimal'
                 )}
-                onClick={handleSheetClose}  
+                onClick={handleSheetClose}
               >
                 {React.cloneElement(link.icon, {
                   className: cn(

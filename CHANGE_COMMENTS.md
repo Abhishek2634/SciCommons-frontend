@@ -1,3 +1,15 @@
+## 2026-02-18 - Community Rules Update Payload Type Alignment
+
+Problem: Running `tsc --skipLibCheck --noEmit` failed with TS2353 in admin rules settings because the update payload included unknown properties.
+
+Root Cause: `AddRules.tsx` sent `tags` and `about` inside `payload.details`, but `UpdateCommunityDetails` only accepts `description`, `type`, `rules`, and optional `community_settings`.
+
+Solution: Updated `AddRules` submit payload to match `UpdateCommunityDetails`, removed unsupported properties, and forwarded existing `community_settings` to preserve current configuration while updating rules.
+
+Result: Type-check now succeeds, lint remains clean, and rules updates are aligned with the generated API schema contract.
+
+Files Modified: `src/app/(main)/(communities)/community/[slug]/(admin)/settings/AddRules.tsx`
+
 ## 2026-02-17 - Realtime Logout Abort for In-Flight Poll
 
 Problem: Logging out could still leave one realtime long-poll request active for up to the poll timeout window.
