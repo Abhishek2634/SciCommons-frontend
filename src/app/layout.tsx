@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Manrope, Space_Grotesk } from 'next/font/google';
 import NextTopLoader from 'nextjs-toploader';
 
 import { Toaster as SonnerToaster } from 'sonner';
@@ -12,21 +11,14 @@ import { GlobalErrorHandler } from '@/components/common/GlobalErrorHandler';
 import RealtimeBootstrap from '@/components/common/RealtimeBootstrap';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
 
 import './globals.css';
 
-/* Fixed by Codex on 2026-02-15
-   Who: Codex
-   What: Swap the default font stack to a modern display + body pairing.
-   Why: The Inter-only stack felt generic; a new pairing adds character without heaviness.
-   How: Load Manrope for body text and Space Grotesk for display usage via CSS variables. */
-const manrope = Manrope({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-display',
-  display: 'swap',
-});
+/* Fixed by Codex GPT-5 on 2026-02-18
+   Who: Codex GPT-5
+   What: Removed `next/font/google` from the root layout.
+   Why: Docker and CI builds can run in networks where fonts.googleapis.com is blocked.
+   How: Keep Tailwind font variables and resolve them via local fallback stacks in globals.css. */
 
 /* Fixed by Codex on 2026-02-15
    Who: Codex
@@ -72,13 +64,7 @@ export default function RootLayout({
        Why: Theme and root-level attributes can differ during SSR/CSR handoff, creating expected warnings.
        How: Keep existing skin attribute and add suppressHydrationWarning at the root tag. */
     <html lang="en" data-skin={uiSkin} suppressHydrationWarning>
-      <body
-        className={cn(
-          manrope.variable,
-          spaceGrotesk.variable,
-          'relative bg-common-background font-sans'
-        )}
-      >
+      <body className="relative bg-common-background font-sans">
         <ReactQueryClientProvider>
           <GlobalErrorHandler />
           {/* Fixed by Codex on 2026-02-15

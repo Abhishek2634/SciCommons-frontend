@@ -1,3 +1,15 @@
+## 2026-02-18 - Docker Build Stability Without Google Fonts Network Access
+
+Problem: `docker compose ... up --build` could fail during `next build` in environments where outbound access to Google Fonts is restricted.
+
+Root Cause: `src/app/layout.tsx` used `next/font/google` (`Manrope` and `Space Grotesk`), which triggers build-time requests to `fonts.googleapis.com`.
+
+Solution: Removed `next/font/google` usage from the root layout and defined `--font-sans` / `--font-display` local fallback stacks in `globals.css` so typography remains stable without remote font fetches.
+
+Result: Frontend builds no longer depend on live Google Fonts access, which improves Docker/CI reliability on restricted networks.
+
+Files Modified: `src/app/layout.tsx`, `src/app/globals.css`
+
 ## 2026-02-18 - Community Rules Update Payload Type Alignment
 
 Problem: Running `tsc --skipLibCheck --noEmit` failed with TS2353 in admin rules settings because the update payload included unknown properties.
