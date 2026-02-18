@@ -17,25 +17,10 @@
      What: Added local font-variable fallbacks for sans and display families.
      Why: Build-time Google font fetching is not reliable in restricted Docker/CI networks.
      How: Define --font-sans and --font-display as resilient local stacks used by Tailwind utilities. */
-  --font-sans:
-    'Manrope',
-    'Segoe UI',
-    'Noto Sans',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Helvetica Neue',
-    Arial,
-    sans-serif;
-  --font-display:
-    'Space Grotesk',
-    'Avenir Next',
-    'Segoe UI',
-    'Noto Sans',
-    system-ui,
-    'Helvetica Neue',
-    Arial,
-    sans-serif;
+  --font-sans: 'Manrope', 'Segoe UI', 'Noto Sans', system-ui, -apple-system, BlinkMacSystemFont,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Space Grotesk', 'Avenir Next', 'Segoe UI', 'Noto Sans', system-ui,
+    'Helvetica Neue', Arial, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {

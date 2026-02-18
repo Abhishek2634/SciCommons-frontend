@@ -1,3 +1,27 @@
+## 2026-02-18 - Home Supporters Strip GSoC Vertical Alignment
+
+Problem: In the homepage supporters row, the GSoC logo appeared slightly lower than KCDHA and DRAC in desktop layout.
+
+Root Cause: The GSoC image asset's internal bounding box/padding produced a visual baseline offset relative to neighboring logos.
+
+Solution: Added a small desktop-only upward translation (`sm:-translate-y-px`) to both dark and light GSoC logo variants in the supporters strip.
+
+Result: The three supporter logos now appear visually aligned on the same row.
+
+Files Modified: `src/app/(home)/page.tsx`
+
+## 2026-02-18 - Add DRAC to Home Supporters Strip
+
+Problem: The homepage supporters row did not include the newly provided DRAC supporter branding.
+
+Root Cause: `src/app/(home)/page.tsx` rendered only KCDHA and GSoC logos, with no DRAC entries in the supporter image list.
+
+Solution: Added DRAC logos to the supporters row using the same light/dark theme switch pattern already used by other supporters (`dark:block` + `dark:hidden` image pair).
+
+Result: DRAC now appears in the "Our Supporters" section on the homepage and switches correctly between dark and light themes.
+
+Files Modified: `src/app/(home)/page.tsx`
+
 ## 2026-02-18 - Docker Build Stability Without Google Fonts Network Access
 
 Problem: `docker compose ... up --build` could fail during `next build` in environments where outbound access to Google Fonts is restricted.
