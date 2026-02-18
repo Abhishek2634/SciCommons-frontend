@@ -62,12 +62,15 @@ const Sidebar: React.FC<SidebarProps> = ({ baseHref, links }) => {
             className={cn(
               'flex items-center rounded-md px-4 py-2 text-sm',
               pathname === link.href
-                ? 'bg-common-invert text-text-primary'
-                : 'hover:bg-common-minimal'
+                ? 'bg-common-invert text-common-cardBackground' 
+                : 'text-text-primary hover:bg-common-minimal'
             )}
           >
             {React.cloneElement(link.icon, {
-              className: pathname === link.href ? 'text-text-primary mr-3 size-4' : 'mr-3 size-4',
+              className: cn(
+                'mr-3 size-4',
+                pathname === link.href ? 'text-common-cardBackground' : 'text-text-primary' 
+              ),
             })}
             {link.label}
           </Link>
@@ -103,15 +106,17 @@ const Sidebar: React.FC<SidebarProps> = ({ baseHref, links }) => {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'flex items-center rounded-md px-4 py-2',
+                  'flex items-center rounded-md px-4 py-2 text-sm',
                   pathname === link.href
-                    ? 'bg-common-invert text-text-primary'
-                    : 'hover:bg-common-minimal'
+                    ? 'bg-common-invert text-common-cardBackground' 
+                    : 'text-text-primary hover:bg-common-minimal'
                 )}
-                onClick={handleSheetClose}
               >
                 {React.cloneElement(link.icon, {
-                  className: pathname === link.href ? 'text-text-primary mr-3' : 'mr-3',
+                  className: cn(
+                    'mr-3 size-4',
+                    pathname === link.href ? 'text-common-cardBackground' : 'text-text-primary'
+                  ),
                 })}
                 {link.label}
               </Link>
