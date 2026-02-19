@@ -201,9 +201,15 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
       >
         <ResizablePanel
           className={cn(
-            'max-h-[calc(100vh-130px)] overflow-y-auto',
+            'h-[calc(100vh-130px)] overflow-y-auto',
             viewType === 'preview' ? 'pr-2' : ''
           )}
+          /* Fixed by Codex on 2026-02-19
+             Problem: Community articles left panel had no visible scrollbar in split view.
+             Root cause: ResizablePanel applies inline overflow hidden and this panel only used class-based overflow.
+             Solution: Set a fixed panel height and explicitly override inline overflow to auto.
+             Result: Mouse/trackpad scrolling and scrollbar visibility work for long article lists. */
+          style={{ overflow: 'auto' }}
           defaultSize={60}
           minSize={30}
           maxSize={70}

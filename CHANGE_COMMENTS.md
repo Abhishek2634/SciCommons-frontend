@@ -1,3 +1,15 @@
+## 2026-02-19 - Community Articles Left Panel Scrollbar Restoration
+
+Problem: In community `Articles` split/preview view, the left articles list panel did not show a scrollbar and was difficult to scroll through with mouse/trackpad.
+
+Root Cause: `ResizablePanel` applies inline `overflow: hidden`; in `CommunityArticles` this was not overridden, so class-based `overflow-y-auto` did not reliably produce a scrollable panel UI.
+
+Solution: Updated the left panel container to use a fixed height and added explicit `style={{ overflow: 'auto' }}` to override the panel's inline overflow behavior.
+
+Result: The left articles panel now shows a scrollbar and supports normal pointer-based scrolling through long lists.
+
+Files Modified: `src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx`
+
 ## 2026-02-19 - Discussion Entity Artifacts and Vote Label Clarity
 
 Problem: Discussion topic/content text displayed raw HTML entities like `&#x20` at line ends, and thread vote controls showed a bare `0` that appeared as an unclear `< 0 >` marker on the right side.
