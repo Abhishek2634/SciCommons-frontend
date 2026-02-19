@@ -1,3 +1,17 @@
+## 2026-02-19 - Discussion Entity Artifacts and Vote Label Clarity
+
+Problem: Discussion topic/content text displayed raw HTML entities like `&#x20` at line ends, and thread vote controls showed a bare `0` that appeared as an unclear `< 0 >` marker on the right side.
+
+Root Cause: Discussion fields were rendered/reset as raw strings from API payloads without HTML-entity decoding, and vote UI presented only the numeric likes count with no context when the value was zero.
+
+Solution: Added a shared `decodeHtmlEntities` utility in `src/lib/htmlEntities.ts` and applied it in discussion card/thread render paths plus edit-form reset defaults so escaped entities are normalized before display. Updated thread vote text to an explicit label (`{n} votes` or `Vote`) instead of a standalone number.
+
+Result: Discussion text no longer leaks encoded entity artifacts in list/thread views, and the right-side vote widget now reads clearly rather than appearing as stray symbols around `0`.
+
+Files Modified: `src/lib/htmlEntities.ts`, `src/components/articles/DiscussionCard.tsx`, `src/components/articles/DiscussionThread.tsx`, `src/tests/__tests__/htmlEntities.test.ts`
+
+Follow-up (same day): Temporarily commented out the thread vote value display in `DiscussionThread` per product request, keeping only upvote/downvote buttons visible.
+
 ## 2026-02-18 - Home Supporters Strip GSoC Vertical Alignment
 
 Problem: In the homepage supporters row, the GSoC logo appeared slightly lower than KCDHA and DRAC in desktop layout.

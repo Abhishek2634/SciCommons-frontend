@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Image from 'next/image';
 
@@ -16,6 +16,7 @@ import { DiscussionOut, EntityType } from '@/api/schemas';
 import { useMarkAsReadOnView } from '@/hooks/useMarkAsReadOnView';
 import { useSubmitOnCtrlEnter } from '@/hooks/useSubmitOnCtrlEnter';
 import { hasUnreadFlag } from '@/hooks/useUnreadFlags';
+import { decodeHtmlEntities } from '@/lib/htmlEntities';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
@@ -93,6 +94,16 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
 
   // Check if this discussion has the unread flag from API response
   const hasUnread = hasUnreadFlag(discussion.flags);
+  /* Fixed by Codex on 2026-02-19
+     Who: Codex
+     What: Decode backend-escaped discussion text for card rendering and edit defaults.
+     Why: Some discussion payloads include entity artifacts like `&#x20` that leaked into UI text.
+     How: Normalize topic/content once with a shared decoder and reuse the normalized values. */
+  const decodedTopic = useMemo(() => decodeHtmlEntities(discussion.topic ?? ''), [discussion.topic]);
+  const decodedContent = useMemo(
+    () => decodeHtmlEntities(discussion.content ?? ''),
+    [discussion.content]
+  );
 
   // Use the mark as read hook - tracks read state locally and syncs with backend
   const { showNewTag } = useMarkAsReadOnView(cardRef, {
@@ -196,17 +207,17 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
 
   useEffect(() => {
     if (!isEditing) {
-      reset({ topic: discussion.topic, content: discussion.content });
+      reset({ topic: decodedTopic, content: decodedContent });
     }
-  }, [discussion.content, discussion.topic, isEditing, reset]);
+  }, [decodedContent, decodedTopic, isEditing, reset]);
 
   const handleEditStart = () => {
-    reset({ topic: discussion.topic, content: discussion.content });
+    reset({ topic: decodedTopic, content: decodedContent });
     setIsEditing(true);
   };
 
   const handleEditCancel = () => {
-    reset({ topic: discussion.topic, content: discussion.content });
+    reset({ topic: decodedTopic, content: decodedContent });
     setIsEditing(false);
   };
 
@@ -386,11 +397,11 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
                   onClick={handleOpenThread}
                   className="line-clamp-2 flex-grow cursor-pointer text-left text-sm font-semibold text-text-primary hover:text-functional-blue hover:underline"
                 >
-                  {discussion.topic}
+                  {decodedTopic}
                 </button>
                 {/* <span className="text-text-secondary res-text-xs">{discussion.content}</span> */}
                 <RenderParsedHTML
-                  rawContent={discussion.content}
+                  rawContent={decodedContent}
                   isShrinked={true}
                   containerClassName="mb-0"
                   supportMarkdown={true}
