@@ -17,4 +17,3 @@ describe('decodeHtmlEntities', () => {
     expect(decodeHtmlEntities('Plain discussion text')).toBe('Plain discussion text');
   });
 });
-

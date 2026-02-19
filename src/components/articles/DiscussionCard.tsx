@@ -99,7 +99,10 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
      What: Decode backend-escaped discussion text for card rendering and edit defaults.
      Why: Some discussion payloads include entity artifacts like `&#x20` that leaked into UI text.
      How: Normalize topic/content once with a shared decoder and reuse the normalized values. */
-  const decodedTopic = useMemo(() => decodeHtmlEntities(discussion.topic ?? ''), [discussion.topic]);
+  const decodedTopic = useMemo(
+    () => decodeHtmlEntities(discussion.topic ?? ''),
+    [discussion.topic]
+  );
   const decodedContent = useMemo(
     () => decodeHtmlEntities(discussion.content ?? ''),
     [discussion.content]

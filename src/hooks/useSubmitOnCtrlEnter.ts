@@ -13,6 +13,12 @@ export function useSubmitOnCtrlEnter(
        How: Add an enable flag and skip the listener when it is false. */
     if (!isEnabled) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      /* Fixed by Codex on 2026-02-19
+         Who: Codex
+         What: Respect already-handled keydown events.
+         Why: Some textarea components now submit on Ctrl/Cmd+Enter directly.
+         How: Skip global submission when another handler already prevented default. */
+      if (e.defaultPrevented) return;
       if (
         (e.ctrlKey || e.metaKey) &&
         e.key === 'Enter' &&

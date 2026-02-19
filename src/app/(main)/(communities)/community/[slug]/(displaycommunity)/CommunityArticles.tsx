@@ -42,6 +42,12 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
     null
   );
   const isDesktop = useMediaQuery(`(min-width: ${SCREEN_WIDTH_SM}px)`);
+  const requestedArticleId = React.useMemo(() => {
+    const articleIdParam = searchParams?.get('articleId');
+    if (!articleIdParam) return null;
+    const parsedArticleId = Number(articleIdParam);
+    return Number.isInteger(parsedArticleId) ? parsedArticleId : null;
+  }, [searchParams]);
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
      Problem: Clicking article and navigating to PDF viewer should return to community page with same article selected
@@ -112,6 +118,20 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
     }
   }, [data, error]);
 
+  useEffect(() => {
+    if (!requestedArticleId || articles.length === 0) return;
+    const articleToRestore = articles.find((article) => article.id === requestedArticleId);
+    if (!articleToRestore) return;
+    if (selectedPreviewArticle?.id === requestedArticleId) return;
+
+    /* Fixed by Codex on 2026-02-19
+       Problem: Community URL articleId deep-link always previewed the first list item.
+       Root cause: Keyboard navigation auto-selected the first article before URL param restoration.
+       Solution: Restore preview selection from query param once list data is available.
+       Result: /community/{slug}?articleId={id} now opens the requested article in preview. */
+    handleArticleSelect(articleToRestore);
+  }, [requestedArticleId, articles, selectedPreviewArticle?.id, handleArticleSelect]);
+
   const handleSearch = useCallback(
     (term: string) => {
       setSearch(term);
@@ -134,7 +154,7 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
     setSelectedItem: handleArticleSelect,
     isEnabled: viewType === 'preview',
     getItemId: (article) => article.id,
-    autoSelectFirst: true,
+    autoSelectFirst: !requestedArticleId,
     getItemElement: (item) =>
       document.querySelector(`[data-article-id="${String(item.id)}"]`) as HTMLElement | null,
     hasMore: false,

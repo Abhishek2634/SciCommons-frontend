@@ -1,3 +1,39 @@
+## 2026-02-19 - Ctrl/Cmd+Enter Submit for FormInput Textareas
+
+Problem: Ctrl/Cmd+Enter submission did not consistently work in abstract edit fields and other textarea-based forms.
+
+Root Cause: Keyboard submit behavior depended on form-level hooks, but some textarea flows relied only on `FormInput` without centralized textarea key handling.
+
+Solution: Added direct Ctrl/Cmd+Enter handling for plain `FormInput` textareas to submit their parent form, and updated the global `useSubmitOnCtrlEnter` hook to ignore already-handled key events.
+
+Result: Keyboard submit now works reliably in edit abstract fields and other `FormInput` textarea contexts, without double-submitting in forms that also use the global hook.
+
+Files Modified: `src/components/common/FormInput.tsx`, `src/hooks/useSubmitOnCtrlEnter.ts`
+
+## 2026-02-19 - Faster Article Settings Completion and Context-Preserving Return
+
+Problem: Updating article details from side-panel list views felt slow and redirected users to a different page context instead of returning to where they started.
+
+Root Cause: Settings save flow relied on generic `returnTo` routing and post-save cache work before perceived completion, without an explicit return-path to list/preview context.
+
+Solution: Added explicit `returnPath` propagation from article panel contexts into the settings link, then prioritized immediate redirect to that safe internal path on update success. Moved cache invalidation to asynchronous post-redirect execution and improved pending button feedback text.
+
+Result: After update, users return directly to the originating list/preview context (for example, community/articles/discussions panels with selected `articleId`), and completion feels faster because navigation happens immediately on success.
+
+Files Modified: `src/components/articles/ArticleContentView.tsx`, `src/components/articles/DisplayArticle.tsx`, `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/page.tsx`, `src/app/(main)/(articles)/article/[slug]/(articledashboard)/settings/EditArticleDetails.tsx`
+
+## 2026-02-19 - Community Article Deep-Link Selection by articleId
+
+Problem: Opening a community URL with `?articleId={id}` loaded the correct community but preview auto-opened the first/top article instead of the requested one.
+
+Root Cause: `CommunityArticles` had no query-param restoration flow for preview selection, while keyboard navigation auto-selected the first article when preview mode was active.
+
+Solution: Added `articleId` parsing from URL query params, restored selected preview article once list data is available, and disabled first-item auto-selection when an explicit `articleId` is present.
+
+Result: Deep links like `/community/GSoC%202026?articleId=318` now open the specified article in the preview panel (when present in the loaded list).
+
+Files Modified: `src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx`
+
 ## 2026-02-19 - Community Articles Left Panel Scrollbar Restoration
 
 Problem: In community `Articles` split/preview view, the left articles list panel did not show a scrollbar and was difficult to scroll through with mouse/trackpad.

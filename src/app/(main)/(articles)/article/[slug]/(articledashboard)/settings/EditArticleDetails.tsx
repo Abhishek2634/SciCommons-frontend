@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -37,6 +37,7 @@ interface EditArticleDetailsProps {
   articleSlug: string;
   communityName?: string | null;
   returnTo?: string | null;
+  returnPath?: string | null;
 }
 
 const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
@@ -50,6 +51,7 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
     articleSlug,
     communityName,
     returnTo,
+    returnPath,
   } = props;
   const {
     control,
@@ -68,16 +70,69 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
 
   const accessToken = useAuthStore((state) => state.accessToken);
   const axiosConfig = { headers: { Authorization: `Bearer ${accessToken}` } };
-
-  const {
-    mutate,
-    error: updateError,
-    isPending: isUpdatePending,
-    isSuccess,
-  } = useArticlesApiUpdateArticle({ request: axiosConfig });
-
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  /* Fixed by Codex on 2026-02-19
+     Who: Codex
+     What: Resolve settings post-save destination with explicit context priority.
+     Why: List/preview edits should return users to where they started, not a default article page.
+     How: Prefer safe returnPath, then returnTo-based fallbacks, then article detail as final fallback. */
+  const getPostUpdateDestination = React.useCallback(() => {
+    const isSafeReturnPath =
+      typeof returnPath === 'string' && returnPath.startsWith('/') && !returnPath.startsWith('//');
+
+    if (isSafeReturnPath) {
+      return returnPath;
+    }
+
+    if (returnTo === 'community-list' && communityName) {
+      return `/community/${encodeURIComponent(communityName)}?articleId=${articleId}`;
+    }
+
+    if (returnTo === 'community' && communityName) {
+      return `/community/${encodeURIComponent(communityName)}/articles/${articleSlug}`;
+    }
+
+    if (returnTo === 'discussions') {
+      return `/discussions?articleId=${articleId}`;
+    }
+
+    return `/article/${articleSlug}`;
+  }, [returnPath, returnTo, communityName, articleId, articleSlug]);
+
+  const invalidateArticleCaches = React.useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['articles'] });
+    void queryClient.invalidateQueries({ queryKey: ['my_articles'] });
+    void queryClient.invalidateQueries({ queryKey: [`/api/articles/article/${articleSlug}`] });
+
+    if (communityName) {
+      void queryClient.invalidateQueries({
+        queryKey: [`/api/articles/article/${articleSlug}`, { community_name: communityName }],
+      });
+    }
+  }, [queryClient, articleSlug, communityName]);
+
+  const { mutate, isPending: isUpdatePending } = useArticlesApiUpdateArticle({
+    request: axiosConfig,
+    mutation: {
+      onSuccess: () => {
+        const destination = getPostUpdateDestination();
+
+        /* Fixed by Codex on 2026-02-19
+           Who: Codex
+           What: Prioritize redirect before cache invalidation on successful updates.
+           Why: Users perceived update completion as slow while waiting on post-save work.
+           How: Navigate immediately, then run cache invalidations asynchronously in the next tick. */
+        toast.success('Article details updated successfully');
+        router.replace(destination);
+        setTimeout(() => invalidateArticleCaches(), 0);
+      },
+      onError: (error) => {
+        toast.error(`${error.response?.data.message}`);
+      },
+    },
+  });
 
   const onSubmit = (formData: FormValues) => {
     const dataToSend: ArticleUpdateSchema = {
@@ -109,39 +164,6 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
     // mutate({ articleId, data: { details: dataToSend, image_file } });
     mutate({ articleId, data: { details: dataToSend } });
   };
-
-  useEffect(() => {
-    if (isSuccess) {
-      /* Fixed by Codex on 2026-02-09
-         Problem: Edited articles could remain stale in list views and detail view until a manual refresh.
-         Solution: Invalidate articles/my-articles list queries AND the specific article query on successful update.
-         Result: Both lists and article detail page refetch and show edits immediately.
-         Alternatives (not implemented): (1) Optimistically update cached list items,
-         (2) Force a refetch when returning to the list pages. */
-      queryClient.invalidateQueries({ queryKey: ['articles'] });
-      queryClient.invalidateQueries({ queryKey: ['my_articles'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/articles/article/${articleSlug}`] });
-
-      // Invalidate community article query if editing from community context
-      if (communityName) {
-        queryClient.invalidateQueries({
-          queryKey: [`/api/articles/article/${articleSlug}`, { community_name: communityName }],
-        });
-      }
-
-      toast.success('Article details updated successfully');
-
-      // Redirect based on context
-      if (returnTo === 'community' && communityName) {
-        router.push(`/community/${encodeURIComponent(communityName)}/articles/${articleSlug}`);
-      } else {
-        router.push(`/article/${articleSlug}`);
-      }
-    }
-    if (updateError) {
-      toast.error(`${updateError.response?.data.message}`);
-    }
-  }, [updateError, isSuccess, router, articleSlug, communityName, returnTo, queryClient]);
 
   return (
     /* Fixed by Codex on 2026-02-09
@@ -222,12 +244,12 @@ const EditArticleDetails: React.FC<EditArticleDetailsProps> = (props) => {
       {/* Submission type removed - cannot be changed after article creation.
           Determined at creation time only. */}
       <Button
-        showLoadingSpinner={false}
+        showLoadingSpinner={true}
         loading={isUpdatePending}
         className="mx-auto w-full"
         type="submit"
       >
-        <ButtonTitle>{isUpdatePending ? 'Loading...' : 'Update Article'}</ButtonTitle>
+        <ButtonTitle>{isUpdatePending ? 'Updating article...' : 'Update Article'}</ButtonTitle>
       </Button>
     </form>
   );

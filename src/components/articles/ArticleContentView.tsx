@@ -4,6 +4,8 @@
    Result: ~180 lines of shared logic, eliminated ~100 lines of duplication, single source of truth */
 import React, { useEffect, useState } from 'react';
 
+import { usePathname, useSearchParams } from 'next/navigation';
+
 import { useArticlesApiGetArticle } from '@/api/articles/articles';
 import { useArticlesReviewApiListReviews } from '@/api/reviews/reviews';
 import { FIVE_MINUTES_IN_MS, TEN_MINUTES_IN_MS } from '@/constants/common.constants';
@@ -63,6 +65,8 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
   tabResetKey,
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [submitReviewInternal, setSubmitReviewInternal] = useState(false);
 
   // Fetch full article data
@@ -168,6 +172,19 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
      How: Convert the defaultTab name into a stable tab index for TabNavigation. */
   const initialTabIndex = defaultTab === 'discussions' ? 1 : 0;
 
+  /* Fixed by Codex on 2026-02-19
+     Who: Codex
+     What: Build a context-preserving return path for article settings.
+     Why: Editing from list/preview contexts should return users to the same panel and selected article.
+     How: Reuse current pathname/query params and enforce articleId in the generated return URL. */
+  const editReturnPath = React.useMemo(() => {
+    if (!pathname || !articleId) return null;
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    params.set('articleId', String(articleId));
+    const query = params.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }, [pathname, searchParams, articleId]);
+
   // Create tabs configuration
   const tabs = articleData
     ? [
@@ -256,6 +273,10 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
     <>
       <DisplayArticle
         article={articleData.data}
+        editCommunityName={
+          communityName ?? articleData.data.community_article?.community?.name ?? null
+        }
+        editReturnPath={editReturnPath}
         showPdfViewerButton={showPdfViewerButton}
         handleOpenPdfViewer={handleOpenPdfViewer}
       />
