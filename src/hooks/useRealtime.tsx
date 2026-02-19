@@ -674,6 +674,14 @@ export function useRealtime() {
               const commentType = event.data.parent_id ? 'reply' : 'comment';
               const ephemeralStore = useEphemeralUnreadStore.getState();
               ephemeralStore.markItemUnread(commentType, event.data.comment.id);
+              /* Fixed by Codex on 2026-02-17
+                 Who: Codex
+                 What: Propagate realtime comment unread state to the parent discussion.
+                 Why: Discussion cards should show NEW and auto-open when unread activity is inside their comment tree.
+                 How: Mark the event's `discussion_id` as ephemeral unread alongside the comment/reply entry. */
+              if (event.data.discussion_id !== undefined) {
+                ephemeralStore.markItemUnread('discussion', event.data.discussion_id);
+              }
               ephemeralStore.cleanupExpired();
             }
           }
@@ -1100,6 +1108,21 @@ export function useRealtime() {
       stoppedRef.current = true;
       queueIdRef.current = null;
       lastEventIdRef.current = null;
+      /* Fixed by Codex on 2026-02-17
+         Who: Codex
+         What: Abort any in-flight realtime poll and clear queued poll reruns on logout.
+         Why: Auth-state teardown previously stopped future loops but could leave one long-poll
+         request open until timeout, which looked like a lingering realtime connection.
+         How: Abort the active AbortController and clear pending poll timeout before leadership
+         release and status reset. */
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
+      if (pollTimeoutRef.current !== null) {
+        clearTimeout(pollTimeoutRef.current);
+        pollTimeoutRef.current = null;
+      }
       try {
         localStorage.removeItem(STORAGE_KEYS.QUEUE_ID);
         localStorage.removeItem(STORAGE_KEYS.LAST_EVENT_ID);

@@ -327,7 +327,12 @@ const ReviewCard: FC<ReviewCardProps> = ({ review, refetch }) => {
             </div>
           </div>
           {displayComments && (
-            <div className="w-full" id={`review-${review.id}-comments`}>
+            /* Fixed by Codex on 2026-02-17
+               Who: Codex
+               What: Add a small vertical gap above expanded review comments.
+               Why: The comments toolbar row sat too close to the right-side "{n} comments" toggle row.
+               How: Apply a subtle top margin on the review comments container. */
+            <div className="mt-1 w-full" id={`review-${review.id}-comments`}>
               <ReviewComments
                 reviewId={Number(review.id)}
                 displayComments={displayComments}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import Image from 'next/image';
 
@@ -25,6 +25,7 @@ import {
 } from '@/api/users-common-api/users-common-api';
 import { TEN_MINUTES_IN_MS } from '@/constants/common.constants';
 import { useSubmitOnCtrlEnter } from '@/hooks/useSubmitOnCtrlEnter';
+import { decodeHtmlEntities } from '@/lib/htmlEntities';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { useAuthStore } from '@/stores/authStore';
 import { useRealtimeContextStore } from '@/stores/realtimeStore';
@@ -143,13 +144,26 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
   };
 
   const discussion = data?.data;
+  /* Fixed by Codex on 2026-02-19
+     Who: Codex
+     What: Decode entity-escaped discussion fields before display and edit initialization.
+     Why: Backend-escaped strings (e.g. trailing `&#x20`) were rendered literally in thread view.
+     How: Decode topic/content once per discussion payload and feed those values into the UI/form. */
+  const decodedTopic = useMemo(
+    () => decodeHtmlEntities(discussion?.topic ?? ''),
+    [discussion?.topic]
+  );
+  const decodedContent = useMemo(
+    () => decodeHtmlEntities(discussion?.content ?? ''),
+    [discussion?.content]
+  );
   const canEditDiscussion = !!discussion?.is_author;
 
   useEffect(() => {
     if (discussion && !isEditing) {
-      reset({ topic: discussion.topic, content: discussion.content });
+      reset({ topic: decodedTopic, content: decodedContent });
     }
-  }, [discussion, isEditing, reset]);
+  }, [discussion, decodedContent, decodedTopic, isEditing, reset]);
 
   const { mutate: updateDiscussion, isPending: isUpdating } =
     useArticlesDiscussionApiUpdateDiscussion({
@@ -175,14 +189,14 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
 
   const handleEditStart = () => {
     if (discussion) {
-      reset({ topic: discussion.topic, content: discussion.content });
+      reset({ topic: decodedTopic, content: decodedContent });
       setIsEditing(true);
     }
   };
 
   const handleEditCancel = () => {
     if (discussion) {
-      reset({ topic: discussion.topic, content: discussion.content });
+      reset({ topic: decodedTopic, content: decodedContent });
     }
     setIsEditing(false);
   };
@@ -280,10 +294,10 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
                   ) : (
                     <>
                       <div className="mr-4 flex-grow cursor-pointer font-bold res-text-base">
-                        <TruncateText text={discussion.topic} maxLines={2} />
+                        <TruncateText text={decodedTopic} maxLines={2} />
                       </div>
                       <div>
-                        <TruncateText text={discussion.content} maxLines={3} />
+                        <TruncateText text={decodedContent} maxLines={3} />
                       </div>
                     </>
                   )}
@@ -331,7 +345,12 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
                   >
                     <ChevronUp size={20} />
                   </button>
-                  <span className="font-bold text-text-secondary">{reactions?.data.likes}</span>
+                  {/* Fixed by Codex on 2026-02-19
+                      Who: Codex
+                      What: Temporarily hide the discussion vote count display.
+                      Why: Product requested removing the visible count while keeping vote actions available.
+                      How: Comment out the middle vote value element and keep upvote/downvote buttons intact. */}
+                  {/* <span className="font-bold text-text-secondary">{voteLabel}</span> */}
                   <button
                     type="button"
                     className="text-text-tertiary hover:text-text-secondary"

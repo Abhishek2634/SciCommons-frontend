@@ -153,19 +153,43 @@ const Home = () => {
                 alt="KCDHA"
                 className="block dark:hidden"
               />
+              {/* Fixed by Codex on 2026-02-18
+                  Who: Codex
+                  What: Added DRAC as a new supporter logo in the home hero supporters strip.
+                  Why: User provided light/dark DRAC assets and requested it be listed with existing supporters.
+                  How: Rendered theme-specific DRAC images with dark-mode class toggles to match current supporter behavior. */}
+              <Image
+                width={316}
+                height={40}
+                src="/images/DRAC_dark.png"
+                alt="DRAC"
+                className="hidden dark:block"
+              />
+              <Image
+                width={316}
+                height={40}
+                src="/images/DRAC.png"
+                alt="DRAC"
+                className="block dark:hidden"
+              />
+              {/* Fixed by Codex on 2026-02-18
+                  Who: Codex
+                  What: Nudged the GSoC logo slightly upward in desktop layout.
+                  Why: Its artwork bounding box makes it render visually lower than the adjacent supporter logos.
+                  How: Applied a small breakpoint-scoped negative Y translation to both light/dark variants. */}
               <Image
                 width={280}
                 height={40}
                 src="/images/GSoC-White.png"
                 alt="GSoC"
-                className="hidden dark:block"
+                className="hidden dark:block sm:-translate-y-px"
               />
               <Image
                 width={280}
                 height={40}
                 src="/images/GSoC-Black.png"
                 alt="GSoC"
-                className="block dark:hidden"
+                className="block dark:hidden sm:-translate-y-px"
               />
             </div>
           </div>
