@@ -287,7 +287,7 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
             </form>
           ) : (
             <>
-              <div className="text-sm text-text-secondary">
+              <div className="text-sm text-text-secondary break-all w-full min-w-0 overflow-hidden">
                 <RenderParsedHTML
                   rawContent={summary.content}
                   supportMarkdown={true}

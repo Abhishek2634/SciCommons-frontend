@@ -223,7 +223,7 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
           </button>
           <div className="mb-4 rounded bg-common-cardBackground p-4 shadow">
             <div className="mb-2 flex items-start justify-between">
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 min-w-0 w-full">
                 <div className="flex items-center gap-2">
                   <Image
                     src={
@@ -248,7 +248,7 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
                     </span>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 min-w-0 w-full overflow-hidden">
                   {isEditing ? (
                     <form
                       ref={formRef}
@@ -293,10 +293,10 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
                     </form>
                   ) : (
                     <>
-                      <div className="mr-4 flex-grow cursor-pointer font-bold res-text-base">
+                      <div className="mr-4 flex-grow cursor-pointer font-bold res-text-base break-all min-w-0">
                         <TruncateText text={decodedTopic} maxLines={2} />
                       </div>
-                      <div>
+                      <div break-all min-w-0 w-full text-text-secondary>
                         <TruncateText text={decodedContent} maxLines={3} />
                       </div>
                     </>

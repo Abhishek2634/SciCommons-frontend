@@ -63,7 +63,7 @@ const TruncateText = ({
     <div>
       <span
         ref={textRef}
-        className={cn('text-text-primary', textClassName, {
+        className={cn('text-text-primary break-all block w-full', textClassName, {
           'overflow-hidden': shouldClamp,
         })}
         style={clampStyle}
