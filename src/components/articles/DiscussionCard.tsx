@@ -349,7 +349,7 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
               </DropdownMenu>
             )}
           </div>
-          <div className="flex w-full flex-col gap-0">
+          <div className="flex w-full flex-col gap-0 min-w-0">
             {/* Fixed by Codex on 2026-02-15
                Who: Codex
                What: Make discussion titles keyboard accessible.
@@ -398,20 +398,22 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
                   type="button"
                   aria-label="Open discussion"
                   onClick={handleOpenThread}
-                  className="line-clamp-2 flex-grow cursor-pointer text-left text-sm font-semibold text-text-primary hover:text-functional-blue hover:underline"
+                  className="line-clamp-2 flex-grow cursor-pointer text-left text-sm font-semibold text-text-primary hover:text-functional-blue hover:underline break-all min-w-0"
                 >
                   {decodedTopic}
                 </button>
                 {/* <span className="text-text-secondary res-text-xs">{discussion.content}</span> */}
-                <RenderParsedHTML
-                  rawContent={decodedContent}
-                  isShrinked={true}
-                  containerClassName="mb-0"
-                  supportMarkdown={true}
-                  supportLatex={true}
-                  contentClassName="text-xs sm:text-sm"
-                  gradientClassName="sm:from-common-background"
-                />
+                <div className="break-all w-full min-w-0 overflow-hidden">
+                  <RenderParsedHTML
+                    rawContent={decodedContent}
+                    isShrinked={true}
+                    containerClassName="mb-0"
+                    supportMarkdown={true}
+                    supportLatex={true}
+                    contentClassName="text-xs sm:text-sm"
+                    gradientClassName="sm:from-common-background"
+                  />
+                </div>
               </>
             )}
           </div>
