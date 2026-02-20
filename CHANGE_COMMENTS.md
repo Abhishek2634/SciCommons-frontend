@@ -1,3 +1,15 @@
+## 2026-02-20 - Discussion Overflow Follow-up After PR #271
+
+Problem: After merging PR #271, discussion summary/thread text wrapping still had a quality gap: one thread container used malformed JSX attributes instead of `className`, and the shared `TruncateText` helper was globally forced to `break-all`, causing unintended typography changes outside discussions.
+
+Root Cause: The overflow fix mixed local layout constraints with a global text-helper override, and one JSX node used raw utility tokens as attributes (`<div break-all min-w-0 ...>`) so styles did not apply as intended.
+
+Solution: Reverted the global `TruncateText` base class back to neutral behavior, then applied wrapping constraints only where needed in discussion surfaces (`DiscussionCard`, `DiscussionSummary`, `DiscussionThread`) using `break-words` plus `overflow-wrap:anywhere`. Corrected the malformed thread `<div>` to a valid `className` and passed explicit wrap classes into `TruncateText` calls used by discussion previews.
+
+Result: Discussion content/topic previews now wrap consistently in both split and full-page discussion views without container overflow, while non-discussion pages keep their prior text rendering behavior.
+
+Files Modified: `src/components/common/TruncateText.tsx`, `src/components/articles/DiscussionCard.tsx`, `src/components/articles/DiscussionSummary.tsx`, `src/components/articles/DiscussionThread.tsx`
+
 ## 2026-02-19 - Ctrl/Cmd+Enter Submit for FormInput Textareas
 
 Problem: Ctrl/Cmd+Enter submission did not consistently work in abstract edit fields and other textarea-based forms.

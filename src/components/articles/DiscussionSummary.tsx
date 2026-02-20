@@ -287,12 +287,18 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
             </form>
           ) : (
             <>
-              <div className="text-sm text-text-secondary break-all w-full min-w-0 overflow-hidden">
+              {/* Fixed by Codex on 2026-02-20
+                  Who: Codex
+                  What: Applied soft-wrap overflow handling to discussion summary content.
+                  Why: Long unbroken tokens in summary markdown could overflow card boundaries in full-page and split views.
+                  How: Use local break-word wrapping with overflow-wrap:anywhere on the summary container and parsed content root. */}
+              <div className="w-full min-w-0 overflow-hidden break-words text-sm text-text-secondary [overflow-wrap:anywhere]">
                 <RenderParsedHTML
                   rawContent={summary.content}
                   supportMarkdown={true}
                   supportLatex={false}
                   containerClassName="mb-0"
+                  contentClassName="break-words [overflow-wrap:anywhere]"
                 />
               </div>
               {summary.updated_at && (
