@@ -174,10 +174,14 @@ const CommunityArticleDisplayPage: React.FC = () => {
           <div className="flex flex-col">
             <DisplayArticle article={data.data} />
             <div className="mt-3 inline-block rounded-md bg-functional-blue/10 px-2 py-0.5 sm:mt-5 sm:rounded-xl sm:px-3 sm:py-1">
-              <span className="text-xs leading-snug text-functional-blueContrast">
+              <span className="block text-xs leading-snug text-functional-blueContrast">
                 {data.data.community_article?.is_pseudonymous
                   ? 'Community admin has enabled pseudonymous reviews & discussions. Your name won’t be shown.'
                   : 'Community admin has disabled pseudonymous reviews & discussions. Your name will be visible.'}
+              </span>
+              <span className="mt-1 block text-xs leading-snug text-functional-blueContrast">
+                For now, only 1 review per person. You may edit your review if you wish, and
+                previous versions will remain saved and visible.
               </span>
             </div>
           </div>
