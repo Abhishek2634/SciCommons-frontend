@@ -52,7 +52,7 @@ const ReviewsTabBody: React.FC<ReviewsTabBodyProps> = ({
     <div className={cn('flex flex-col', className)}>
       {!hasUserReviewed && (
         <div className="flex items-center justify-between rounded-md bg-functional-green/5 px-4 py-2">
-          <span className="text-sm font-semibold text-text-secondary">{REVIEW_NOTICE_TEXT}</span>
+          <span className="text-xs leading-snug text-text-secondary">{REVIEW_NOTICE_TEXT}</span>
           <button
             type="button"
             className="text-xs text-functional-green hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"

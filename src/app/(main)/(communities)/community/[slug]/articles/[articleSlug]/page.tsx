@@ -9,7 +9,7 @@ import { useArticlesApiGetArticle } from '@/api/articles/articles';
 import { useArticlesReviewApiListReviews } from '@/api/reviews/reviews';
 import DiscussionForum from '@/components/articles/DiscussionForum';
 import DisplayArticle, { DisplayArticleSkeleton } from '@/components/articles/DisplayArticle';
-import ReviewsTabBody, { REVIEW_NOTICE_TEXT } from '@/components/articles/ReviewsTabBody';
+import ReviewsTabBody from '@/components/articles/ReviewsTabBody';
 import CommunityBreadcrumb from '@/components/communities/CommunityBreadcrumb';
 import TabNavigation from '@/components/ui/tab-navigation';
 import { FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
@@ -144,9 +144,6 @@ const CommunityArticleDisplayPage: React.FC = () => {
                 {data.data.community_article?.is_pseudonymous
                   ? 'Community admin has enabled pseudonymous reviews & discussions. Your name won’t be shown.'
                   : 'Community admin has disabled pseudonymous reviews & discussions. Your name will be visible.'}
-              </span>
-              <span className="mt-1 block text-xs leading-snug text-functional-blueContrast">
-                {REVIEW_NOTICE_TEXT}
               </span>
             </div>
           </div>
