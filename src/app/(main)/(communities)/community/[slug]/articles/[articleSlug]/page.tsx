@@ -9,9 +9,7 @@ import { useArticlesApiGetArticle } from '@/api/articles/articles';
 import { useArticlesReviewApiListReviews } from '@/api/reviews/reviews';
 import DiscussionForum from '@/components/articles/DiscussionForum';
 import DisplayArticle, { DisplayArticleSkeleton } from '@/components/articles/DisplayArticle';
-import ReviewCard, { ReviewCardSkeleton } from '@/components/articles/ReviewCard';
-import ReviewForm from '@/components/articles/ReviewForm';
-import EmptyState from '@/components/common/EmptyState';
+import ReviewsTabBody, { REVIEW_NOTICE_TEXT } from '@/components/articles/ReviewsTabBody';
 import CommunityBreadcrumb from '@/components/communities/CommunityBreadcrumb';
 import TabNavigation from '@/components/ui/tab-navigation';
 import { FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
@@ -80,58 +78,26 @@ const CommunityArticleDisplayPage: React.FC = () => {
         {
           title: 'Reviews',
           content: () => (
-            <div className="flex flex-col gap-2">
-              {/* Todo: Uncomment this after testing */}
-              {/* {!data.data.is_submitter && (
-                <ReviewForm
-                  articleId={data?.data.id || 0}
-                  refetch={reviewsRefetch}
-                  communityId={data?.data.community_article?.community.id}
-                />
-              )} */}
-              {!hasUserReviewed && (
-                <div className="flex items-center justify-between rounded-md bg-functional-green/5 px-4 py-2">
-                  <span className="text-sm font-semibold text-text-secondary">
-                    Have your reviews? (You can add a review only once.)
-                  </span>
-                  {/* Fixed by Codex on 2026-02-15
-                      Who: Codex
-                      What: Make the review toggle a real button with aria state.
-                      Why: Span clicks are not keyboard accessible for screen reader users.
-                      How: Swap to a button with aria-expanded/controls and focus styling. */}
-                  <button
-                    type="button"
-                    className="text-xs text-functional-green hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"
-                    onClick={() => setSubmitReview(!submitReview)}
-                    aria-expanded={submitReview}
-                    aria-controls="community-article-review-form"
-                  >
-                    {submitReview ? 'Cancel' : 'Add review'}
-                  </button>
-                </div>
-              )}
-              {submitReview && !hasUserReviewed && (
-                <div id="community-article-review-form">
-                  <ReviewForm
-                    articleId={Number(data.data.id)}
-                    refetch={reviewsRefetch}
-                    is_submitter={data.data.is_submitter}
-                    communityId={data?.data.community_article?.community.id}
-                    onSubmitSuccess={() => setSubmitReview(false)}
-                  />
-                </div>
-              )}
-              {reviewsIsPending && [...Array(5)].map((_, i) => <ReviewCardSkeleton key={i} />)}
-              {reviewsData?.data.items.length === 0 && (
-                <EmptyState
-                  content="No reviews yet"
-                  subcontent="Be the first to review this article"
-                />
-              )}
-              {reviewsData?.data.items.map((item) => (
-                <ReviewCard key={item.id} review={item} refetch={reviewsRefetch} />
-              ))}
-            </div>
+            /* Fixed by Codex on 2026-02-21
+               Who: Codex
+               What: Reused shared ReviewsTabBody for community article reviews tab.
+               Why: Keep review interactions identical across community/article/discussions contexts.
+               How: Inject community scope and local submit state through shared component props. */
+            <ReviewsTabBody
+              articleId={Number(data.data.id)}
+              reviews={reviewsData?.data.items}
+              reviewsIsPending={reviewsIsPending}
+              reviewsRefetch={reviewsRefetch}
+              hasUserReviewed={hasUserReviewed}
+              isReviewFormOpen={submitReview}
+              onReviewFormToggle={() => setSubmitReview((prev) => !prev)}
+              onReviewSubmitSuccess={() => setSubmitReview(false)}
+              communityId={data?.data.community_article?.community.id}
+              isSubmitter={data.data.is_submitter}
+              reviewFormContainerId="community-article-review-form"
+              className="gap-2"
+              showHeading={false}
+            />
           ),
         },
         {
@@ -180,8 +146,7 @@ const CommunityArticleDisplayPage: React.FC = () => {
                   : 'Community admin has disabled pseudonymous reviews & discussions. Your name will be visible.'}
               </span>
               <span className="mt-1 block text-xs leading-snug text-functional-blueContrast">
-                For now, only 1 review per person. You may edit your review if you wish, and
-                previous versions will remain saved and visible.
+                {REVIEW_NOTICE_TEXT}
               </span>
             </div>
           </div>

@@ -1,3 +1,15 @@
+## 2026-02-21 - Centralized Reviews Tab Body Across Article, Community, and Discussions
+
+Problem: Review-tab UI behavior (notice text, add/cancel review toggle, review form, loading/empty/list states) was duplicated across multiple routes, so small copy updates and UX tweaks had to be repeated manually.
+
+Root Cause: Route containers evolved separately (`ArticleDisplayPageClient`, community article page, and shared article content used in discussions), but each still embedded its own review-tab rendering instead of composing a shared review body.
+
+Solution: Added `ReviewsTabBody` component to centralize the full review-tab body, including the canonical review notice text (`REVIEW_NOTICE_TEXT`). Rewired `ArticleContentView`, article display route, and community article route to use this shared component while preserving route-specific behavior through props (for example, PDF quote notice in the article route and community scope on community pages).
+
+Result: Review-tab behavior now has one implementation path, the notice copy is managed from one place, and future review UX changes can be made once and propagated consistently across article/community/discussions contexts.
+
+Files Modified: `src/components/articles/ReviewsTabBody.tsx`, `src/components/articles/ArticleContentView.tsx`, `src/app/(main)/(articles)/article/[slug]/(displayarticle)/ArticleDisplayPageClient.tsx`, `src/app/(main)/(communities)/community/[slug]/articles/[articleSlug]/page.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-20 - Discussion Overflow Follow-up After PR #271
 
 Problem: After merging PR #271, discussion summary/thread text wrapping still had a quality gap: one thread container used malformed JSX attributes instead of `className`, and the shared `TruncateText` helper was globally forced to `break-all`, causing unintended typography changes outside discussions.

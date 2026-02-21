@@ -16,8 +16,7 @@ import EmptyState from '../common/EmptyState';
 import TabNavigation from '../ui/tab-navigation';
 import DiscussionForum from './DiscussionForum';
 import DisplayArticle, { DisplayArticleSkeleton } from './DisplayArticle';
-import ReviewCard, { ReviewCardSkeleton } from './ReviewCard';
-import ReviewForm from './ReviewForm';
+import ReviewsTabBody from './ReviewsTabBody';
 
 interface ArticleContentViewProps {
   articleSlug: string;
@@ -191,58 +190,30 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
         {
           title: 'Reviews',
           content: () => (
-            <div className="flex flex-col">
-              {!hasUserReviewed && (
-                <div className="flex items-center justify-between rounded-md bg-functional-green/5 px-4 py-2">
-                  <span className="text-sm font-semibold text-text-secondary">
-                    Have your reviews? (You can add a review only once.)
-                  </span>
-                  {/* Fixed by Codex on 2026-02-15
-                      Who: Codex
-                      What: Use a button for the review toggle with aria state.
-                      Why: Span-based click targets are not keyboard accessible.
-                      How: Switch to button with aria-expanded and focus-visible ring. */}
-                  <button
-                    type="button"
-                    className="text-xs text-functional-green hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"
-                    onClick={handleReviewFormToggle}
-                    aria-expanded={isReviewFormOpen}
-                  >
-                    {isReviewFormOpen ? 'Cancel' : 'Add review'}
-                  </button>
-                </div>
-              )}
-              {isReviewFormOpen && !hasUserReviewed && (
-                <div id="article-content-view-review-form">
-                  <ReviewForm
-                    articleId={Number(articleId)}
-                    refetch={reviewsRefetch}
-                    communityId={resolvedCommunityId}
-                    is_submitter={articleData.data.is_submitter}
-                    onSubmitSuccess={() => {
-                      if (isReviewFormControlled && onReviewFormToggle) {
-                        onReviewFormToggle(false);
-                        return;
-                      }
-                      setSubmitReviewInternal(false);
-                    }}
-                  />
-                </div>
-              )}
-              <span className="mb-4 border-b border-common-minimal pb-2 text-base font-bold text-text-secondary">
-                Reviews
-              </span>
-              {reviewsIsPending && [...Array(5)].map((_, i) => <ReviewCardSkeleton key={i} />)}
-              {reviewsData?.data.items.length === 0 && (
-                <EmptyState
-                  content="No reviews yet"
-                  subcontent="Be the first to review this article"
-                />
-              )}
-              {reviewsData?.data.items.map((item) => (
-                <ReviewCard key={item.id} review={item} refetch={reviewsRefetch} />
-              ))}
-            </div>
+            /* Fixed by Codex on 2026-02-21
+               Who: Codex
+               What: Replaced inline review-tab rendering with shared ReviewsTabBody.
+               Why: Keep article/discussions review UI behavior consistent without copy drift.
+               How: Delegate notice, form toggle, and review list states to a shared component. */
+            <ReviewsTabBody
+              articleId={Number(articleId)}
+              reviews={reviewsData?.data.items}
+              reviewsIsPending={reviewsIsPending}
+              reviewsRefetch={reviewsRefetch}
+              hasUserReviewed={hasUserReviewed}
+              isReviewFormOpen={isReviewFormOpen}
+              onReviewFormToggle={handleReviewFormToggle}
+              onReviewSubmitSuccess={() => {
+                if (isReviewFormControlled && onReviewFormToggle) {
+                  onReviewFormToggle(false);
+                  return;
+                }
+                setSubmitReviewInternal(false);
+              }}
+              communityId={resolvedCommunityId}
+              isSubmitter={articleData.data.is_submitter}
+              reviewFormContainerId="article-content-view-review-form"
+            />
           ),
         },
         {
