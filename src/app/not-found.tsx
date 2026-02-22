@@ -119,7 +119,12 @@ export default function NotFound() {
               className={`space-y-4 pt-8 transition-all delay-500 duration-1000 ${isAnimating ? 'opacity-100' : 'opacity-0'}`}
             >
               <p className="text-sm text-text-tertiary">Still need help? Try these options:</p>
-              <div className="grid gap-3 sm:grid-cols-3">
+              {/* Fixed by Codex on 2026-02-22
+                  Who: Codex
+                  What: Recentered the fallback quick-link cards on the 404 page.
+                  Why: The Articles card is intentionally hidden, so a 3-column grid left Home/Go Back visually off-center.
+                  How: Constrained the grid width and switched to a centered 2-column layout on small+ screens. */}
+              <div className="mx-auto grid w-full max-w-xl gap-3 sm:grid-cols-2">
                 <Link
                   href="/"
                   className="group rounded-lg border border-common-contrast bg-common-cardBackground p-4 text-left transition-all hover:border-functional-blue/40 hover:shadow-md"
