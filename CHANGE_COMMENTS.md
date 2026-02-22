@@ -1,3 +1,15 @@
+## 2026-02-22 - ProfessionalStatus Type-Safe End-Year Validation Follow-up
+
+Problem: The latest profile status end-year fix introduced a TypeScript compile regression in `ProfessionalStatus.tsx`.
+
+Root Cause: `useFormContext<IProfileForm>()` made nested field paths strongly typed, but `FormInput` currently accepts `name` as `keyof IProfileForm` (top-level keys only), so nested names like `professionalStatuses.0.endYear` failed type-check.
+
+Solution: Kept strict form context typing and introduced explicit field-name constants cast at the `FormInput` boundary for nested array paths. Also made year parsing explicit with base-10 radix to keep validation behavior deterministic.
+
+Result: End-year validation remains in place, and the profile module now passes TypeScript and eslint checks without widening form types back to `any`.
+
+Files Modified: `src/app/(main)/(users)/myprofile/ProfessionalStatus.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-22 - Centered 404 Quick-Link Cards (Home/Go Back)
 
 Problem: On the 404 page, the `Home` and `Go Back` quick-link cards were not visually centered in the "Still need help?" section.

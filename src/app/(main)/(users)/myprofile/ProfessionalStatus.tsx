@@ -31,6 +31,14 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
         Provide your academic or professional status to help us ensure relevant content.
       </p>
       {fields.map((field, index) => {
+        /* Fixed by Codex on 2026-02-22
+           Who: Codex
+           What: Keep nested professional status field names compatible with the current FormInput name type.
+           Why: FormInput currently accepts `keyof IProfileForm`, while these inputs use nested array paths.
+           How: Reuse typed field-name constants and cast nested paths at the boundary so strict form typing remains enabled. */
+        const statusFieldName = `professionalStatuses.${index}.status` as keyof IProfileForm;
+        const startYearFieldName = `professionalStatuses.${index}.startYear` as keyof IProfileForm;
+        const endYearFieldName = `professionalStatuses.${index}.endYear` as keyof IProfileForm;
         const startYearValue = watch(`professionalStatuses.${index}.startYear`);
 
         return (
@@ -39,7 +47,7 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
               <div className="md:col-span-3">
                 <FormInput
                   label="Status"
-                  name={`professionalStatuses.${index}.status`}
+                  name={statusFieldName}
                   type="text"
                   register={register}
                   errors={errors}
@@ -49,7 +57,7 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
               </div>
               <FormInput
                 label="Start Year"
-                name={`professionalStatuses.${index}.startYear`}
+                name={startYearFieldName}
                 type="text"
                 register={register}
                 errors={errors}
@@ -60,7 +68,7 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
               />
               <FormInput
                 label="End Year"
-                name={`professionalStatuses.${index}.endYear`}
+                name={endYearFieldName}
                 type="text"
                 register={register}
                 errors={errors}
@@ -69,8 +77,8 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
                 readOnly={!editMode}
                 validateFn={(value: string) => {
                   if (!value || value.toLowerCase() === 'present') return true;
-                  const start = parseInt(startYearValue);
-                  const end = parseInt(value);
+                  const start = parseInt(startYearValue, 10);
+                  const end = parseInt(value, 10);
                   if (!isNaN(start) && !isNaN(end) && end < start) {
                     return 'End year must be after start year';
                   }
