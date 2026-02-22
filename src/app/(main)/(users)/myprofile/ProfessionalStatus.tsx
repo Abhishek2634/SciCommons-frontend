@@ -14,7 +14,7 @@ interface ProfessionalStatusProps {
 }
 
 const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMode }) => {
-  const { register, control, watch } = useFormContext();
+  const { register, control, watch } = useFormContext<IProfileForm>();
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'professionalStatuses',
@@ -31,74 +31,94 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
         Provide your academic or professional status to help us ensure relevant content.
       </p>
       {fields.map((field, index) => {
-        const watchedOngoing = watch(`professionalStatuses.${index}.isOngoing`);
-        const endYearValue = watch(`professionalStatuses.${index}.endYear`);
+        /* Fixed by Codex on 2026-02-22
+           Who: Codex
+           What: Keep nested professional status field names compatible with the current FormInput name type.
+           Why: FormInput currently accepts `keyof IProfileForm`, while these inputs use nested array paths.
+           How: Reuse typed field-name constants and cast nested paths at the boundary so strict form typing remains enabled. */
+        const statusFieldName = `professionalStatuses.${index}.status` as keyof IProfileForm;
+        const startYearFieldName = `professionalStatuses.${index}.startYear` as keyof IProfileForm;
+        const endYearFieldName = `professionalStatuses.${index}.endYear` as keyof IProfileForm;
 
-        const isOngoing =watchedOngoing || (!editMode && endYearValue === '');
+        const watchedOngoing = watch(`professionalStatuses.${index}.isOngoing`);
+        const startYearValue = watch(`professionalStatuses.${index}.startYear`);
+
+        const isOngoing = watchedOngoing;
 
         return (
-        <div key={field.id} className="border-b py-4 last:border-b-0">
-          <div className="flex items-end gap-4">
-            <div className="flex-1">
-              <FormInput
-                label="Status"
-                name={`professionalStatuses.${index}.status`}
-                type="text"
-                register={register}
-                errors={errors}
-                requiredMessage="Status is required"
-                readOnly={!editMode}
-              />
-            </div>
-            <div className="w-28">
-            <FormInput
-              label="Start Year"
-              name={`professionalStatuses.${index}.startYear`}
-              type="text"
-              register={register}
-              errors={errors}
-              requiredMessage="Start year is required"
-              patternValue={/^\d{4}$/}
-              patternMessage="Invalid year format"
-              readOnly={!editMode}
-            />
-            </div>
-            <div className="w-28">
-              {!isOngoing ? (
+          <div key={field.id} className="border-b py-4 last:border-b-0">
+            <div className="flex items-end gap-4">
+              <div className="flex-1">
                 <FormInput
-                  label="End Year"
-                  name={`professionalStatuses.${index}.endYear`}
+                  label="Status"
+                  name={statusFieldName}
                   type="text"
                   register={register}
                   errors={errors}
+                  requiredMessage="Status is required"
                   readOnly={!editMode}
-            />
-            ) : (
-              <div className="flex flex-col">
-                <label className="text-sm text-text-secondary mb-1">
-                   End Year
-                </label>
-                <input
-                  value="Ongoing"
-                  disabled
-                  className="bg-common-cardBackground border border-common-contrast rounded-md px-3 py-2 text-text-primary opacity-80 cursor-not-allowed"
                 />
-            </div>
-              )}
+              </div>
+              
+              <div className="w-28">
+                <FormInput
+                  label="Start Year"
+                  name={startYearFieldName}
+                  type="text"
+                  register={register}
+                  errors={errors}
+                  requiredMessage="Start year is required"
+                  patternValue={/^\d{4}$/}
+                  patternMessage="Invalid year format"
+                  readOnly={!editMode}
+                />
               </div>
 
+<div className="w-28">
+                {!isOngoing ? (
+                  <FormInput
+                    label="End Year"
+                    name={endYearFieldName}
+                    type="text"
+                    register={register}
+                    errors={errors}
+                    readOnly={!editMode}
+                    validateFn={(value: string) => {
+                      if (isOngoing) return true;
+                      if (!value) return 'End year is required unless ongoing is selected';
+                      const start = parseInt(startYearValue, 10);
+                      const end = parseInt(value, 10);
+                      if (!isNaN(start) && !isNaN(end) && end < start) {
+                        return 'End year must be after start year';
+                      }
+                      return true;
+                    }}
+                  />
+                ) : (
+                  <div className="flex flex-col">
+                    <label className="text-sm text-text-secondary mb-1">End Year</label>
+                    <input
+                      value="Ongoing"
+                      disabled
+                      className="bg-common-cardBackground border border-common-contrast rounded-md px-3 py-2 text-text-primary opacity-80 cursor-not-allowed"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Ongoing checkbox */}
               {editMode && (
                 <div className="flex items-center gap-2 pb-1">
                   <input
-                  type="checkbox"
-                  {...register(`professionalStatuses.${index}.isOngoing`)}
+                    type="checkbox"
+                    {...register(`professionalStatuses.${index}.isOngoing`)}
                     className="h-4 w-4"
                   />
-                  <label className="text-sm text-text-secondary">
-                  Ongoing
-                  </label>
+                  <label className="text-sm text-text-secondary">Ongoing</label>
                 </div>
               )}
+
+              {/* Remove */}
               {editMode && (
                 <Button
                   variant={'danger'}
@@ -151,3 +171,5 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
 };
 
 export default ProfessionalStatus;
+
+

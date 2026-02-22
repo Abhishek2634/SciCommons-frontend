@@ -1,3 +1,27 @@
+## 2026-02-22 - ProfessionalStatus Type-Safe End-Year Validation Follow-up
+
+Problem: The latest profile status end-year fix introduced a TypeScript compile regression in `ProfessionalStatus.tsx`.
+
+Root Cause: `useFormContext<IProfileForm>()` made nested field paths strongly typed, but `FormInput` currently accepts `name` as `keyof IProfileForm` (top-level keys only), so nested names like `professionalStatuses.0.endYear` failed type-check.
+
+Solution: Kept strict form context typing and introduced explicit field-name constants cast at the `FormInput` boundary for nested array paths. Also made year parsing explicit with base-10 radix to keep validation behavior deterministic.
+
+Result: End-year validation remains in place, and the profile module now passes TypeScript and eslint checks without widening form types back to `any`.
+
+Files Modified: `src/app/(main)/(users)/myprofile/ProfessionalStatus.tsx`, `CHANGE_COMMENTS.md`
+
+## 2026-02-22 - Centered 404 Quick-Link Cards (Home/Go Back)
+
+Problem: On the 404 page, the `Home` and `Go Back` quick-link cards were not visually centered in the "Still need help?" section.
+
+Root Cause: The layout remained `sm:grid-cols-3` after the `Articles` quick-link card was hidden, so only two cards rendered in a three-column grid.
+
+Solution: Updated the quick-links grid in `not-found.tsx` to use a centered, constrained two-column layout (`mx-auto`, `max-w-xl`, `sm:grid-cols-2`).
+
+Result: The `Home` and `Go Back` cards now render centered as a balanced row on small and larger screens.
+
+Files Modified: `src/app/not-found.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-21 - Centralized Reviews Tab Body Across Article, Community, and Discussions
 
 Problem: Review-tab UI behavior (notice text, add/cancel review toggle, review form, loading/empty/list states) was duplicated across multiple routes, so small copy updates and UX tweaks had to be repeated manually.
