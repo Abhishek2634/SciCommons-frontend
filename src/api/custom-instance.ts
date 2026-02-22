@@ -56,10 +56,7 @@ AXIOS_INSTANCE.interceptors.response.use(
     // ONLY handle 401 (Unauthorized - session expired) globally
     // 403 (Forbidden - no permission) should be handled by individual components
     if (status === 401 && !isHandlingAuthFailure) {
-      if (
-        typeof window !== 'undefined' &&
-        (window.location.pathname === '/auth/login' || window.location.pathname === '/login')
-      ) {
+      if (typeof window !== 'undefined' && window.location.pathname === '/auth/login') {
         return Promise.reject(error);
       }
 
