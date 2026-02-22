@@ -1,3 +1,15 @@
+## 2026-02-22 - Professional Status Validation and Mobile Layout Hardening (pr-280 follow-up)
+
+Problem: The professional status update allowed malformed end-year values to pass submit-time validation, and the new single-row layout could compress/overflow on smaller screens.
+
+Root Cause: End-year pattern validation was removed while submit checks relied on loose numeric conversion; the row layout switched from responsive grid to fixed-width flex items without a mobile wrap fallback.
+
+Solution: Restored strict 4-digit `End Year` validation in `ProfessionalStatus`, kept ordering checks, added responsive `flex-wrap` fallback for the row, added an explicit `aria-label` on the icon-only remove action, and aligned submit-time year validation in `page.tsx` to enforce numeric 4-digit years for both start/end.
+
+Result: Invalid year strings are now blocked consistently before mutation, the professional status row behaves better on narrow screens, and icon-only remove controls are explicitly accessible.
+
+Files Modified: `src/app/(main)/(users)/myprofile/ProfessionalStatus.tsx`, `src/app/(main)/(users)/myprofile/page.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-22 - ProfessionalStatus Type-Safe End-Year Validation Follow-up
 
 Problem: The latest profile status end-year fix introduced a TypeScript compile regression in `ProfessionalStatus.tsx`.

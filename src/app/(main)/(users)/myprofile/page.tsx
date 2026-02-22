@@ -100,13 +100,20 @@ const Home: React.FC = () => {
       research_interests: formData.researchInterests.map((interest) => interest.value),
     };
 
+    /* Fixed by Codex on 2026-02-22
+       Who: Codex
+       What: Harden submit-time year validation for professional statuses.
+       Why: Non-numeric or malformed year strings could pass the previous Number/parse checks.
+       How: Enforce 4-digit year format for start/end and keep range/order checks against the current year. */
     const invalidYear = formData.professionalStatuses.some((s) => {
       const currentYear = new Date().getFullYear();
 
-      if (!s.startYear) return true;
-        const start = Number(s.startYear);
+      if (!/^\d{4}$/.test(s.startYear)) return true;
+      const start = Number(s.startYear);
       if (start < 1950 || start > currentYear) return true;
-      if (!s.isOngoing && s.endYear) {
+
+      if (!s.isOngoing) {
+        if (!/^\d{4}$/.test(s.endYear)) return true;
         const end = Number(s.endYear);
         if (end < start) return true;
         if (end > currentYear) return true;
@@ -116,9 +123,9 @@ const Home: React.FC = () => {
     });
 
     if (invalidYear) {
-      toast.error("Enter valid start years between 1950 and present.");
+      toast.error('Enter valid years: use 4-digit years between 1950 and the current year.');
       return;
-  }
+    }
 
     mutate({
       data: {

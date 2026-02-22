@@ -47,7 +47,7 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
 
         return (
           <div key={field.id} className="border-b py-4 last:border-b-0">
-            <div className="flex items-end gap-4">
+            <div className="flex flex-wrap items-end gap-4 md:flex-nowrap">
               <div className="flex-1">
                 <FormInput
                   label="Status"
@@ -74,7 +74,12 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
                 />
               </div>
 
-<div className="w-28">
+              {/* Fixed by Codex on 2026-02-22
+                 Who: Codex
+                 What: Restore strict numeric validation for End Year while keeping ongoing mode.
+                 Why: Free-text values could bypass validation and reach the API payload.
+                 How: Reinstate 4-digit pattern validation and reject non-numeric/invalid ordering in validateFn. */}
+              <div className="w-28">
                 {!isOngoing ? (
                   <FormInput
                     label="End Year"
@@ -82,12 +87,15 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
                     type="text"
                     register={register}
                     errors={errors}
+                    patternValue={/^\d{4}$/}
+                    patternMessage="Invalid year format"
                     readOnly={!editMode}
                     validateFn={(value: string) => {
                       if (isOngoing) return true;
                       if (!value) return 'End year is required unless ongoing is selected';
                       const start = parseInt(startYearValue, 10);
                       const end = parseInt(value, 10);
+                      if (isNaN(end)) return 'Invalid year format';
                       if (!isNaN(start) && !isNaN(end) && end < start) {
                         return 'End year must be after start year';
                       }
@@ -125,6 +133,7 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
                   className="p-2 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-500"
                   onClick={() => remove(index)}
                   title="Remove this status"
+                  aria-label="Remove this status"
                   type="button"
                 >
                   <ButtonIcon>
