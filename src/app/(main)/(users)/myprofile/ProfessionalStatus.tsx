@@ -14,14 +14,14 @@ interface ProfessionalStatusProps {
 }
 
 const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMode }) => {
-  const { register, control } = useFormContext();
+  const { register, control, watch } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'professionalStatuses',
   });
 
   const addNewStatus = () => {
-    append({ status: '', startYear: '', endYear: '' });
+    append({ status: '', startYear: '', endYear: '', isOngoing: false });
   };
 
   return (
@@ -30,10 +30,16 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
       <p className="mb-4 pt-2 text-sm text-text-tertiary">
         Provide your academic or professional status to help us ensure relevant content.
       </p>
-      {fields.map((field, index) => (
-        <div key={field.id} className="border-b pb-6 last:border-b-0">
-          <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-6">
-            <div className="md:col-span-3">
+      {fields.map((field, index) => {
+        const watchedOngoing = watch(`professionalStatuses.${index}.isOngoing`);
+        const endYearValue = watch(`professionalStatuses.${index}.endYear`);
+
+        const isOngoing =watchedOngoing || (!editMode && endYearValue === '');
+
+        return (
+        <div key={field.id} className="border-b py-4 last:border-b-0">
+          <div className="flex items-end gap-4">
+            <div className="flex-1">
               <FormInput
                 label="Status"
                 name={`professionalStatuses.${index}.status`}
@@ -44,6 +50,7 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
                 readOnly={!editMode}
               />
             </div>
+            <div className="w-28">
             <FormInput
               label="Start Year"
               name={`professionalStatuses.${index}.startYear`}
@@ -55,35 +62,47 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
               patternMessage="Invalid year format"
               readOnly={!editMode}
             />
-            <FormInput
-              label="End Year"
-              name={`professionalStatuses.${index}.endYear`}
-              type="text"
-              register={register}
-              errors={errors}
-              patternValue={/^\d{4}$|^Present$/i}
-              patternMessage="Invalid year format (use 'Present' for current positions)"
-              readOnly={!editMode}
+            </div>
+            <div className="w-28">
+              {!isOngoing ? (
+                <FormInput
+                  label="End Year"
+                  name={`professionalStatuses.${index}.endYear`}
+                  type="text"
+                  register={register}
+                  errors={errors}
+                  readOnly={!editMode}
             />
-            <div className="flex h-full w-full items-end justify-center">
-              {fields.length < 3 && editMode && (
-                <Button
-                  variant={'blue'}
-                  className="w-full py-2.5"
-                  onClick={addNewStatus}
-                  title="Add new status"
-                  type="button"
-                >
-                  <ButtonIcon>
-                    <Plus size={16} />
-                  </ButtonIcon>
-                  <ButtonTitle>Add Status</ButtonTitle>
-                </Button>
+            ) : (
+              <div className="flex flex-col">
+                <label className="text-sm text-text-secondary mb-1">
+                   End Year
+                </label>
+                <input
+                  value="Ongoing"
+                  disabled
+                  className="bg-common-cardBackground border border-common-contrast rounded-md px-3 py-2 text-text-primary opacity-80 cursor-not-allowed"
+                />
+            </div>
               )}
-              {index > 0 && editMode && (
+              </div>
+
+              {editMode && (
+                <div className="flex items-center gap-2 pb-1">
+                  <input
+                  type="checkbox"
+                  {...register(`professionalStatuses.${index}.isOngoing`)}
+                    className="h-4 w-4"
+                  />
+                  <label className="text-sm text-text-secondary">
+                  Ongoing
+                  </label>
+                </div>
+              )}
+              {editMode && (
                 <Button
                   variant={'danger'}
-                  className="w-full py-2.5"
+                  className="p-2 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-500"
                   onClick={() => remove(index)}
                   title="Remove this status"
                   type="button"
@@ -91,26 +110,40 @@ const ProfessionalStatus: React.FC<ProfessionalStatusProps> = ({ errors, editMod
                   <ButtonIcon>
                     <Trash2 size={16} />
                   </ButtonIcon>
-                  <ButtonTitle>Remove Status</ButtonTitle>
                 </Button>
               )}
             </div>
           </div>
+        );
+      })}
+
+      {fields.length > 0 && fields.length < 3 && editMode && (
+        <div className="mt-4">
+          <Button
+            variant={'blue'}
+            className="py-2.5"
+            onClick={addNewStatus}
+            title="Add new status"
+            type="button"
+          >
+            <ButtonIcon>
+              <Plus size={16} />
+            </ButtonIcon>
+            <ButtonTitle>Add Status</ButtonTitle>
+          </Button>
         </div>
-      ))}
+      )}
+
       {fields.length === 0 && editMode && (
-        <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-8">
-          <div className="md:col-span-3">
-            <button
-              type="button"
-              onClick={addNewStatus}
-              className="flex items-center text-sm text-functional-blue hover:text-functional-blueContrast"
-              title="Add new status"
-            >
-              <Plus size={14} />
-              &nbsp;Status
-            </button>
-          </div>
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-common-contrast py-10 text-center">
+          <button
+            type="button"
+            onClick={addNewStatus}
+            className="flex items-center gap-1 rounded-md px-4 py-2 text-sm font-medium text-functional-blue ring-1 ring-functional-blue hover:bg-functional-blue/10"
+          >
+            <Plus size={14} />
+            Add Status
+          </button>
         </div>
       )}
     </div>
