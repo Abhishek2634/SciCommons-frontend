@@ -25,11 +25,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 interface CommunityCardProps {
   community: CommunityListOut;
   roleBadges?: CommunityRoleBadge[];
+  showMemberBadge?: boolean;
+  accessIndicator?: CommunityAccessIndicator;
 }
 
 export interface CommunityRoleBadge {
   code: 'A' | 'M' | 'R';
   label: 'Admin' | 'Moderator' | 'Reviewer';
+}
+
+export interface CommunityAccessIndicator {
+  tone: 'public' | 'private';
+  label: string;
 }
 
 const roleBadgeClassByCode: Record<CommunityRoleBadge['code'], string> = {
@@ -38,7 +45,17 @@ const roleBadgeClassByCode: Record<CommunityRoleBadge['code'], string> = {
   R: 'border-functional-blue/60 bg-functional-blue/10 text-functional-blue',
 };
 
-const CommunityCard: FC<CommunityCardProps> = ({ community, roleBadges = [] }) => {
+const accessIndicatorClassByTone: Record<CommunityAccessIndicator['tone'], string> = {
+  public: 'bg-functional-green',
+  private: 'bg-functional-red',
+};
+
+const CommunityCard: FC<CommunityCardProps> = ({
+  community,
+  roleBadges = [],
+  showMemberBadge = false,
+  accessIndicator,
+}) => {
   // COMMENTED OUT BCOZ WE ARE NOT SHOWING JOIN BUTTON IN COMMUNITY CARD UNTIL AUTH IS FIXED.
   const accessToken = useAuthStore((state) => state.accessToken);
   // const axiosConfig = { headers: { Authorization: `Bearer ${accessToken}` } };
@@ -102,17 +119,25 @@ const CommunityCard: FC<CommunityCardProps> = ({ community, roleBadges = [] }) =
     });
   };
 
+  const topRightMarkerLabels = [
+    ...roleBadges.map((badge) => badge.label),
+    ...(showMemberBadge ? ['Member'] : []),
+    ...(accessIndicator ? [accessIndicator.label] : []),
+  ];
+  const hasTopRightMarkers = topRightMarkerLabels.length > 0;
+
   return (
     <div className="relative flex h-full flex-col items-start gap-4 rounded-lg border border-common-contrast bg-common-cardBackground p-2.5 px-3.5 res-text-xs hover:shadow-md hover:shadow-common-minimal">
       {/* Fixed by Codex on 2026-02-23
           Who: Codex
-          What: Added compact role badges (A/M/R) to community cards.
-          Why: My Communities should show elevated roles without changing card layout density.
-          How: Render tokenized top-right badges with accessible labels for screen readers. */}
-      {roleBadges.length > 0 && (
+          What: Added compact membership/access markers to community cards.
+          Why: Communities and My Communities need quick role/access context without relying on color alone.
+          How: Render tokenized top-right A/M/R/m badges and public/private access dots with explicit aria labels. */}
+      {hasTopRightMarkers && (
         <div
           className="absolute right-2 top-2 flex items-center gap-1"
-          aria-label={`Your roles in this community: ${roleBadges.map((badge) => badge.label).join(', ')}`}
+          role="group"
+          aria-label={`Community status: ${topRightMarkerLabels.join(', ')}`}
         >
           {roleBadges.map((badge) => (
             <span
@@ -128,6 +153,29 @@ const CommunityCard: FC<CommunityCardProps> = ({ community, roleBadges = [] }) =
               {badge.code}
             </span>
           ))}
+          {showMemberBadge && (
+            <span
+              role="img"
+              aria-label="Member"
+              title="Member"
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-common-contrast bg-common-minimal text-[10px] font-semibold text-text-secondary"
+            >
+              m
+            </span>
+          )}
+          {accessIndicator && (
+            <span
+              role="img"
+              aria-label={accessIndicator.label}
+              title={accessIndicator.label}
+              className={cn(
+                'inline-flex h-3 w-3 rounded-full ring-2 ring-common-cardBackground',
+                accessIndicatorClassByTone[accessIndicator.tone]
+              )}
+            >
+              <span className="sr-only">{accessIndicator.label}</span>
+            </span>
+          )}
         </div>
       )}
       {/* <div className="relative size-10 flex-shrink-0 sm:mr-4">
@@ -138,7 +186,7 @@ const CommunityCard: FC<CommunityCardProps> = ({ community, roleBadges = [] }) =
           className="rounded-full object-cover"
         />
       </div> */}
-      <div className="w-full flex-1 pb-2 pr-8 sm:pb-0">
+      <div className={cn('w-full flex-1 pb-2 sm:pb-0', hasTopRightMarkers && 'pr-20')}>
         <Link href={`/community/${encodeURIComponent(community.name)}`}>
           <h3 className="mb-2 truncate text-base font-bold text-text-primary hover:underline">
             {community.name}

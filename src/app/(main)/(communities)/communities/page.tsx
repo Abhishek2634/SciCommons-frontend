@@ -10,6 +10,7 @@ import { CommunityListOut } from '@/api/schemas';
 import { useUsersApiListMyCommunities, usersApiListMyCommunities } from '@/api/users/users';
 import SearchableList, { LoadingType } from '@/components/common/SearchableList';
 import CommunityCard, {
+  CommunityAccessIndicator,
   CommunityCardSkeleton,
   CommunityRoleBadge,
 } from '@/components/communities/CommunityCard';
@@ -38,12 +39,14 @@ enum Tabs {
 }
 
 type ElevatedRole = 'admin' | 'moderator' | 'reviewer';
+type MembershipRole = ElevatedRole | 'member';
 
 const roleBadgeDefinitions: Array<{ role: ElevatedRole; badge: CommunityRoleBadge }> = [
   { role: 'admin', badge: { code: 'A', label: 'Admin' } },
   { role: 'moderator', badge: { code: 'M', label: 'Moderator' } },
   { role: 'reviewer', badge: { code: 'R', label: 'Reviewer' } },
 ];
+const roleQueryOrder: MembershipRole[] = ['admin', 'moderator', 'reviewer', 'member'];
 
 const ROLE_QUERY_PAGE_SIZE = 50;
 
@@ -80,6 +83,9 @@ const CommunitiesTabContent: React.FC<TabContentProps> = ({
   const loadingType = LoadingType.PAGINATION;
 
   const requestConfig = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {};
+  const roleMembershipRequestConfig = accessToken
+    ? { headers: { Authorization: `Bearer ${accessToken}` } }
+    : undefined;
 
   const { data, isPending, error } = useCommunitiesApiListCommunities<CommunitiesResponse>(
     {
@@ -98,6 +104,49 @@ const CommunitiesTabContent: React.FC<TabContentProps> = ({
     }
   );
 
+  /* Fixed by Codex on 2026-02-23
+     Who: Codex
+     What: Added role/membership status lookups for the Communities tab.
+     Why: Communities cards must show A/M/R badges, member-only "m", and non-member access dots.
+     How: Query paginated `/my-communities` role slices and merge ID sets into card-level status markers. */
+  const roleQueries = useQueries({
+    queries: roleQueryOrder.map((role) => ({
+      queryKey: ['my_communities_roles', role, search],
+      enabled: isActive && !!accessToken,
+      staleTime: FIVE_MINUTES_IN_MS,
+      refetchOnWindowFocus: true,
+      queryFn: async () => {
+        if (!accessToken) return [] as number[];
+
+        const roleCommunityIds: number[] = [];
+        let currentPage = 1;
+        let totalPages = 1;
+
+        do {
+          const response = await usersApiListMyCommunities(
+            {
+              role,
+              search,
+              page: currentPage,
+              per_page: ROLE_QUERY_PAGE_SIZE,
+            },
+            roleMembershipRequestConfig
+          );
+
+          roleCommunityIds.push(...response.data.items.map((community) => community.id));
+          totalPages = response.data.num_pages;
+          currentPage += 1;
+        } while (currentPage <= totalPages);
+
+        return roleCommunityIds;
+      },
+    })),
+  });
+
+  const [adminRoleQuery, moderatorRoleQuery, reviewerRoleQuery, memberRoleQuery] = roleQueries;
+  const isRoleMembershipReady =
+    !accessToken || roleQueries.every((query) => query.isSuccess || query.isError);
+
   useEffect(() => {
     if (error) {
       showErrorToast(error);
@@ -112,6 +161,40 @@ const CommunitiesTabContent: React.FC<TabContentProps> = ({
       setTotalPages(data.data.num_pages);
     }
   }, [data, error, page, loadingType, setItems, appendItems]);
+
+  useEffect(() => {
+    if (adminRoleQuery.error) {
+      showErrorToast(adminRoleQuery.error as Parameters<typeof showErrorToast>[0]);
+    }
+    if (moderatorRoleQuery.error) {
+      showErrorToast(moderatorRoleQuery.error as Parameters<typeof showErrorToast>[0]);
+    }
+    if (reviewerRoleQuery.error) {
+      showErrorToast(reviewerRoleQuery.error as Parameters<typeof showErrorToast>[0]);
+    }
+    if (memberRoleQuery.error) {
+      showErrorToast(memberRoleQuery.error as Parameters<typeof showErrorToast>[0]);
+    }
+  }, [
+    adminRoleQuery.error,
+    moderatorRoleQuery.error,
+    reviewerRoleQuery.error,
+    memberRoleQuery.error,
+  ]);
+
+  const adminCommunityIds = useMemo(() => new Set(adminRoleQuery.data ?? []), [adminRoleQuery.data]);
+  const moderatorCommunityIds = useMemo(
+    () => new Set(moderatorRoleQuery.data ?? []),
+    [moderatorRoleQuery.data]
+  );
+  const reviewerCommunityIds = useMemo(
+    () => new Set(reviewerRoleQuery.data ?? []),
+    [reviewerRoleQuery.data]
+  );
+  const memberCommunityIds = useMemo(
+    () => new Set(memberRoleQuery.data ?? []),
+    [memberRoleQuery.data]
+  );
 
   const handleSearch = useCallback(
     (term: string) => {
@@ -129,9 +212,85 @@ const CommunitiesTabContent: React.FC<TabContentProps> = ({
     [setPage]
   );
 
+  /* Fixed by Codex on 2026-02-23
+     Who: Codex
+     What: Sorted Communities cards by membership priority for reading-order scanning.
+     Why: Product requirement calls for deterministic left-to-right, top-to-bottom role grouping.
+     How: Stable-sort filtered items into Admin, Moderator, Reviewer, Member, then non-members by type. */
+  const sortedDisplayedItems = useMemo(() => {
+    if (!isRoleMembershipReady) {
+      return displayedItems;
+    }
+
+    const getSortTier = (community: CommunityListOut) => {
+      if (adminCommunityIds.has(community.id)) return 0;
+      if (moderatorCommunityIds.has(community.id)) return 1;
+      if (reviewerCommunityIds.has(community.id)) return 2;
+      if (memberCommunityIds.has(community.id)) return 3;
+      if (community.type === 'public') return 4;
+      if (community.type === 'private') return 5;
+      return 6;
+    };
+
+    return displayedItems
+      .map((community, index) => ({ community, index }))
+      .sort((left, right) => {
+        const tierDelta = getSortTier(left.community) - getSortTier(right.community);
+        return tierDelta !== 0 ? tierDelta : left.index - right.index;
+      })
+      .map(({ community }) => community);
+  }, [
+    displayedItems,
+    isRoleMembershipReady,
+    adminCommunityIds,
+    moderatorCommunityIds,
+    reviewerCommunityIds,
+    memberCommunityIds,
+  ]);
+
   const renderCommunity = useCallback(
-    (community: CommunityListOut) => <CommunityCard community={community} />,
-    []
+    (community: CommunityListOut) => {
+      const roleBadges = roleBadgeDefinitions
+        .filter(({ role }) => {
+          if (role === 'admin') return adminCommunityIds.has(community.id);
+          if (role === 'moderator') return moderatorCommunityIds.has(community.id);
+          return reviewerCommunityIds.has(community.id);
+        })
+        .map(({ badge }) => badge);
+
+      const isMemberOnly = memberCommunityIds.has(community.id) && roleBadges.length === 0;
+      const hasAnyMembership = roleBadges.length > 0 || isMemberOnly;
+      const accessIndicator: CommunityAccessIndicator | undefined =
+        isRoleMembershipReady && !hasAnyMembership
+          ? community.type === 'public'
+            ? {
+                tone: 'public',
+                label: 'Public community, not a member',
+              }
+            : community.type === 'private'
+              ? {
+                  tone: 'private',
+                  label: 'Private community, membership required',
+                }
+              : undefined
+          : undefined;
+
+      return (
+        <CommunityCard
+          community={community}
+          roleBadges={roleBadges}
+          showMemberBadge={isMemberOnly}
+          accessIndicator={accessIndicator}
+        />
+      );
+    },
+    [
+      adminCommunityIds,
+      moderatorCommunityIds,
+      reviewerCommunityIds,
+      memberCommunityIds,
+      isRoleMembershipReady,
+    ]
   );
 
   const renderSkeleton = useCallback(() => <CommunityCardSkeleton />, []);
@@ -146,7 +305,7 @@ const CommunitiesTabContent: React.FC<TabContentProps> = ({
         renderItem={renderCommunity}
         renderSkeleton={renderSkeleton}
         isLoading={isPending}
-        items={displayedItems}
+        items={sortedDisplayedItems}
         totalItems={totalItems}
         totalPages={totalPages}
         currentPage={page}
@@ -215,11 +374,11 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
 
   /* Fixed by Codex on 2026-02-23
      Who: Codex
-     What: Added paginated role map queries (admin/moderator/reviewer) for My Communities cards.
-     Why: A single filtered page can miss role matches, leading to incomplete badge marking.
+     What: Added paginated role map queries (admin/moderator/reviewer/member) for My Communities.
+     Why: Role badges and ordering both need accurate role sets across all pages, not just page 1.
      How: For each role, iterate through all `/my-communities?role=...` pages and build ID sets. */
   const roleQueries = useQueries({
-    queries: roleBadgeDefinitions.map(({ role }) => ({
+    queries: roleQueryOrder.map((role) => ({
       queryKey: ['my_communities_roles', role, search],
       enabled: isActive && !!accessToken,
       staleTime: FIVE_MINUTES_IN_MS,
@@ -252,7 +411,7 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
     })),
   });
 
-  const [adminRoleQuery, moderatorRoleQuery, reviewerRoleQuery] = roleQueries;
+  const [adminRoleQuery, moderatorRoleQuery, reviewerRoleQuery, memberRoleQuery] = roleQueries;
 
   useEffect(() => {
     if (error) {
@@ -279,7 +438,15 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
     if (reviewerRoleQuery.error) {
       showErrorToast(reviewerRoleQuery.error as Parameters<typeof showErrorToast>[0]);
     }
-  }, [adminRoleQuery.error, moderatorRoleQuery.error, reviewerRoleQuery.error]);
+    if (memberRoleQuery.error) {
+      showErrorToast(memberRoleQuery.error as Parameters<typeof showErrorToast>[0]);
+    }
+  }, [
+    adminRoleQuery.error,
+    moderatorRoleQuery.error,
+    reviewerRoleQuery.error,
+    memberRoleQuery.error,
+  ]);
 
   const adminCommunityIds = useMemo(() => new Set(adminRoleQuery.data ?? []), [adminRoleQuery.data]);
   const moderatorCommunityIds = useMemo(
@@ -290,15 +457,36 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
     () => new Set(reviewerRoleQuery.data ?? []),
     [reviewerRoleQuery.data]
   );
-
-  const roleMembershipByRole = useMemo(
-    () => ({
-      admin: adminCommunityIds,
-      moderator: moderatorCommunityIds,
-      reviewer: reviewerCommunityIds,
-    }),
-    [adminCommunityIds, moderatorCommunityIds, reviewerCommunityIds]
+  const memberCommunityIds = useMemo(
+    () => new Set(memberRoleQuery.data ?? []),
+    [memberRoleQuery.data]
   );
+
+  const sortedDisplayedItems = useMemo(() => {
+    const getSortTier = (community: CommunityListOut) => {
+      if (adminCommunityIds.has(community.id)) return 0;
+      if (moderatorCommunityIds.has(community.id)) return 1;
+      if (reviewerCommunityIds.has(community.id)) return 2;
+      if (memberCommunityIds.has(community.id)) return 3;
+      if (community.type === 'public') return 4;
+      if (community.type === 'private') return 5;
+      return 6;
+    };
+
+    return displayedItems
+      .map((community, index) => ({ community, index }))
+      .sort((left, right) => {
+        const tierDelta = getSortTier(left.community) - getSortTier(right.community);
+        return tierDelta !== 0 ? tierDelta : left.index - right.index;
+      })
+      .map(({ community }) => community);
+  }, [
+    displayedItems,
+    adminCommunityIds,
+    moderatorCommunityIds,
+    reviewerCommunityIds,
+    memberCommunityIds,
+  ]);
 
   const handleSearch = useCallback(
     (term: string) => {
@@ -319,12 +507,16 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
   const renderCommunity = useCallback(
     (community: CommunityListOut) => {
       const roleBadges = roleBadgeDefinitions
-        .filter(({ role }) => roleMembershipByRole[role].has(community.id))
+        .filter(({ role }) => {
+          if (role === 'admin') return adminCommunityIds.has(community.id);
+          if (role === 'moderator') return moderatorCommunityIds.has(community.id);
+          return reviewerCommunityIds.has(community.id);
+        })
         .map(({ badge }) => badge);
 
       return <CommunityCard community={community} roleBadges={roleBadges} />;
     },
-    [roleMembershipByRole]
+    [adminCommunityIds, moderatorCommunityIds, reviewerCommunityIds]
   );
 
   const renderSkeleton = useCallback(() => <CommunityCardSkeleton />, []);
@@ -339,7 +531,7 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
         renderItem={renderCommunity}
         renderSkeleton={renderSkeleton}
         isLoading={isPending}
-        items={displayedItems}
+        items={sortedDisplayedItems}
         totalItems={totalItems}
         totalPages={totalPages}
         currentPage={page}

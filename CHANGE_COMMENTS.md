@@ -8,6 +8,8 @@ Solution: Kept `My Communities` list sourcing from unfiltered `/my-communities`,
 
 Result: `My Communities` now reflects membership-focused listing while clearly indicating elevated roles per card in an accessible, compact format.
 
+Follow-up (same day): Extended the same role markers to the `Communities` tab, added member-only `m` marker support, introduced accessible non-member access dots (green for public, red for private), and sorted visible cards in reading order by role priority (`Admin`, `Moderator`, `Reviewer`, `Member`, then non-members with `public` before `private`).
+
 Files Modified: `src/app/(main)/(communities)/communities/page.tsx`, `src/components/communities/CommunityCard.tsx`, `CHANGE_COMMENTS.md`
 
 ## 2026-02-23 - Community Article Detail List-View Shortcut
