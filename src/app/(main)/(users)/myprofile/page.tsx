@@ -135,9 +135,9 @@ const Home: React.FC = () => {
     });
   };
 
-    const onInvalid = () => {
-      toast.error("Please fix the highlighted fields before saving.");
-    };
+  const onInvalid = () => {
+    toast.error('Please fix the highlighted fields before saving.');
+  };
 
   useEffect(() => {
     if (data) {
