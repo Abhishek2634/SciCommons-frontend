@@ -148,7 +148,7 @@ const CreateDropdown: React.FC = () => {
       }
     >
       <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger>
+        <DrawerTrigger asChild>
           {/* Fixed by Codex on 2026-02-15
               Who: Codex
               What: Make the create drawer trigger keyboard accessible.
