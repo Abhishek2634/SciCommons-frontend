@@ -1,3 +1,15 @@
+## 2026-02-23 - My Communities Membership Source + Elevated Role Badges
+
+Problem: The `My Communities` tab needed to be aligned with the new `/my-communities` behavior (membership list) while still showing whether the user is also an Admin, Moderator, or Reviewer in each community.
+
+Root Cause: The tab rendered plain community cards from the base list response only, with no role overlay metadata in card UI.
+
+Solution: Kept `My Communities` list sourcing from unfiltered `/my-communities`, added parallel role-filtered lookups (`admin`, `moderator`, `reviewer`) to build role membership sets, and passed compact role badges (`A`, `M`, `R`) into `CommunityCard` for top-right rendering. Added accessible labeling for each badge.
+
+Result: `My Communities` now reflects membership-focused listing while clearly indicating elevated roles per card in an accessible, compact format.
+
+Files Modified: `src/app/(main)/(communities)/communities/page.tsx`, `src/components/communities/CommunityCard.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-23 - Community Article Detail List-View Shortcut
 
 Problem: From community article detail pages (for example `/community/{slug}/articles/{articleSlug}`), returning to the community article listing required breadcrumb navigation without an explicit list-mode shortcut.

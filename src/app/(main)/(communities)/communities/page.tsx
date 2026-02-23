@@ -1,14 +1,18 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useQueries } from '@tanstack/react-query';
 import { Users } from 'lucide-react';
 
 import { useCommunitiesApiListCommunities } from '@/api/communities/communities';
 import { CommunityListOut } from '@/api/schemas';
-import { useUsersApiListMyCommunities } from '@/api/users/users';
+import { useUsersApiListMyCommunities, usersApiListMyCommunities } from '@/api/users/users';
 import SearchableList, { LoadingType } from '@/components/common/SearchableList';
-import CommunityCard, { CommunityCardSkeleton } from '@/components/communities/CommunityCard';
+import CommunityCard, {
+  CommunityCardSkeleton,
+  CommunityRoleBadge,
+} from '@/components/communities/CommunityCard';
 import TabComponent from '@/components/communities/TabComponent';
 import { FIVE_MINUTES_IN_MS } from '@/constants/common.constants';
 import { useFilteredList } from '@/hooks/useFilteredList';
@@ -32,6 +36,16 @@ enum Tabs {
   COMMUNITIES = 'Communities',
   MY_COMMUNITIES = 'My Communities',
 }
+
+type ElevatedRole = 'admin' | 'moderator' | 'reviewer';
+
+const roleBadgeDefinitions: Array<{ role: ElevatedRole; badge: CommunityRoleBadge }> = [
+  { role: 'admin', badge: { code: 'A', label: 'Admin' } },
+  { role: 'moderator', badge: { code: 'M', label: 'Moderator' } },
+  { role: 'reviewer', badge: { code: 'R', label: 'Reviewer' } },
+];
+
+const ROLE_QUERY_PAGE_SIZE = 50;
 
 interface TabContentProps {
   search: string;
@@ -178,6 +192,9 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const loadingType = LoadingType.PAGINATION;
+  const myCommunitiesRequestConfig = accessToken
+    ? { headers: { Authorization: `Bearer ${accessToken}` } }
+    : undefined;
 
   const { data, isPending, error } = useUsersApiListMyCommunities<CommunitiesResponse>(
     {
@@ -192,11 +209,50 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
         queryKey: ['my_communities', page, search],
         enabled: isActive,
       },
-      request: {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      },
+      request: myCommunitiesRequestConfig,
     }
   );
+
+  /* Fixed by Codex on 2026-02-23
+     Who: Codex
+     What: Added paginated role map queries (admin/moderator/reviewer) for My Communities cards.
+     Why: A single filtered page can miss role matches, leading to incomplete badge marking.
+     How: For each role, iterate through all `/my-communities?role=...` pages and build ID sets. */
+  const roleQueries = useQueries({
+    queries: roleBadgeDefinitions.map(({ role }) => ({
+      queryKey: ['my_communities_roles', role, search],
+      enabled: isActive && !!accessToken,
+      staleTime: FIVE_MINUTES_IN_MS,
+      refetchOnWindowFocus: true,
+      queryFn: async () => {
+        if (!accessToken) return [] as number[];
+
+        const roleCommunityIds: number[] = [];
+        let currentPage = 1;
+        let totalPages = 1;
+
+        do {
+          const response = await usersApiListMyCommunities(
+            {
+              role,
+              search,
+              page: currentPage,
+              per_page: ROLE_QUERY_PAGE_SIZE,
+            },
+            myCommunitiesRequestConfig
+          );
+
+          roleCommunityIds.push(...response.data.items.map((community) => community.id));
+          totalPages = response.data.num_pages;
+          currentPage += 1;
+        } while (currentPage <= totalPages);
+
+        return roleCommunityIds;
+      },
+    })),
+  });
+
+  const [adminRoleQuery, moderatorRoleQuery, reviewerRoleQuery] = roleQueries;
 
   useEffect(() => {
     if (error) {
@@ -212,6 +268,37 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
       setTotalPages(data.data.num_pages);
     }
   }, [data, error, page, loadingType, setItems, appendItems]);
+
+  useEffect(() => {
+    if (adminRoleQuery.error) {
+      showErrorToast(adminRoleQuery.error as Parameters<typeof showErrorToast>[0]);
+    }
+    if (moderatorRoleQuery.error) {
+      showErrorToast(moderatorRoleQuery.error as Parameters<typeof showErrorToast>[0]);
+    }
+    if (reviewerRoleQuery.error) {
+      showErrorToast(reviewerRoleQuery.error as Parameters<typeof showErrorToast>[0]);
+    }
+  }, [adminRoleQuery.error, moderatorRoleQuery.error, reviewerRoleQuery.error]);
+
+  const adminCommunityIds = useMemo(() => new Set(adminRoleQuery.data ?? []), [adminRoleQuery.data]);
+  const moderatorCommunityIds = useMemo(
+    () => new Set(moderatorRoleQuery.data ?? []),
+    [moderatorRoleQuery.data]
+  );
+  const reviewerCommunityIds = useMemo(
+    () => new Set(reviewerRoleQuery.data ?? []),
+    [reviewerRoleQuery.data]
+  );
+
+  const roleMembershipByRole = useMemo(
+    () => ({
+      admin: adminCommunityIds,
+      moderator: moderatorCommunityIds,
+      reviewer: reviewerCommunityIds,
+    }),
+    [adminCommunityIds, moderatorCommunityIds, reviewerCommunityIds]
+  );
 
   const handleSearch = useCallback(
     (term: string) => {
@@ -230,8 +317,14 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
   );
 
   const renderCommunity = useCallback(
-    (community: CommunityListOut) => <CommunityCard community={community} />,
-    []
+    (community: CommunityListOut) => {
+      const roleBadges = roleBadgeDefinitions
+        .filter(({ role }) => roleMembershipByRole[role].has(community.id))
+        .map(({ badge }) => badge);
+
+      return <CommunityCard community={community} roleBadges={roleBadges} />;
+    },
+    [roleMembershipByRole]
   );
 
   const renderSkeleton = useCallback(() => <CommunityCardSkeleton />, []);

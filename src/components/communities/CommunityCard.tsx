@@ -24,9 +24,21 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 
 interface CommunityCardProps {
   community: CommunityListOut;
+  roleBadges?: CommunityRoleBadge[];
 }
 
-const CommunityCard: FC<CommunityCardProps> = ({ community }) => {
+export interface CommunityRoleBadge {
+  code: 'A' | 'M' | 'R';
+  label: 'Admin' | 'Moderator' | 'Reviewer';
+}
+
+const roleBadgeClassByCode: Record<CommunityRoleBadge['code'], string> = {
+  A: 'border-functional-yellow/60 bg-functional-yellow/10 text-functional-yellow',
+  M: 'border-functional-green/60 bg-functional-green/10 text-functional-green',
+  R: 'border-functional-blue/60 bg-functional-blue/10 text-functional-blue',
+};
+
+const CommunityCard: FC<CommunityCardProps> = ({ community, roleBadges = [] }) => {
   // COMMENTED OUT BCOZ WE ARE NOT SHOWING JOIN BUTTON IN COMMUNITY CARD UNTIL AUTH IS FIXED.
   const accessToken = useAuthStore((state) => state.accessToken);
   // const axiosConfig = { headers: { Authorization: `Bearer ${accessToken}` } };
@@ -92,6 +104,32 @@ const CommunityCard: FC<CommunityCardProps> = ({ community }) => {
 
   return (
     <div className="relative flex h-full flex-col items-start gap-4 rounded-lg border border-common-contrast bg-common-cardBackground p-2.5 px-3.5 res-text-xs hover:shadow-md hover:shadow-common-minimal">
+      {/* Fixed by Codex on 2026-02-23
+          Who: Codex
+          What: Added compact role badges (A/M/R) to community cards.
+          Why: My Communities should show elevated roles without changing card layout density.
+          How: Render tokenized top-right badges with accessible labels for screen readers. */}
+      {roleBadges.length > 0 && (
+        <div
+          className="absolute right-2 top-2 flex items-center gap-1"
+          aria-label={`Your roles in this community: ${roleBadges.map((badge) => badge.label).join(', ')}`}
+        >
+          {roleBadges.map((badge) => (
+            <span
+              key={badge.code}
+              role="img"
+              aria-label={badge.label}
+              title={badge.label}
+              className={cn(
+                'inline-flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-semibold',
+                roleBadgeClassByCode[badge.code]
+              )}
+            >
+              {badge.code}
+            </span>
+          ))}
+        </div>
+      )}
       {/* <div className="relative size-10 flex-shrink-0 sm:mr-4">
         <Image
           src={community.profile_pic_url || `data:image/png;base64,${imageData}`}
@@ -100,7 +138,7 @@ const CommunityCard: FC<CommunityCardProps> = ({ community }) => {
           className="rounded-full object-cover"
         />
       </div> */}
-      <div className="w-full flex-1 pb-2 sm:pb-0">
+      <div className="w-full flex-1 pb-2 pr-8 sm:pb-0">
         <Link href={`/community/${encodeURIComponent(community.name)}`}>
           <h3 className="mb-2 truncate text-base font-bold text-text-primary hover:underline">
             {community.name}
