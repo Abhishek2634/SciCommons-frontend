@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { List } from 'lucide-react';
+
 import { withAuthRedirect } from '@/HOCs/withAuthRedirect';
 import { useArticlesApiGetArticle } from '@/api/articles/articles';
 import { useArticlesReviewApiListReviews } from '@/api/reviews/reviews';
@@ -160,7 +161,7 @@ const CommunityArticleDisplayPage: React.FC = () => {
             tooltipData="List View"
             variant="outline"
             size="xs"
-            className="border border-common-minimal/70 bg-common-cardBackground px-2 sm:px-3 hover:bg-common-minimal"
+            className="border border-common-minimal/70 bg-common-cardBackground px-2 hover:bg-common-minimal sm:px-3"
             aria-label="Switch to community articles list view"
           >
             <Link href={communityListHref} onClick={handleGoToListView}>
