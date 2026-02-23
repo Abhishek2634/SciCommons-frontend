@@ -1,3 +1,17 @@
+## 2026-02-23 - Community Article Detail List-View Shortcut
+
+Problem: From community article detail pages (for example `/community/{slug}/articles/{articleSlug}`), returning to the community article listing required breadcrumb navigation without an explicit list-mode shortcut.
+
+Root Cause: The detail page header only rendered breadcrumbs and tabs; it had no direct action to switch back to the community articles list view state.
+
+Solution: Added a right-aligned `List View` button in the community article detail page header. The action routes back to `/community/{slug}` (preserving current `articleId` in query) and sets the shared articles view store to `grid` before navigation so users land in list mode.
+
+Result: Users now have a one-click convenience control to return from article detail pages to community list mode, consistent with existing view-switching patterns.
+
+Follow-up (same day): Made the action icon-only on small screens while retaining the text label on larger screens, added explicit accessibility labeling/tooltip, and switched to `Button asChild` with `Link` to avoid nested interactive elements.
+
+Files Modified: `src/app/(main)/(communities)/community/[slug]/articles/[articleSlug]/page.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-22 - Professional Status Validation and Mobile Layout Hardening (pr-280 follow-up)
 
 Problem: The professional status update allowed malformed end-year values to pass submit-time validation, and the new single-row layout could compress/overflow on smaller screens.
