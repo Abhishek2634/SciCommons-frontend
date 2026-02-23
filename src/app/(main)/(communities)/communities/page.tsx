@@ -182,7 +182,10 @@ const CommunitiesTabContent: React.FC<TabContentProps> = ({
     memberRoleQuery.error,
   ]);
 
-  const adminCommunityIds = useMemo(() => new Set(adminRoleQuery.data ?? []), [adminRoleQuery.data]);
+  const adminCommunityIds = useMemo(
+    () => new Set(adminRoleQuery.data ?? []),
+    [adminRoleQuery.data]
+  );
   const moderatorCommunityIds = useMemo(
     () => new Set(moderatorRoleQuery.data ?? []),
     [moderatorRoleQuery.data]
@@ -448,7 +451,10 @@ const MyCommunitiesTabContent: React.FC<TabContentProps> = ({
     memberRoleQuery.error,
   ]);
 
-  const adminCommunityIds = useMemo(() => new Set(adminRoleQuery.data ?? []), [adminRoleQuery.data]);
+  const adminCommunityIds = useMemo(
+    () => new Set(adminRoleQuery.data ?? []),
+    [adminRoleQuery.data]
+  );
   const moderatorCommunityIds = useMemo(
     () => new Set(moderatorRoleQuery.data ?? []),
     [moderatorRoleQuery.data]
