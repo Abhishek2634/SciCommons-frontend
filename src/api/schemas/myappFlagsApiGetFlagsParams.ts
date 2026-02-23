@@ -4,11 +4,11 @@
  * MyApp API
  * OpenAPI spec version: 1.0.0
  */
-import type { MyappFlagsApiGetFlagsEntityType } from './myappFlagsApiGetFlagsEntityType';
 import type { MyappFlagsApiGetFlagsFlagType } from './myappFlagsApiGetFlagsFlagType';
+import type { MyappFlagsApiGetFlagsEntityType } from './myappFlagsApiGetFlagsEntityType';
 
 export type MyappFlagsApiGetFlagsParams = {
-  /**
+/**
  * Available flag types that can be set on entities.
 Keep in sync with UserFlag.VALID_FLAG_TYPES in articles/models.py
 
@@ -19,8 +19,8 @@ Future flags (add here and in UserFlag.VALID_FLAG_TYPES when implemented):
 - starred: Entity is starred/favorited by the user
 - muted: Entity notifications are muted by the user
  */
-  flag_type: MyappFlagsApiGetFlagsFlagType;
-  /**
+flag_type: MyappFlagsApiGetFlagsFlagType;
+/**
  * Entity types that can have flags attached.
 Keep in sync with UserFlag.VALID_ENTITY_TYPES in articles/models.py
 
@@ -32,6 +32,6 @@ Future entity types (add here and in UserFlag.VALID_ENTITY_TYPES when implemente
 - article: An article
 - review: A review on an article
  */
-  entity_type: MyappFlagsApiGetFlagsEntityType;
-  entity_ids: string;
+entity_type: MyappFlagsApiGetFlagsEntityType;
+entity_ids: string;
 };

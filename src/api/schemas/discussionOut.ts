@@ -5,8 +5,8 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { DiscussionOutDeletedAt } from './discussionOutDeletedAt';
-import type { DiscussionOutId } from './discussionOutId';
 import type { FlagType } from './flagType';
+import type { DiscussionOutId } from './discussionOutId';
 import type { UserStats } from './userStats';
 
 export interface DiscussionOut {

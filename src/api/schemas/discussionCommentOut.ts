@@ -4,9 +4,9 @@
  * MyApp API
  * OpenAPI spec version: 1.0.0
  */
-import type { DiscussionCommentOutId } from './discussionCommentOutId';
-import type { FlagType } from './flagType';
 import type { UserStats } from './userStats';
+import type { FlagType } from './flagType';
+import type { DiscussionCommentOutId } from './discussionCommentOutId';
 
 export interface DiscussionCommentOut {
   author: UserStats;

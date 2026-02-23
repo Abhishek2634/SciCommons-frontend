@@ -4,7 +4,10 @@
  * MyApp API
  * OpenAPI spec version: 1.0.0
  */
-import { useMutation, useQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query'
 import type {
   MutationFunction,
   QueryFunction,
@@ -12,248 +15,198 @@ import type {
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
-  UseQueryResult,
-} from '@tanstack/react-query';
-
-import { customInstance } from '.././custom-instance';
-import type { BodyType, ErrorType } from '.././custom-instance';
+  UseQueryResult
+} from '@tanstack/react-query'
 import type {
   FlagGetOut,
   FlagModifyOut,
   FlagRequestIn,
-  MyappFlagsApiGetFlagsParams,
-} from '.././schemas';
+  MyappFlagsApiGetFlagsParams
+} from '.././schemas'
+import { customInstance } from '.././custom-instance';
+import type { ErrorType, BodyType } from '.././custom-instance';
+
 
 type SecondParameter<T extends (...args: any) => any> = Parameters<T>[1];
+
 
 /**
  * Check which entities have a specific flag set for the authenticated user.
  * @summary Get flags for entities
  */
 export const myappFlagsApiGetFlags = (
-  params: MyappFlagsApiGetFlagsParams,
-  options?: SecondParameter<typeof customInstance>,
-  signal?: AbortSignal
+    params: MyappFlagsApiGetFlagsParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
 ) => {
-  return customInstance<FlagGetOut>({ url: `/api/flags/`, method: 'GET', params, signal }, options);
-};
+      
+      
+      return customInstance<FlagGetOut>(
+      {url: `/api/flags/`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
 
-export const getMyappFlagsApiGetFlagsQueryKey = (params: MyappFlagsApiGetFlagsParams) => {
-  return [`/api/flags/`, ...(params ? [params] : [])] as const;
-};
+export const getMyappFlagsApiGetFlagsQueryKey = (params: MyappFlagsApiGetFlagsParams,) => {
+    return [`/api/flags/`, ...(params ? [params]: [])] as const;
+    }
 
-export const getMyappFlagsApiGetFlagsQueryOptions = <
-  TData = Awaited<ReturnType<typeof myappFlagsApiGetFlags>>,
-  TError = ErrorType<unknown>,
->(
-  params: MyappFlagsApiGetFlagsParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof myappFlagsApiGetFlags>>, TError, TData>
-    >;
-    request?: SecondParameter<typeof customInstance>;
-  }
+    
+export const getMyappFlagsApiGetFlagsQueryOptions = <TData = Awaited<ReturnType<typeof myappFlagsApiGetFlags>>, TError = ErrorType<unknown>>(params: MyappFlagsApiGetFlagsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof myappFlagsApiGetFlags>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getMyappFlagsApiGetFlagsQueryKey(params);
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof myappFlagsApiGetFlags>>> = ({ signal }) =>
-    myappFlagsApiGetFlags(params, requestOptions, signal);
+  const queryKey =  queryOptions?.queryKey ?? getMyappFlagsApiGetFlagsQueryKey(params);
 
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof myappFlagsApiGetFlags>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
+  
 
-export type MyappFlagsApiGetFlagsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof myappFlagsApiGetFlags>>
->;
-export type MyappFlagsApiGetFlagsQueryError = ErrorType<unknown>;
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof myappFlagsApiGetFlags>>> = ({ signal }) => myappFlagsApiGetFlags(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof myappFlagsApiGetFlags>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type MyappFlagsApiGetFlagsQueryResult = NonNullable<Awaited<ReturnType<typeof myappFlagsApiGetFlags>>>
+export type MyappFlagsApiGetFlagsQueryError = ErrorType<unknown>
 
 /**
  * @summary Get flags for entities
  */
-export const useMyappFlagsApiGetFlags = <
-  TData = Awaited<ReturnType<typeof myappFlagsApiGetFlags>>,
-  TError = ErrorType<unknown>,
->(
-  params: MyappFlagsApiGetFlagsParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof myappFlagsApiGetFlags>>, TError, TData>
-    >;
-    request?: SecondParameter<typeof customInstance>;
-  }
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const queryOptions = getMyappFlagsApiGetFlagsQueryOptions(params, options);
+export const useMyappFlagsApiGetFlags = <TData = Awaited<ReturnType<typeof myappFlagsApiGetFlags>>, TError = ErrorType<unknown>>(
+ params: MyappFlagsApiGetFlagsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof myappFlagsApiGetFlags>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } => {
 
-  query.queryKey = queryOptions.queryKey;
+  const queryOptions = getMyappFlagsApiGetFlagsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
 
   return query;
-};
+}
+
+
 
 /**
  * Add a flag to multiple entities for the authenticated user.
  * @summary Add flags to entities
  */
 export const myappFlagsApiAddFlags = (
-  flagRequestIn: BodyType<FlagRequestIn>,
-  options?: SecondParameter<typeof customInstance>
-) => {
-  return customInstance<FlagModifyOut>(
-    {
-      url: `/api/flags/`,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      data: flagRequestIn,
+    flagRequestIn: BodyType<FlagRequestIn>,
+ options?: SecondParameter<typeof customInstance>,) => {
+      
+      
+      return customInstance<FlagModifyOut>(
+      {url: `/api/flags/`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: flagRequestIn
     },
-    options
-  );
-};
+      options);
+    }
+  
 
-export const getMyappFlagsApiAddFlagsMutationOptions = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof myappFlagsApiAddFlags>>,
-    TError,
-    { data: BodyType<FlagRequestIn> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customInstance>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof myappFlagsApiAddFlags>>,
-  TError,
-  { data: BodyType<FlagRequestIn> },
-  TContext
-> => {
-  const { mutation: mutationOptions, request: requestOptions } = options ?? {};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof myappFlagsApiAddFlags>>,
-    { data: BodyType<FlagRequestIn> }
-  > = (props) => {
-    const { data } = props ?? {};
+export const getMyappFlagsApiAddFlagsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof myappFlagsApiAddFlags>>, TError,{data: BodyType<FlagRequestIn>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof myappFlagsApiAddFlags>>, TError,{data: BodyType<FlagRequestIn>}, TContext> => {
+const {mutation: mutationOptions, request: requestOptions} = options ?? {};
 
-    return myappFlagsApiAddFlags(data, requestOptions);
-  };
+      
 
-  return { mutationFn, ...mutationOptions };
-};
 
-export type MyappFlagsApiAddFlagsMutationResult = NonNullable<
-  Awaited<ReturnType<typeof myappFlagsApiAddFlags>>
->;
-export type MyappFlagsApiAddFlagsMutationBody = BodyType<FlagRequestIn>;
-export type MyappFlagsApiAddFlagsMutationError = ErrorType<unknown>;
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof myappFlagsApiAddFlags>>, {data: BodyType<FlagRequestIn>}> = (props) => {
+          const {data} = props ?? {};
 
-/**
+          return  myappFlagsApiAddFlags(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MyappFlagsApiAddFlagsMutationResult = NonNullable<Awaited<ReturnType<typeof myappFlagsApiAddFlags>>>
+    export type MyappFlagsApiAddFlagsMutationBody = BodyType<FlagRequestIn>
+    export type MyappFlagsApiAddFlagsMutationError = ErrorType<unknown>
+
+    /**
  * @summary Add flags to entities
  */
-export const useMyappFlagsApiAddFlags = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof myappFlagsApiAddFlags>>,
-    TError,
-    { data: BodyType<FlagRequestIn> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customInstance>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof myappFlagsApiAddFlags>>,
-  TError,
-  { data: BodyType<FlagRequestIn> },
-  TContext
-> => {
-  const mutationOptions = getMyappFlagsApiAddFlagsMutationOptions(options);
+export const useMyappFlagsApiAddFlags = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof myappFlagsApiAddFlags>>, TError,{data: BodyType<FlagRequestIn>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationResult<
+        Awaited<ReturnType<typeof myappFlagsApiAddFlags>>,
+        TError,
+        {data: BodyType<FlagRequestIn>},
+        TContext
+      > => {
 
-  return useMutation(mutationOptions);
-};
-/**
+      const mutationOptions = getMyappFlagsApiAddFlagsMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
  * Remove a flag from multiple entities for the authenticated user.
  * @summary Remove flags from entities
  */
 export const myappFlagsApiRemoveFlags = (
-  flagRequestIn: BodyType<FlagRequestIn>,
-  options?: SecondParameter<typeof customInstance>
-) => {
-  return customInstance<FlagModifyOut>(
-    {
-      url: `/api/flags/`,
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      data: flagRequestIn,
+    flagRequestIn: BodyType<FlagRequestIn>,
+ options?: SecondParameter<typeof customInstance>,) => {
+      
+      
+      return customInstance<FlagModifyOut>(
+      {url: `/api/flags/`, method: 'DELETE',
+      headers: {'Content-Type': 'application/json', },
+      data: flagRequestIn
     },
-    options
-  );
-};
+      options);
+    }
+  
 
-export const getMyappFlagsApiRemoveFlagsMutationOptions = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof myappFlagsApiRemoveFlags>>,
-    TError,
-    { data: BodyType<FlagRequestIn> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customInstance>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof myappFlagsApiRemoveFlags>>,
-  TError,
-  { data: BodyType<FlagRequestIn> },
-  TContext
-> => {
-  const { mutation: mutationOptions, request: requestOptions } = options ?? {};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof myappFlagsApiRemoveFlags>>,
-    { data: BodyType<FlagRequestIn> }
-  > = (props) => {
-    const { data } = props ?? {};
+export const getMyappFlagsApiRemoveFlagsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof myappFlagsApiRemoveFlags>>, TError,{data: BodyType<FlagRequestIn>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof myappFlagsApiRemoveFlags>>, TError,{data: BodyType<FlagRequestIn>}, TContext> => {
+const {mutation: mutationOptions, request: requestOptions} = options ?? {};
 
-    return myappFlagsApiRemoveFlags(data, requestOptions);
-  };
+      
 
-  return { mutationFn, ...mutationOptions };
-};
 
-export type MyappFlagsApiRemoveFlagsMutationResult = NonNullable<
-  Awaited<ReturnType<typeof myappFlagsApiRemoveFlags>>
->;
-export type MyappFlagsApiRemoveFlagsMutationBody = BodyType<FlagRequestIn>;
-export type MyappFlagsApiRemoveFlagsMutationError = ErrorType<unknown>;
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof myappFlagsApiRemoveFlags>>, {data: BodyType<FlagRequestIn>}> = (props) => {
+          const {data} = props ?? {};
 
-/**
+          return  myappFlagsApiRemoveFlags(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MyappFlagsApiRemoveFlagsMutationResult = NonNullable<Awaited<ReturnType<typeof myappFlagsApiRemoveFlags>>>
+    export type MyappFlagsApiRemoveFlagsMutationBody = BodyType<FlagRequestIn>
+    export type MyappFlagsApiRemoveFlagsMutationError = ErrorType<unknown>
+
+    /**
  * @summary Remove flags from entities
  */
-export const useMyappFlagsApiRemoveFlags = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof myappFlagsApiRemoveFlags>>,
-    TError,
-    { data: BodyType<FlagRequestIn> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customInstance>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof myappFlagsApiRemoveFlags>>,
-  TError,
-  { data: BodyType<FlagRequestIn> },
-  TContext
-> => {
-  const mutationOptions = getMyappFlagsApiRemoveFlagsMutationOptions(options);
+export const useMyappFlagsApiRemoveFlags = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof myappFlagsApiRemoveFlags>>, TError,{data: BodyType<FlagRequestIn>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationResult<
+        Awaited<ReturnType<typeof myappFlagsApiRemoveFlags>>,
+        TError,
+        {data: BodyType<FlagRequestIn>},
+        TContext
+      > => {
 
-  return useMutation(mutationOptions);
-};
+      const mutationOptions = getMyappFlagsApiRemoveFlagsMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    

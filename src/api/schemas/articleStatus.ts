@@ -5,7 +5,8 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type ArticleStatus = (typeof ArticleStatus)[keyof typeof ArticleStatus];
+export type ArticleStatus = typeof ArticleStatus[keyof typeof ArticleStatus];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ArticleStatus = {

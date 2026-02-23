@@ -113,6 +113,7 @@ export * from './communityOutJoinRequestStatus';
 export * from './communityOutProfilePicUrl';
 export * from './communityOutRules';
 export * from './communityOutTags';
+export * from './communityRoleFilter';
 export * from './communityStatsResponse';
 export * from './communitySubscriptionOut';
 export * from './communitySubscriptionOutArticlesItem';
