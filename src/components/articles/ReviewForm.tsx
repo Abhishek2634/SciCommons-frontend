@@ -341,7 +341,10 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
                 <p id={reviewDeleteDialogTitleId} className="mb-2 text-lg font-semibold">
                   Delete this review?
                 </p>
-                <p id={reviewDeleteDialogDescriptionId} className="mb-4 text-sm text-text-secondary">
+                <p
+                  id={reviewDeleteDialogDescriptionId}
+                  className="mb-4 text-sm text-text-secondary"
+                >
                   This action cannot be undone.
                 </p>
 
