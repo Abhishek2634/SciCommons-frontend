@@ -1,3 +1,15 @@
+## 2026-02-24 - Community Admin Requests Split into Pending and Approved Tabs
+
+Problem: The admin `Requests` screen showed a mixed history by default, so pending join requests were buried alongside previously approved entries.
+
+Root Cause: The page used a status dropdown with broad filtering (`All` by default) rather than focused, workflow-oriented tabs.
+
+Solution: Replaced the dropdown with the shared `TabComponent` style used across community/admin pages and mapped two explicit tabs (`Pending`, `Approved`) to strict status filters (`pending`, `approved`).
+
+Result: Admins now get a cleaner workflow: pending requests are isolated for action, while approved requests are available in a separate history tab using consistent site tab styling.
+
+Files Modified: `src/app/(main)/(communities)/community/[slug]/(admin)/requests/page.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-24 - Login Path Compatibility Redirect
 
 Problem: Session-expiration flows could send users to `/login`, but the actual login page is `/auth/login`, causing a 404 on stale links/routes.
