@@ -22,58 +22,55 @@ const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profil
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col rounded-xl border border-common-contrast bg-common-cardBackground p-4 md:flex-row md:p-6">
-      <div className="relative mx-auto mb-6 flex items-center justify-center md:mb-0 md:mr-6 md:w-1/3">
-        <div className="aspect-square h-40 w-40 shrink-0 overflow-hidden rounded-full border-2 border-common-minimal bg-common-minimal">
-          <Image
-            src={previewImage || profilePicture}
-            alt="Profile"
-            width={160}
-            height={160}
-            className="h-full w-full object-cover"
-            quality={85}
-            sizes="(max-width: 768px) 160px, 160px"
-            priority
+      <div className="mx-auto mb-6 flex items-start justify-center md:mb-0 md:mr-6 md:w-1/3">
+        <div className="relative h-40 w-40 shrink-0">
+          <div className="h-full w-full overflow-hidden rounded-full border-2 border-common-minimal bg-common-minimal">
+            <Image
+              src={previewImage || profilePicture}
+              alt="Profile"
+              width={160}
+              height={160}
+              className="h-full w-full object-cover"
+              quality={85}
+              sizes="(max-width: 768px) 160px, 160px"
+              priority
+            />
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            {...register('profilePicture', {
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setPreviewImage(reader.result as string);
+                  };
+                  reader.readAsDataURL(file);
+                }
+              },
+            })}
           />
+          {editMode && (
+            <button
+              type="button"
+              onClick={() => {
+                const fileInput = document.querySelector(
+                  'input[name="profilePicture"]'
+                ) as HTMLInputElement;
+                if (fileInput) fileInput.click();
+              }}
+              className="absolute bottom-1 right-1 rounded-full bg-functional-blue p-2 text-primary-foreground transition-colors hover:bg-functional-blueContrast"
+              aria-label="Change profile photo"
+            >
+              <Pencil size={18} className="text-primary-foreground" />
+            </button>
+          )}
         </div>
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          {...register('profilePicture', {
-            onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                  setPreviewImage(reader.result as string);
-                };
-                reader.readAsDataURL(file);
-              }
-            },
-          })}
-        />
-        {/* Fixed by Codex on 2026-02-15
-            Who: Codex
-            What: Add accessible labels to icon-only profile controls.
-            Why: Screen readers need descriptive labels for icon buttons.
-            How: Provide aria-labels for the photo and edit/save actions. */}
-        {editMode && (
-          <button
-            type="button"
-            onClick={() => {
-              const fileInput = document.querySelector(
-                'input[name="profilePicture"]'
-              ) as HTMLInputElement;
-              if (fileInput) fileInput.click();
-            }}
-            className="absolute bottom-1 right-1 rounded-full bg-functional-blue p-2 text-primary-foreground transition-colors hover:bg-functional-blueContrast md:bottom-40 md:right-14"
-            aria-label="Change profile photo"
-          >
-            <Pencil size={18} className="text-primary-foreground" />
-          </button>
-        )}
       </div>
-      <div className="w-full md:w-2/3">
+      <div className="w-full min-w-0 md:w-2/3">
         <h2 className="mb-6 flex items-center font-bold res-text-xl">
           <span className="text-text-primary">Your Profile</span>
           <button
