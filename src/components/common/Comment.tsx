@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useEphemeralUnreadStore } from '@/stores/ephemeralUnreadStore';
 
+import { Button, ButtonTitle } from '../ui/button';
 import { Ratings } from '../ui/ratings';
 import CommentInput from './CommentInput';
 import RenderComments from './RenderComments';
@@ -133,6 +134,8 @@ const Comment: React.FC<CommentProps> = ({
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const commentDeleteDialogTitleId = React.useId();
+  const commentDeleteDialogDescriptionId = React.useId();
   const [highlight, setHighlight] = useState(isNew);
   const hasReplies = replies && replies.length > 0;
   const commentRef = useRef<HTMLDivElement>(null);
@@ -250,10 +253,10 @@ const Comment: React.FC<CommentProps> = ({
   };
 
   const handleDeleteComment = () => {
-  if (id) {
-    setShowConfirm(true);
-  }
-};
+    if (id) {
+      setShowConfirm(true);
+    }
+  };
 
   const handleReaction = (reaction: Reaction) => {
     if (reaction === 'upvote' && id)
@@ -512,37 +515,47 @@ const Comment: React.FC<CommentProps> = ({
           </button>
         )}
       </div>
+      {/* Fixed by Codex on 2026-02-24
+          Who: Codex
+          What: Normalized comment-delete confirmation modal semantics and styling.
+          Why: The modal sat below fixed navigation on mobile and used non-tokenized raw buttons.
+          How: Raised z-index above nav, added dialog ARIA attributes, and switched actions to shared Button variants. */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-common-cardBackground rounded-xl p-6 w-[320px]">
-            <h3 className="text-lg font-semibold mb-2">
+        <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/50">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={commentDeleteDialogTitleId}
+            aria-describedby={commentDeleteDialogDescriptionId}
+            className="w-[320px] rounded-xl bg-common-cardBackground p-6"
+          >
+            <h3 id={commentDeleteDialogTitleId} className="mb-2 text-lg font-semibold">
               Delete comment?
             </h3>
-            <p className="text-sm text-text-secondary mb-4">
+            <p id={commentDeleteDialogDescriptionId} className="mb-4 text-sm text-text-secondary">
               This action cannot be undone.
             </p>
 
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => setShowConfirm(false)}
-              className="px-3 py-1.5 rounded-md border border-common-contrast"
-            >
-            Cancel
-            </button>
+            <div className="flex justify-end gap-2">
+              <Button variant="gray" size="sm" type="button" onClick={() => setShowConfirm(false)}>
+                <ButtonTitle>Cancel</ButtonTitle>
+              </Button>
 
-          <button
-            onClick={() => {
-              if (id) onDeleteComment(id);
-              setShowConfirm(false);
-            }}
-            className="px-3 py-1.5 rounded-md bg-red-600 text-white"
-          >
-            Delete
-          </button>
+              <Button
+                variant="danger"
+                size="sm"
+                type="button"
+                onClick={() => {
+                  if (id) onDeleteComment(id);
+                  setShowConfirm(false);
+                }}
+              >
+                <ButtonTitle>Delete</ButtonTitle>
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
-      </div>
-    )}
+      )}
     </div>
   );
 };

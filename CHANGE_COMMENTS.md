@@ -1,3 +1,15 @@
+## 2026-02-24 - Localmodal Delete Confirm Dialog Hardening (Review + Comment)
+
+Problem: The localmodal delete confirmations for reviews/comments could render behind fixed mobile navigation and lacked complete dialog accessibility semantics.
+
+Root Cause: Both overlays used `z-50` while fixed mobile UI uses much higher z-indices, and dialog containers did not declare `role="dialog"`/`aria-modal`/label associations. The comment modal also used ad-hoc button styling instead of shared tokenized button variants.
+
+Solution: Raised modal overlay layers to `z-[1100]`, added ARIA dialog semantics (`role`, `aria-modal`, `aria-labelledby`, `aria-describedby`) in both modals, and switched comment modal actions to shared `Button` components (`gray`/`danger`) for consistency.
+
+Result: Delete confirmations now consistently sit above fixed UI on mobile, are better announced by assistive technologies, and align with existing design-token/button patterns.
+
+Files Modified: `src/components/articles/ReviewForm.tsx`, `src/components/common/Comment.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-23 - My Communities Membership Source + Elevated Role Badges
 
 Problem: The `My Communities` tab needed to be aligned with the new `/my-communities` behavior (membership list) while still showing whether the user is also an Admin, Moderator, or Reviewer in each community.
