@@ -132,6 +132,7 @@ const Comment: React.FC<CommentProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [highlight, setHighlight] = useState(isNew);
   const hasReplies = replies && replies.length > 0;
   const commentRef = useRef<HTMLDivElement>(null);
@@ -249,12 +250,10 @@ const Comment: React.FC<CommentProps> = ({
   };
 
   const handleDeleteComment = () => {
-    if (id) {
-      if (window.confirm('Are you sure you want to delete this comment?')) {
-        onDeleteComment(id);
-      }
-    }
-  };
+  if (id) {
+    setShowConfirm(true);
+  }
+};
 
   const handleReaction = (reaction: Reaction) => {
     if (reaction === 'upvote' && id)
@@ -513,6 +512,37 @@ const Comment: React.FC<CommentProps> = ({
           </button>
         )}
       </div>
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-common-cardBackground rounded-xl p-6 w-[320px]">
+            <h3 className="text-lg font-semibold mb-2">
+              Delete comment?
+            </h3>
+            <p className="text-sm text-text-secondary mb-4">
+              This action cannot be undone.
+            </p>
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="px-3 py-1.5 rounded-md border border-common-contrast"
+            >
+            Cancel
+            </button>
+
+          <button
+            onClick={() => {
+              if (id) onDeleteComment(id);
+              setShowConfirm(false);
+            }}
+            className="px-3 py-1.5 rounded-md bg-red-600 text-white"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+      </div>
+    )}
     </div>
   );
 };
