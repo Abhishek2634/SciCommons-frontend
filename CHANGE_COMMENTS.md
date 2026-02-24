@@ -1,3 +1,15 @@
+## 2026-02-24 - Login Path Compatibility Redirect
+
+Problem: Session-expiration flows could send users to `/login`, but the actual login page is `/auth/login`, causing a 404 on stale links/routes.
+
+Root Cause: The app’s canonical auth route moved under `/auth/login`, while compatibility handling for legacy `/login` paths was missing.
+
+Solution: Added a dedicated `/login` route that redirects to `/auth/login` and preserves existing query parameters (including redirect targets).
+
+Result: Users who land on `/login` are now safely routed to the correct auth page instead of seeing 404.
+
+Files Modified: `src/app/login/page.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-24 - Localmodal Delete Confirm Dialog Hardening (Review + Comment)
 
 Problem: The localmodal delete confirmations for reviews/comments could render behind fixed mobile navigation and lacked complete dialog accessibility semantics.
