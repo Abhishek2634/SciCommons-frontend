@@ -1,3 +1,15 @@
+## 2026-02-24 - Profile Image Picker Targeting Hardening
+
+Problem: The profile photo edit button clicked a globally queried `input[name="profilePicture"]`, which could target the wrong element if another matching input existed.
+
+Root Cause: The trigger logic depended on `document.querySelector(...)` instead of the specific file input rendered by the `Profile` component.
+
+Solution: Replaced global selector usage with a component-local input ref while preserving react-hook-form registration behavior by forwarding the registered ref callback.
+
+Result: The profile image edit action now reliably opens the correct file picker and is resilient to future form composition changes.
+
+Files Modified: `src/app/(main)/(users)/myprofile/Profile.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-23 - My Communities Membership Source + Elevated Role Badges
 
 Problem: The `My Communities` tab needed to be aligned with the new `/my-communities` behavior (membership list) while still showing whether the user is also an Admin, Moderator, or Reviewer in each community.

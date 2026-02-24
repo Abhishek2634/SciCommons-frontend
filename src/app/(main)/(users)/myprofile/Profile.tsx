@@ -19,6 +19,20 @@ interface ProfileProps {
 const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profilePicture }) => {
   const { register } = useFormContext();
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const profileImageInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const profilePictureRegister = register('profilePicture', {
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreviewImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+  });
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col rounded-xl border border-common-contrast bg-common-cardBackground p-4 md:flex-row md:p-6">
@@ -40,27 +54,22 @@ const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profil
             type="file"
             accept="image/*"
             className="hidden"
-            {...register('profilePicture', {
-              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    setPreviewImage(reader.result as string);
-                  };
-                  reader.readAsDataURL(file);
-                }
-              },
-            })}
+            {...profilePictureRegister}
+            ref={(element) => {
+              profilePictureRegister.ref(element);
+              profileImageInputRef.current = element;
+            }}
           />
+          {/* Fixed by Codex on 2026-02-24
+              Who: Codex
+              What: Scoped the profile image picker trigger to this component's file input ref.
+              Why: A global query selector can click the wrong input if duplicate field names exist.
+              How: Capture react-hook-form's ref and call `.click()` on the local input reference. */}
           {editMode && (
             <button
               type="button"
               onClick={() => {
-                const fileInput = document.querySelector(
-                  'input[name="profilePicture"]'
-                ) as HTMLInputElement;
-                if (fileInput) fileInput.click();
+                profileImageInputRef.current?.click();
               }}
               className="absolute bottom-1 right-1 rounded-full bg-functional-blue p-2 text-primary-foreground transition-colors hover:bg-functional-blueContrast"
               aria-label="Change profile photo"
