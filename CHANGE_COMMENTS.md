@@ -1,3 +1,27 @@
+## 2026-02-25 - Discussions Split View Default Selection on First Load
+
+Problem: On initial load of the discussions page, the right panel could remain empty until the user manually selected an article from the left sidebar.
+
+Root Cause: Selection restore logic only handled explicit `articleId` URL params and had no fallback for first-load scenarios without that param.
+
+Solution: Updated discussions initialization to select an article once in deterministic priority order: URL `articleId`, session-stored last selected discussion article, previously read article from `readItemsStore.clearedArticles`, then the top article. Persisted selected article id in session storage during both initialization and manual selection.
+
+Result: The discussions right panel now auto-populates reliably on first load, while still honoring deep links and previous context when available.
+
+Files Modified: `src/app/(main)/discussions/DiscussionsPageClient.tsx`, `CHANGE_COMMENTS.md`
+
+## 2026-02-25 - Community Split-View Preview Selection Override Fix
+
+Problem: In the community two-panel articles view, clicking a non-top article could still show the top article in the right preview panel.
+
+Root Cause: URL-driven restoration logic re-applied selection too aggressively and could override manual click selection during subsequent state/query-param updates.
+
+Solution: Hardened preview selection sync in `CommunityArticles`: read current query params from `window.location.search` when updating `articleId`, restore from URL only when the requested id actually changes, reset restore state on search, and key the right-panel `ArticleContentView` by selected article id.
+
+Result: Clicking any article in community preview mode now keeps the right panel aligned with the clicked card instead of snapping back to the first item.
+
+Files Modified: `src/app/(main)/(communities)/community/[slug]/(displaycommunity)/CommunityArticles.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-25 - Community-Member `@mention` Suggestions in Discussion Comments
 
 Problem: Discussion comments/replies did not provide guided `@name` tagging, so users had to guess exact member names and could not reliably mention the intended community member.
@@ -9,6 +33,8 @@ Solution: Added mention-autocomplete behavior to the shared discussion comment i
 Result: In community discussions, users now get continuously filtered `@member` suggestions while typing in comments/replies, with no impact on non-discussion comment surfaces.
 
 Follow-up (same day): Extended `@mention` suggestions to discussion markdown content editors (new + edit) by wiring mention candidates through `DiscussionForm`/discussion edit forms -> `FormInput` -> MDX editor wrapper and adding caret-based mention detection + suffix insertion in the markdown editor component.
+
+Follow-up (same day): Hardened mention menu UX near viewport edges by adding dynamic above/below placement and constrained max-height in both textarea and markdown editors, and synchronized arrow-key highlight with list scrolling so the active option stays visible.
 
 Files Modified: `src/components/common/CommentInput.tsx`, `src/components/articles/DiscussionForum.tsx`, `src/components/articles/DiscussionCard.tsx`, `src/components/articles/DiscussionThread.tsx`, `src/components/articles/DiscussionComments.tsx`, `src/components/common/RenderComments.tsx`, `src/components/common/Comment.tsx`, `src/components/articles/DiscussionForm.tsx`, `src/components/common/FormInput.tsx`, `src/components/common/MarkdownEditor/ForwardRefEditor.tsx`, `src/components/common/MarkdownEditor/InitializedMDXEditor.tsx`, `src/components/articles/ArticleContentView.tsx`, `src/components/articles/ArticlePreviewSection.tsx`, `src/app/(main)/(communities)/community/[slug]/articles/[articleSlug]/page.tsx`, `CHANGE_COMMENTS.md`
 

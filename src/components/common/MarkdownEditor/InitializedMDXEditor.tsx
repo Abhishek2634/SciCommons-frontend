@@ -61,6 +61,11 @@ export default function InitializedMDXEditor({
   const [activeMentionQuery, setActiveMentionQuery] = React.useState<string | null>(null);
   const [highlightedMentionIndex, setHighlightedMentionIndex] = React.useState(0);
   const [isMentionMenuOpen, setIsMentionMenuOpen] = React.useState(false);
+  const [mentionMenuPlacement, setMentionMenuPlacement] = React.useState<'top' | 'bottom'>(
+    'bottom'
+  );
+  const [mentionMenuMaxHeight, setMentionMenuMaxHeight] = React.useState(160);
+  const mentionOptionRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
 
   const normalizedMentionCandidates = React.useMemo(() => {
     const dedupedNames = new Set<string>();
@@ -77,6 +82,22 @@ export default function InitializedMDXEditor({
     setActiveMentionQuery(null);
     setIsMentionMenuOpen(false);
     setHighlightedMentionIndex(0);
+  }, []);
+
+  const updateMentionMenuPlacement = React.useCallback(() => {
+    const editorRoot = editorRootRef.current;
+    if (!editorRoot) return;
+
+    const viewportMargin = 8;
+    const preferredMenuHeight = 200;
+    const rect = editorRoot.getBoundingClientRect();
+    const spaceAbove = rect.top - viewportMargin;
+    const spaceBelow = window.innerHeight - rect.bottom - viewportMargin;
+    const shouldPlaceOnTop = spaceBelow < preferredMenuHeight && spaceAbove > spaceBelow;
+    const availableSpace = shouldPlaceOnTop ? spaceAbove : spaceBelow;
+
+    setMentionMenuPlacement(shouldPlaceOnTop ? 'top' : 'bottom');
+    setMentionMenuMaxHeight(Math.max(80, Math.min(240, Math.floor(availableSpace))));
   }, []);
 
   const filteredMentionCandidates = React.useMemo(() => {
@@ -143,8 +164,14 @@ export default function InitializedMDXEditor({
       }
       return nextMentionQuery;
     });
+    updateMentionMenuPlacement();
     setIsMentionMenuOpen(true);
-  }, [clearMentionMenu, normalizedMentionCandidates.length, props.readOnly]);
+  }, [
+    clearMentionMenu,
+    normalizedMentionCandidates.length,
+    props.readOnly,
+    updateMentionMenuPlacement,
+  ]);
 
   const handleSelectMention = React.useCallback(
     (memberName: string) => {
@@ -191,10 +218,15 @@ export default function InitializedMDXEditor({
       return;
     }
 
+    updateMentionMenuPlacement();
     if (highlightedMentionIndex >= filteredMentionCandidates.length) {
       setHighlightedMentionIndex(0);
     }
-  }, [filteredMentionCandidates.length, highlightedMentionIndex]);
+  }, [
+    filteredMentionCandidates.length,
+    highlightedMentionIndex,
+    updateMentionMenuPlacement,
+  ]);
 
   const handleEditorKeyDownCapture = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -290,6 +322,41 @@ export default function InitializedMDXEditor({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [clearMentionMenu, isMentionMenuOpen]);
+
+  React.useEffect(() => {
+    if (!isMentionMenuOpen) return;
+
+    /* Fixed by Codex on 2026-02-25
+       Who: Codex
+       What: Kept markdown mention menu visible within viewport bounds.
+       Why: Menus near the bottom of the page could render off-screen and hide suggestion options.
+       How: Recompute menu placement/max-height on open and during resize/scroll, flipping above the editor when space is constrained. */
+    const handleViewportChange = () => {
+      updateMentionMenuPlacement();
+    };
+
+    handleViewportChange();
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('scroll', handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleViewportChange, true);
+    };
+  }, [isMentionMenuOpen, updateMentionMenuPlacement]);
+
+  React.useEffect(() => {
+    if (!isMentionMenuOpen) return;
+
+    /* Fixed by Codex on 2026-02-25
+       Who: Codex
+       What: Auto-scrolled markdown mention options with keyboard navigation.
+       Why: Arrowing through long lists could move highlight outside the visible suggestion window.
+       How: Scroll active option into view using nearest alignment after highlight index updates. */
+    mentionOptionRefs.current[highlightedMentionIndex]?.scrollIntoView({
+      block: 'nearest',
+    });
+  }, [highlightedMentionIndex, isMentionMenuOpen]);
 
   const YoutubeDirectiveDescriptor: DirectiveDescriptor = {
     name: 'youtube',
@@ -411,13 +478,21 @@ export default function InitializedMDXEditor({
         contentEditableClassName={markdownStyles}
       />
       {isMentionMenuOpen && filteredMentionCandidates.length > 0 && !props.readOnly && (
-        <div className="absolute inset-x-0 top-full z-20 mt-1 rounded-md border border-common-contrast bg-common-cardBackground p-1 shadow-lg">
+        <div
+          className={cn(
+            'absolute inset-x-0 z-20 rounded-md border border-common-contrast bg-common-cardBackground p-1 shadow-lg',
+            mentionMenuPlacement === 'bottom' ? 'top-full mt-1' : 'bottom-full mb-1'
+          )}
+        >
           <div className="mb-1 px-2 text-xxs text-text-tertiary">Mention a community member</div>
-          <div className="max-h-40 overflow-y-auto">
+          <div className="overflow-y-auto" style={{ maxHeight: `${mentionMenuMaxHeight}px` }}>
             {filteredMentionCandidates.map((candidate, index) => (
               <button
                 key={candidate}
                 type="button"
+                ref={(element) => {
+                  mentionOptionRefs.current[index] = element;
+                }}
                 onMouseDown={(event) => {
                   event.preventDefault();
                   handleSelectMention(candidate);

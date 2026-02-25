@@ -11,6 +11,7 @@ import EmptyState from '@/components/common/EmptyState';
 import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useReadItemsStore } from '@/stores/readItemsStore';
 
 import DiscussionsSidebar from './DiscussionsSidebar';
 
@@ -25,6 +26,8 @@ interface SelectedArticle {
   communityName: string;
 }
 
+const LAST_SELECTED_DISCUSSION_ARTICLE_ID_KEY = 'discussions-last-selected-article-id';
+
 const DiscussionsPageClientInner: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
@@ -33,7 +36,7 @@ const DiscussionsPageClientInner: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const sidebarScrollPositionRef = useRef<number>(0);
-  const hasRestoredFromUrl = useRef(false);
+  const hasInitializedSelection = useRef(false);
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
      Problem: When navigating to article page and using back button, sidebar resets to top article
@@ -54,6 +57,7 @@ const DiscussionsPageClientInner: React.FC = () => {
 
   const handleArticleSelect = (article: SelectedArticle) => {
     setSelectedArticle(article);
+    sessionStorage.setItem(LAST_SELECTED_DISCUSSION_ARTICLE_ID_KEY, article.id.toString());
     // Update URL with selected article ID
     const params = new URLSearchParams(searchParams?.toString() || '');
     params.set('articleId', article.id.toString());
@@ -79,27 +83,74 @@ const DiscussionsPageClientInner: React.FC = () => {
         isAdmin: boolean;
       }>
     ) => {
-      const articleIdParam = searchParams?.get('articleId');
-      // Only restore once when component mounts with URL param
-      if (articleIdParam && !selectedArticle && !hasRestoredFromUrl.current) {
-        const articleId = parseInt(articleIdParam, 10);
-        const article = articles.find((a) => a.articleId === articleId);
-        if (article) {
-          hasRestoredFromUrl.current = true;
-          setSelectedArticle({
-            id: article.articleId,
-            title: article.articleTitle,
-            slug: article.articleSlug,
-            abstract: article.articleAbstract,
-            communityId: article.communityId,
-            communityArticleId: article.communityArticleId,
-            isAdmin: article.isAdmin,
-            communityName: article.communityName,
-          });
-        }
+      if (hasInitializedSelection.current || selectedArticle || articles.length === 0) {
+        return;
+      }
+
+      const mapToSelectedArticle = (article: (typeof articles)[number]): SelectedArticle => ({
+        id: article.articleId,
+        title: article.articleTitle,
+        slug: article.articleSlug,
+        abstract: article.articleAbstract,
+        communityId: article.communityId,
+        communityArticleId: article.communityArticleId,
+        isAdmin: article.isAdmin,
+        communityName: article.communityName,
+      });
+
+      const getArticleById = (articleId: number | null) => {
+        if (!articleId) return null;
+        return articles.find((article) => article.articleId === articleId) ?? null;
+      };
+
+      const parseArticleId = (value: string | null) => {
+        if (!value) return null;
+        const parsed = parseInt(value, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+      };
+
+      const urlArticleId = parseArticleId(searchParams?.get('articleId') ?? null);
+
+      let lastSelectedArticleId: number | null = null;
+      const savedLastSelectedArticleId = sessionStorage.getItem(
+        LAST_SELECTED_DISCUSSION_ARTICLE_ID_KEY
+      );
+      lastSelectedArticleId = parseArticleId(savedLastSelectedArticleId);
+
+      const clearedArticles = useReadItemsStore.getState().clearedArticles;
+      const previouslyReadArticle =
+        articles.find((article) => clearedArticles.has(`${article.communityId}-${article.articleId}`)) ??
+        null;
+
+      const preferredArticle =
+        getArticleById(urlArticleId) ??
+        getArticleById(lastSelectedArticleId) ??
+        previouslyReadArticle ??
+        articles[0] ??
+        null;
+
+      if (!preferredArticle) return;
+
+      /* Fixed by Codex on 2026-02-25
+         Who: Codex
+         What: Added deterministic default article selection for discussions split view.
+         Why: First load could leave the right panel empty until a manual click.
+         How: Initialize selection once from URL articleId, then session last-selected article, then previously read article, then first article. */
+      hasInitializedSelection.current = true;
+      const nextSelectedArticle = mapToSelectedArticle(preferredArticle);
+      setSelectedArticle(nextSelectedArticle);
+      sessionStorage.setItem(
+        LAST_SELECTED_DISCUSSION_ARTICLE_ID_KEY,
+        nextSelectedArticle.id.toString()
+      );
+
+      if (pathname && urlArticleId !== nextSelectedArticle.id) {
+        const params = new URLSearchParams(searchParams?.toString() || '');
+        params.set('articleId', nextSelectedArticle.id.toString());
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       }
     },
-    [searchParams, selectedArticle]
+    [pathname, router, searchParams, selectedArticle]
   );
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09

@@ -73,10 +73,13 @@ const CommentInput: React.FC<CommentInputProps> = ({
   const [activeMention, setActiveMention] = useState<MentionMatch | null>(null);
   const [highlightedMentionIndex, setHighlightedMentionIndex] = useState(0);
   const [isMentionMenuOpen, setIsMentionMenuOpen] = useState(false);
+  const [mentionMenuPlacement, setMentionMenuPlacement] = useState<'top' | 'bottom'>('bottom');
+  const [mentionMenuMaxHeight, setMentionMenuMaxHeight] = useState(160);
   const contentValue = watch('content', initialContent);
   const formRef = React.useRef<HTMLFormElement>(null);
   const mentionContainerRef = useRef<HTMLDivElement>(null);
   const mentionTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const mentionOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   useSubmitOnCtrlEnter(formRef, isPending);
 
   const normalizedMentionCandidates = useMemo(() => {
@@ -94,6 +97,22 @@ const CommentInput: React.FC<CommentInputProps> = ({
     setActiveMention(null);
     setIsMentionMenuOpen(false);
     setHighlightedMentionIndex(0);
+  }, []);
+
+  const updateMentionMenuPlacement = React.useCallback(() => {
+    const textarea = mentionTextareaRef.current;
+    if (!textarea) return;
+
+    const viewportMargin = 8;
+    const preferredMenuHeight = 200;
+    const rect = textarea.getBoundingClientRect();
+    const spaceAbove = rect.top - viewportMargin;
+    const spaceBelow = window.innerHeight - rect.bottom - viewportMargin;
+    const shouldPlaceOnTop = spaceBelow < preferredMenuHeight && spaceAbove > spaceBelow;
+    const availableSpace = shouldPlaceOnTop ? spaceAbove : spaceBelow;
+
+    setMentionMenuPlacement(shouldPlaceOnTop ? 'top' : 'bottom');
+    setMentionMenuMaxHeight(Math.max(80, Math.min(240, Math.floor(availableSpace))));
   }, []);
 
   const filteredMentionCandidates = useMemo(() => {
@@ -153,9 +172,10 @@ const CommentInput: React.FC<CommentInputProps> = ({
 
         return nextMention;
       });
+      updateMentionMenuPlacement();
       setIsMentionMenuOpen(true);
     },
-    [clearMentionMenu, isMarkdownPreview, normalizedMentionCandidates]
+    [clearMentionMenu, isMarkdownPreview, normalizedMentionCandidates, updateMentionMenuPlacement]
   );
 
   const insertMention = React.useCallback(
@@ -203,11 +223,17 @@ const CommentInput: React.FC<CommentInputProps> = ({
       return;
     }
 
+    updateMentionMenuPlacement();
     setIsMentionMenuOpen(true);
     if (highlightedMentionIndex >= filteredMentionCandidates.length) {
       setHighlightedMentionIndex(0);
     }
-  }, [activeMention, filteredMentionCandidates.length, highlightedMentionIndex]);
+  }, [
+    activeMention,
+    filteredMentionCandidates.length,
+    highlightedMentionIndex,
+    updateMentionMenuPlacement,
+  ]);
 
   useEffect(() => {
     if (!isMentionMenuOpen) return;
@@ -222,6 +248,41 @@ const CommentInput: React.FC<CommentInputProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [clearMentionMenu, isMentionMenuOpen]);
+
+  useEffect(() => {
+    if (!isMentionMenuOpen) return;
+
+    /* Fixed by Codex on 2026-02-25
+       Who: Codex
+       What: Keep mention menu visible near viewport edges in discussion textareas.
+       Why: Dropdowns rendered only below the input could extend off-screen and become unusable near page bottom.
+       How: Recompute placement/height on open and during scroll/resize, flipping the menu above when needed. */
+    const handleViewportChange = () => {
+      updateMentionMenuPlacement();
+    };
+
+    handleViewportChange();
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('scroll', handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleViewportChange, true);
+    };
+  }, [isMentionMenuOpen, updateMentionMenuPlacement]);
+
+  useEffect(() => {
+    if (!isMentionMenuOpen) return;
+
+    /* Fixed by Codex on 2026-02-25
+       Who: Codex
+       What: Synced highlighted mention option with list scroll position.
+       Why: Arrow-key navigation could move the active option outside the visible list viewport.
+       How: Scroll the focused option into view with nearest-block alignment whenever highlight index changes. */
+    mentionOptionRefs.current[highlightedMentionIndex]?.scrollIntoView({
+      block: 'nearest',
+    });
+  }, [highlightedMentionIndex, isMentionMenuOpen]);
 
   const contentField = register('content', {
     required: 'Content is required',
@@ -322,18 +383,26 @@ const CommentInput: React.FC<CommentInputProps> = ({
           />
         </div>
         {isMentionMenuOpen && filteredMentionCandidates.length > 0 && !isMarkdownPreview && (
-          <div className="absolute inset-x-0 top-full z-20 mt-1 rounded-md border border-common-contrast bg-common-cardBackground p-1 shadow-lg">
+          <div
+            className={cn(
+              'absolute inset-x-0 z-20 rounded-md border border-common-contrast bg-common-cardBackground p-1 shadow-lg',
+              mentionMenuPlacement === 'bottom' ? 'top-full mt-1' : 'bottom-full mb-1'
+            )}
+          >
             {/* Fixed by Codex on 2026-02-25
                 Who: Codex
                 What: Added keyboard-accessible mention candidate menu for discussion comments.
                 Why: Users need fast `@member` selection without memorizing exact usernames.
                 How: Render filtered candidates beneath the textarea and support arrow/enter/tab selection. */}
             <div className="mb-1 px-2 text-xxs text-text-tertiary">Mention a community member</div>
-            <div className="max-h-40 overflow-y-auto">
+            <div className="overflow-y-auto" style={{ maxHeight: `${mentionMenuMaxHeight}px` }}>
               {filteredMentionCandidates.map((candidate, index) => (
                 <button
                   key={candidate}
                   type="button"
+                  ref={(element) => {
+                    mentionOptionRefs.current[index] = element;
+                  }}
                   onMouseDown={(e) => {
                     e.preventDefault();
                     insertMention(candidate);
