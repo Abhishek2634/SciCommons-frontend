@@ -1,3 +1,15 @@
+## 2026-02-25 - Notifications Button Mention Indicator
+
+Problem: New discussion mentions appeared in the Mentions inbox, but the top notifications button had no visible cue that unread mentions existed.
+
+Root Cause: Navbar notifications icon was static and not connected to mention unread state.
+
+Solution: Wired navbar to the mention notification store, scoped entries to the active user, cleaned expired mention records on load, and rendered a compact "New" badge on the notifications button when unread mentions are present.
+
+Result: Users now get a lightweight visual alert for new mentions without numeric counts, and the badge clears once mentions are marked read.
+
+Files Modified: `src/components/common/NavBar.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-25 - Notifications "View" Link Routing Fix (System Tab)
 
 Problem: "View" links in non-mention notifications could open dead destinations instead of navigating to the intended in-app page.

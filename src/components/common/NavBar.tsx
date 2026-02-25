@@ -36,6 +36,7 @@ import { useTabTitleNotification } from '@/hooks/useTabTitleNotification';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
+import { useMentionNotificationsStore } from '@/stores/mentionNotificationsStore';
 import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
 
 import { Button } from '../ui/button';
@@ -45,12 +46,31 @@ const NavBar: React.FC = () => {
   const isAuthenticated = useStore(useAuthStore, (state) => state.isAuthenticated);
   const user = useStore(useAuthStore, (state) => state.user);
   const pathname = usePathname();
+  const mentionOwnerUserId = useMentionNotificationsStore((state) => state.ownerUserId);
+  const mentionItems = useMentionNotificationsStore((state) => state.mentions);
+  const setMentionOwnerIfNeeded = useMentionNotificationsStore((state) => state.setOwnerIfNeeded);
+  const cleanupMentionNotifications = useMentionNotificationsStore((state) => state.cleanupExpired);
+  const hasUnreadMentions =
+    !!user?.id &&
+    mentionOwnerUserId === user.id &&
+    mentionItems.some((mentionNotification) => !mentionNotification.isRead);
 
   // Get count of articles with new realtime events for discussions badge
   const newEventsCount = useSubscriptionUnreadStore((state) => state.getNewEventsCount());
 
   // Update tab title with unread count
   useTabTitleNotification();
+
+  useEffect(() => {
+    /* Fixed by Codex on 2026-02-25
+       Who: Codex
+       What: Hydrate mention-notification ownership and unread cleanup in the navbar.
+       Why: Notifications button should reliably show a mention indicator across app pages, including fresh sessions.
+       How: Align mention store owner with the active user and prune expired entries when auth user is available. */
+    if (!user?.id) return;
+    setMentionOwnerIfNeeded(user.id);
+    cleanupMentionNotifications(user.id);
+  }, [cleanupMentionNotifications, setMentionOwnerIfNeeded, user?.id]);
 
   const isAshokaUser = user?.email?.endsWith('ashoka.edu.in') ?? false;
   const router = useRouter();
@@ -167,9 +187,21 @@ const NavBar: React.FC = () => {
             <div className="hidden md:block">
               <CreateDropdown />
             </div>
-            <Link href="/notifications" aria-label="Notifications">
-              <Bell className="hover:animate-wiggle h-9 w-9 cursor-pointer rounded-full p-2 text-text-secondary hover:text-functional-yellow" />
-            </Link>
+            <div className="relative">
+              <Link href="/notifications" aria-label="Notifications">
+                <Bell className="hover:animate-wiggle h-9 w-9 cursor-pointer rounded-full p-2 text-text-secondary hover:text-functional-yellow" />
+              </Link>
+              {/* Fixed by Codex on 2026-02-25
+                  Who: Codex
+                  What: Added an unread-mentions indicator to the notifications button.
+                  Why: Users asked for a visual cue when new mentions arrive without showing a count.
+                  How: Render a compact "New" badge when mention store contains unread entries for the active user. */}
+              {hasUnreadMentions && (
+                <span className="pointer-events-none absolute -right-2 -top-1 rounded-full border border-functional-red/50 bg-functional-red/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.18em] text-functional-red">
+                  New
+                </span>
+              )}
+            </div>
             <ThemeSwitch iconSize={20} />
             <ProfileDropdown />
           </div>
