@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
-import { Check, CheckCheck, MessageSquare, SquareArrowOutUpRight } from 'lucide-react';
+import { Check, CheckCheck, MessageSquare, SquareArrowOutUpRight, X } from 'lucide-react';
 
+import {
+  communitiesApiJoinGetJoinRequests,
+  useCommunitiesApiJoinManageJoinRequest,
+} from '@/api/join-community/join-community';
 import { useUsersApiGetNotifications, useUsersApiMarkNotificationAsRead } from '@/api/users/users';
 import { BlockSkeleton, Skeleton } from '@/components/common/Skeleton';
 import { Button, ButtonIcon, ButtonTitle } from '@/components/ui/button';
@@ -17,6 +21,36 @@ import {
   MentionNotificationItem,
   useMentionNotificationsStore,
 } from '@/stores/mentionNotificationsStore';
+
+type SystemNotification = {
+  id: number;
+  message: string;
+  isRead: boolean;
+  notificationType: string;
+  createdAt: string;
+  content: string | null;
+  link: string | null;
+};
+
+type JoinRequestAction = 'approve' | 'reject';
+
+interface ManagerJoinRequestNotificationContext {
+  communityName: string | null;
+  communityLabel: string;
+  requesterUsername: string | null;
+  communityId: number | null;
+  joinRequestId: number | null;
+}
+
+interface PreparedSystemNotification extends SystemNotification {
+  managerJoinRequestContext: ManagerJoinRequestNotificationContext | null;
+  actionDecision: JoinRequestAction | null;
+  actionPending: boolean;
+  actionError: string | null;
+}
+
+const NOTIFICATION_PARSING_BASE = 'https://scicommons.org';
+const MANAGER_JOIN_REQUEST_TYPES = new Set(['join_request_received', 'join request received']);
 
 const formatMentionTimestamp = (timestamp: string): string => {
   const parsedTimestamp = Date.parse(timestamp);
@@ -30,6 +64,234 @@ const sortMentionsByDetectedTime = (
   [...mentions].sort(
     (firstMention, secondMention) => secondMention.detectedAt - firstMention.detectedAt
   );
+
+const sortSystemNotificationsByCreatedAt = <T extends { createdAt: string }>(
+  notifications: T[]
+): T[] =>
+  [...notifications].sort((firstNotification, secondNotification) => {
+    const firstTimestamp = Date.parse(firstNotification.createdAt);
+    const secondTimestamp = Date.parse(secondNotification.createdAt);
+    const safeFirstTimestamp = Number.isNaN(firstTimestamp) ? 0 : firstTimestamp;
+    const safeSecondTimestamp = Number.isNaN(secondTimestamp) ? 0 : secondTimestamp;
+    return safeSecondTimestamp - safeFirstTimestamp;
+  });
+
+const parsePositiveInteger = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return null;
+
+    const parsedValue = Number.parseInt(trimmedValue, 10);
+    if (Number.isInteger(parsedValue) && parsedValue > 0) {
+      return parsedValue;
+    }
+  }
+
+  return null;
+};
+
+const parseStructuredNotificationContent = (
+  content: string | null
+): Record<string, unknown> | null => {
+  if (!content) return null;
+
+  const trimmedContent = content.trim();
+  if (!trimmedContent.startsWith('{') || !trimmedContent.endsWith('}')) {
+    return null;
+  }
+
+  try {
+    const parsedContent = JSON.parse(trimmedContent);
+    if (typeof parsedContent === 'object' && parsedContent !== null) {
+      return parsedContent as Record<string, unknown>;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+};
+
+const getNotificationRecordValue = (
+  record: Record<string, unknown> | null,
+  keys: string[]
+): unknown => {
+  if (!record) return null;
+
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(record, key)) {
+      return record[key];
+    }
+  }
+
+  return null;
+};
+
+const getNotificationRecordString = (
+  record: Record<string, unknown> | null,
+  keys: string[]
+): string | null => {
+  const value = getNotificationRecordValue(record, keys);
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim();
+  }
+  return null;
+};
+
+const getNotificationRecordInteger = (
+  record: Record<string, unknown> | null,
+  keys: string[]
+): number | null => parsePositiveInteger(getNotificationRecordValue(record, keys));
+
+const decodeCommunitySegment = (rawSegment: string): string => {
+  try {
+    return decodeURIComponent(rawSegment).replace(/\+/g, ' ');
+  } catch {
+    return rawSegment;
+  }
+};
+
+const extractRequesterUsernameFromMessage = (message: string): string | null => {
+  const requesterPatterns = [
+    /new join request from\s+@?([A-Za-z0-9_.-]+)/i,
+    /join request from\s+@?([A-Za-z0-9_.-]+)/i,
+    /@?([A-Za-z0-9_.-]+)\s+has requested to join/i,
+  ];
+
+  for (const pattern of requesterPatterns) {
+    const requesterMatch = message.match(pattern);
+    if (requesterMatch?.[1]) {
+      return requesterMatch[1];
+    }
+  }
+
+  return null;
+};
+
+const extractCommunityNameFromMessage = (message: string): string | null => {
+  const communityNamePatterns = [
+    /join your\s+(.+?)\s+community/i,
+    /join request to\s+(.+?)\s+has/i,
+    /to join\s+(.+?)\s+community/i,
+  ];
+
+  for (const pattern of communityNamePatterns) {
+    const communityMatch = message.match(pattern);
+    if (communityMatch?.[1]) {
+      return communityMatch[1].trim();
+    }
+  }
+
+  return null;
+};
+
+const extractManagerJoinRequestContext = (
+  notification: SystemNotification
+): ManagerJoinRequestNotificationContext | null => {
+  const normalizedType = notification.notificationType.trim().toLowerCase();
+  if (!MANAGER_JOIN_REQUEST_TYPES.has(normalizedType)) {
+    return null;
+  }
+
+  /* Fixed by Codex on 2026-02-25
+     Who: Codex
+     What: Added multi-source join-request notification parsing (type/message/link/content).
+     Why: Manager notifications do not have one guaranteed payload shape, but UI still needs inline Accept/Reject.
+     How: Merge structured content JSON, URL query/path metadata, and message regex fallbacks into one context object. */
+  const structuredContent = parseStructuredNotificationContent(notification.content);
+
+  const communityNameFromContent = getNotificationRecordString(structuredContent, [
+    'communityName',
+    'community_name',
+    'community',
+    'groupName',
+    'group_name',
+  ]);
+  const communityIdFromContent = getNotificationRecordInteger(structuredContent, [
+    'communityId',
+    'community_id',
+  ]);
+  const joinRequestIdFromContent = getNotificationRecordInteger(structuredContent, [
+    'joinRequestId',
+    'join_request_id',
+    'requestId',
+  ]);
+  const requesterUsernameFromContent = getNotificationRecordString(structuredContent, [
+    'requesterUsername',
+    'requester_username',
+    'requester',
+    'username',
+    'requesterName',
+    'requester_name',
+  ]);
+
+  const safeLink = getSafeNavigableUrl(notification.link, NOTIFICATION_PARSING_BASE);
+  let communityNameFromLink: string | null = null;
+  let communityIdFromLink: number | null = null;
+  let joinRequestIdFromLink: number | null = null;
+
+  if (safeLink) {
+    const parsedLink = safeLink.isExternal
+      ? new URL(safeLink.href)
+      : new URL(safeLink.href, NOTIFICATION_PARSING_BASE);
+
+    const communityMatch = parsedLink.pathname.match(/^\/community\/([^/]+)\/requests\/?$/i);
+    if (communityMatch?.[1]) {
+      communityNameFromLink = decodeCommunitySegment(communityMatch[1]);
+    }
+
+    communityIdFromLink = parsePositiveInteger(
+      parsedLink.searchParams.get('communityId') ?? parsedLink.searchParams.get('community_id')
+    );
+    joinRequestIdFromLink = parsePositiveInteger(
+      parsedLink.searchParams.get('joinRequestId') ??
+        parsedLink.searchParams.get('join_request_id') ??
+        parsedLink.searchParams.get('requestId')
+    );
+  }
+
+  const communityName =
+    communityNameFromContent ??
+    communityNameFromLink ??
+    extractCommunityNameFromMessage(notification.message);
+  const communityId = communityIdFromContent ?? communityIdFromLink;
+  const joinRequestId = joinRequestIdFromContent ?? joinRequestIdFromLink;
+  const requesterUsername =
+    requesterUsernameFromContent ?? extractRequesterUsernameFromMessage(notification.message);
+
+  const hasResolvableTarget =
+    (communityId !== null && joinRequestId !== null) || Boolean(communityName);
+  if (!hasResolvableTarget) {
+    return null;
+  }
+
+  const communityLabel = communityName ?? `Community #${communityId ?? 'Unknown'}`;
+
+  return {
+    communityName,
+    communityLabel,
+    requesterUsername,
+    communityId,
+    joinRequestId,
+  };
+};
+
+const removeNotificationEntry = <T,>(
+  currentRecord: Record<number, T>,
+  notificationId: number
+): Record<number, T> => {
+  if (!Object.prototype.hasOwnProperty.call(currentRecord, notificationId)) {
+    return currentRecord;
+  }
+
+  const nextRecord = { ...currentRecord };
+  delete nextRecord[notificationId];
+  return nextRecord;
+};
 
 interface MentionsTabProps {
   unreadMentions: MentionNotificationItem[];
@@ -126,109 +388,229 @@ const MentionsTab: React.FC<MentionsTabProps> = ({
 
 interface SystemNotificationsTabProps {
   isPending: boolean;
-  notifications: Array<{
-    id: number;
-    message: string;
-    isRead: boolean;
-    notificationType: string;
-    createdAt: string;
-    content: string | null;
-    link: string | null;
-  }>;
+  unreadNotifications: PreparedSystemNotification[];
+  readNotifications: PreparedSystemNotification[];
   onMarkAsRead: (id: number) => void;
+  onManagerJoinRequestAction: (
+    notification: PreparedSystemNotification,
+    action: JoinRequestAction
+  ) => void;
 }
 
 const SystemNotificationsTab: React.FC<SystemNotificationsTabProps> = ({
   isPending,
-  notifications,
+  unreadNotifications,
+  readNotifications,
   onMarkAsRead,
+  onManagerJoinRequestAction,
 }) => {
   if (isPending) {
     return <NotificationCardSkeletonLoader />;
   }
 
-  if (notifications.length === 0) {
+  if (unreadNotifications.length === 0 && readNotifications.length === 0) {
     return <p className="text-center text-text-tertiary">No notifications to show.</p>;
   }
 
-  return (
-    <ul className="flex w-full flex-col items-center gap-4">
-      {notifications.map((notification) => {
-        /* Fixed by Codex on 2026-02-25
-           Who: Codex
-           What: Resolve notification targets as internal or external before rendering the View link.
-           Why: Relative links were opening as dead external URLs instead of routing inside the app.
-           How: Use shared safe URL parsing and render Next `Link` for internal routes, anchor tags for off-site links. */
-        const safeLink = getSafeNavigableUrl(notification.link);
+  const renderNotificationRow = (notification: PreparedSystemNotification, isRead: boolean) => {
+    const managerContext = notification.managerJoinRequestContext;
+    const isManagerJoinRequest = Boolean(managerContext);
+    const safeLink = isManagerJoinRequest ? null : getSafeNavigableUrl(notification.link);
 
-        return (
-          <li
-            key={notification.id}
-            className={`w-full rounded-xl border p-4 ${
-              notification.isRead
-                ? 'border-common-minimal bg-common-background'
-                : 'border-common-contrast bg-common-cardBackground'
-            }`}
-          >
-            <p
-              className={`text-base font-medium ${
-                notification.isRead ? 'text-text-secondary' : 'text-text-primary'
-              }`}
-            >
-              {notification.message}
-            </p>
-            <p className="text-sm text-text-tertiary">
-              {notification.notificationType} -{' '}
-              {new Date(notification.createdAt).toLocaleDateString()}
-            </p>
-            {notification.content && (
-              <p className="mt-2 text-sm text-text-secondary">{notification.content}</p>
-            )}
-            <div className="mt-2 flex items-center justify-between">
-              {safeLink &&
-                (safeLink.isExternal ? (
-                  <a
-                    href={safeLink.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-sm text-functional-green hover:text-functional-greenContrast"
-                  >
-                    View
-                    <SquareArrowOutUpRight size={12} className="inline" />
-                  </a>
-                ) : (
-                  <Link
-                    href={safeLink.href}
-                    className="flex items-center gap-1 text-sm text-functional-green hover:text-functional-greenContrast"
-                  >
-                    View
-                    <SquareArrowOutUpRight size={12} className="inline" />
-                  </Link>
-                ))}
-              {!notification.isRead ? (
-                <Button onClick={() => onMarkAsRead(notification.id)} className="px-3 py-1.5">
-                  <ButtonIcon>
-                    <Check size={14} />
-                  </ButtonIcon>
-                  <ButtonTitle className="sm:text-xs">Mark as Read</ButtonTitle>
-                </Button>
-              ) : (
-                <Button
-                  className="px-3 py-1.5 text-text-tertiary hover:bg-transparent"
-                  variant={'outline'}
-                >
-                  <ButtonIcon>
-                    <CheckCheck size={14} />
-                  </ButtonIcon>
-                  <ButtonTitle className="sm:text-xs">Read</ButtonTitle>
-                </Button>
-              )}
+    return (
+      <li
+        key={notification.id}
+        className={`w-full rounded-xl border p-4 ${
+          isRead
+            ? 'border-common-minimal bg-common-background'
+            : 'border-common-contrast bg-common-cardBackground'
+        }`}
+      >
+        <p className={`text-base font-medium ${isRead ? 'text-text-secondary' : 'text-text-primary'}`}>
+          {notification.message}
+        </p>
+        <p className="text-sm text-text-tertiary">
+          {notification.notificationType} - {new Date(notification.createdAt).toLocaleDateString()}
+        </p>
+        {managerContext && (
+          <p className="mt-1 text-xs text-text-secondary">
+            Group: <span className="font-semibold text-text-primary">{managerContext.communityLabel}</span>
+          </p>
+        )}
+        {notification.content && !managerContext && (
+          <p className="mt-2 text-sm text-text-secondary">{notification.content}</p>
+        )}
+        {notification.actionError && (
+          <p className="mt-2 text-xs font-medium text-functional-red">{notification.actionError}</p>
+        )}
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          {safeLink &&
+            (safeLink.isExternal ? (
+              <a
+                href={safeLink.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-sm text-functional-green hover:text-functional-greenContrast"
+              >
+                View
+                <SquareArrowOutUpRight size={12} className="inline" />
+              </a>
+            ) : (
+              <Link
+                href={safeLink.href}
+                className="flex items-center gap-1 text-sm text-functional-green hover:text-functional-greenContrast"
+              >
+                View
+                <SquareArrowOutUpRight size={12} className="inline" />
+              </Link>
+            ))}
+
+          {isManagerJoinRequest ? (
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                onClick={() => onManagerJoinRequestAction(notification, 'approve')}
+                className={`px-3 py-1.5 ${
+                  notification.actionDecision === 'approve'
+                    ? 'ring-1 ring-functional-greenContrast/40'
+                    : ''
+                }`}
+                variant={notification.actionDecision === 'approve' ? 'default' : 'outline'}
+                disabled={notification.actionPending}
+                type="button"
+              >
+                <ButtonIcon>
+                  <Check size={14} />
+                </ButtonIcon>
+                <ButtonTitle className="sm:text-xs">
+                  {notification.actionPending && notification.actionDecision === 'approve'
+                    ? 'Processing...'
+                    : 'Accept'}
+                </ButtonTitle>
+              </Button>
+              <Button
+                onClick={() => onManagerJoinRequestAction(notification, 'reject')}
+                className={`px-3 py-1.5 ${
+                  notification.actionDecision === 'reject' ? 'ring-1 ring-functional-redContrast/40' : ''
+                }`}
+                variant={notification.actionDecision === 'reject' ? 'danger' : 'outline'}
+                disabled={notification.actionPending}
+                type="button"
+              >
+                <ButtonIcon>
+                  <X size={14} />
+                </ButtonIcon>
+                <ButtonTitle className="sm:text-xs">
+                  {notification.actionPending && notification.actionDecision === 'reject'
+                    ? 'Processing...'
+                    : 'Reject'}
+                </ButtonTitle>
+              </Button>
             </div>
-          </li>
-        );
-      })}
-    </ul>
+          ) : !notification.isRead ? (
+            <Button onClick={() => onMarkAsRead(notification.id)} className="px-3 py-1.5" type="button">
+              <ButtonIcon>
+                <Check size={14} />
+              </ButtonIcon>
+              <ButtonTitle className="sm:text-xs">Mark as Read</ButtonTitle>
+            </Button>
+          ) : (
+            <Button
+              className="px-3 py-1.5 text-text-tertiary hover:bg-transparent"
+              variant={'outline'}
+              type="button"
+            >
+              <ButtonIcon>
+                <CheckCheck size={14} />
+              </ButtonIcon>
+              <ButtonTitle className="sm:text-xs">Read</ButtonTitle>
+            </Button>
+          )}
+        </div>
+      </li>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-text-primary">
+          Unread System Notifications ({unreadNotifications.length})
+        </h2>
+        {unreadNotifications.length === 0 ? (
+          <div className="rounded-xl border border-common-minimal bg-common-background p-4 text-xs text-text-tertiary">
+            No unread system notifications.
+          </div>
+        ) : (
+          <ul className="flex w-full flex-col items-center gap-4">
+            {unreadNotifications.map((notification) => renderNotificationRow(notification, false))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-text-secondary">Read System Notifications</h2>
+        {readNotifications.length === 0 ? (
+          <div className="rounded-xl border border-common-minimal bg-common-background p-4 text-xs text-text-tertiary">
+            No read system notifications.
+          </div>
+        ) : (
+          <ul className="flex w-full flex-col items-center gap-4">
+            {readNotifications.map((notification) => renderNotificationRow(notification, true))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
+};
+
+const resolveManagerJoinRequestTarget = async (
+  context: ManagerJoinRequestNotificationContext,
+  authHeaders: ReturnType<typeof useAuthHeaders>
+): Promise<{ communityId: number; joinRequestId: number } | null> => {
+  if (context.communityId !== null && context.joinRequestId !== null) {
+    return {
+      communityId: context.communityId,
+      joinRequestId: context.joinRequestId,
+    };
+  }
+
+  if (!context.communityName) {
+    return null;
+  }
+
+  const joinRequestsResponse = await communitiesApiJoinGetJoinRequests(context.communityName, authHeaders);
+  const joinRequests = joinRequestsResponse.data ?? [];
+  const pendingJoinRequests = joinRequests.filter((joinRequest) => joinRequest.status === 'pending');
+  const normalizedRequester = context.requesterUsername?.toLowerCase() ?? null;
+
+  let resolvedJoinRequest =
+    normalizedRequester === null
+      ? undefined
+      : pendingJoinRequests.find(
+          (joinRequest) => joinRequest.user.username.toLowerCase() === normalizedRequester
+        );
+
+  if (!resolvedJoinRequest && normalizedRequester === null && pendingJoinRequests.length === 1) {
+    resolvedJoinRequest = pendingJoinRequests[0];
+  }
+
+  if (!resolvedJoinRequest && normalizedRequester !== null) {
+    const requesterMatches = pendingJoinRequests.filter(
+      (joinRequest) => joinRequest.user.username.toLowerCase() === normalizedRequester
+    );
+    if (requesterMatches.length === 1) {
+      resolvedJoinRequest = requesterMatches[0];
+    }
+  }
+
+  if (!resolvedJoinRequest) {
+    return null;
+  }
+
+  return {
+    communityId: context.communityId ?? resolvedJoinRequest.community_id,
+    joinRequestId: context.joinRequestId ?? resolvedJoinRequest.id,
+  };
 };
 
 const NotificationPage: React.FC = () => {
@@ -242,6 +624,18 @@ const NotificationPage: React.FC = () => {
   const cleanupExpired = useMentionNotificationsStore((state) => state.cleanupExpired);
   const markMentionAsRead = useMentionNotificationsStore((state) => state.markMentionAsRead);
 
+  const [optimisticReadByNotificationId, setOptimisticReadByNotificationId] = useState<
+    Record<number, true>
+  >({});
+  const [joinRequestActionByNotificationId, setJoinRequestActionByNotificationId] = useState<
+    Record<number, JoinRequestAction>
+  >({});
+  const [joinRequestActionPendingByNotificationId, setJoinRequestActionPendingByNotificationId] =
+    useState<Record<number, boolean>>({});
+  const [joinRequestActionErrorByNotificationId, setJoinRequestActionErrorByNotificationId] =
+    useState<Record<number, string>>({});
+  const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState(false);
+
   const { data, isPending, refetch } = useUsersApiGetNotifications(
     {},
     {
@@ -252,15 +646,13 @@ const NotificationPage: React.FC = () => {
     }
   );
 
-  const { mutate, isSuccess } = useUsersApiMarkNotificationAsRead({
+  const { mutateAsync: markNotificationAsRead } = useUsersApiMarkNotificationAsRead({
     request: authHeaders,
   });
 
-  useEffect(() => {
-    if (isSuccess) {
-      refetch();
-    }
-  }, [isSuccess, refetch]);
+  const { mutateAsync: manageJoinRequest } = useCommunitiesApiJoinManageJoinRequest({
+    request: authHeaders,
+  });
 
   /* Fixed by Codex on 2026-02-25
      Who: Codex
@@ -288,8 +680,172 @@ const NotificationPage: React.FC = () => {
     [mentionItems]
   );
 
-  const markAsRead = (id: number) => {
-    mutate({ notificationId: id });
+  const notifications = useMemo<SystemNotification[]>(() => data?.data ?? [], [data?.data]);
+
+  const preparedSystemNotifications = useMemo(() => {
+    const enrichedNotifications = notifications.map((notification) => {
+      const managerJoinRequestContext = extractManagerJoinRequestContext(notification);
+      const actionDecision = joinRequestActionByNotificationId[notification.id] ?? null;
+      const actionPending = Boolean(joinRequestActionPendingByNotificationId[notification.id]);
+      const actionError = joinRequestActionErrorByNotificationId[notification.id] ?? null;
+      const isRead =
+        notification.isRead ||
+        Boolean(optimisticReadByNotificationId[notification.id]) ||
+        actionDecision !== null;
+
+      return {
+        ...notification,
+        isRead,
+        managerJoinRequestContext,
+        actionDecision,
+        actionPending,
+        actionError,
+      };
+    });
+
+    return sortSystemNotificationsByCreatedAt(enrichedNotifications);
+  }, [
+    joinRequestActionByNotificationId,
+    joinRequestActionErrorByNotificationId,
+    joinRequestActionPendingByNotificationId,
+    notifications,
+    optimisticReadByNotificationId,
+  ]);
+
+  const unreadSystemNotifications = useMemo(
+    () => preparedSystemNotifications.filter((notification) => !notification.isRead),
+    [preparedSystemNotifications]
+  );
+  const readSystemNotifications = useMemo(
+    () => preparedSystemNotifications.filter((notification) => notification.isRead),
+    [preparedSystemNotifications]
+  );
+
+  const markAsRead = (notificationId: number) => {
+    setOptimisticReadByNotificationId((previousRecord) => ({
+      ...previousRecord,
+      [notificationId]: true,
+    }));
+
+    void markNotificationAsRead({ notificationId })
+      .then(() => {
+        void refetch();
+      })
+      .catch(() => {
+        setOptimisticReadByNotificationId((previousRecord) =>
+          removeNotificationEntry(previousRecord, notificationId)
+        );
+      });
+  };
+
+  const markAllSystemNotificationsAsRead = () => {
+    if (isMarkingAllAsRead) return;
+
+    const unreadNotificationIds = unreadSystemNotifications.map((notification) => notification.id);
+    if (unreadNotificationIds.length === 0) return;
+
+    /* Fixed by Codex on 2026-02-25
+       Who: Codex
+       What: Added bulk mark-as-read support for system notifications.
+       Why: Users asked for a single action to clear the unread system pile.
+       How: Apply optimistic local read state for unread ids, execute mark-as-read calls in parallel, rollback failures, then refetch once. */
+    setIsMarkingAllAsRead(true);
+    setOptimisticReadByNotificationId((previousRecord) => {
+      const nextRecord = { ...previousRecord };
+      unreadNotificationIds.forEach((notificationId) => {
+        nextRecord[notificationId] = true;
+      });
+      return nextRecord;
+    });
+
+    void (async () => {
+      const markResults = await Promise.allSettled(
+        unreadNotificationIds.map((notificationId) => markNotificationAsRead({ notificationId }))
+      );
+
+      const failedNotificationIds = unreadNotificationIds.filter(
+        (_, index) => markResults[index].status === 'rejected'
+      );
+
+      if (failedNotificationIds.length > 0) {
+        setOptimisticReadByNotificationId((previousRecord) => {
+          let nextRecord = previousRecord;
+          failedNotificationIds.forEach((notificationId) => {
+            nextRecord = removeNotificationEntry(nextRecord, notificationId);
+          });
+          return nextRecord;
+        });
+      }
+
+      await refetch();
+      setIsMarkingAllAsRead(false);
+    })();
+  };
+
+  const handleManagerJoinRequestAction = (
+    notification: PreparedSystemNotification,
+    action: JoinRequestAction
+  ) => {
+    const managerJoinRequestContext = notification.managerJoinRequestContext;
+    if (!managerJoinRequestContext) return;
+
+    setJoinRequestActionPendingByNotificationId((previousRecord) => ({
+      ...previousRecord,
+      [notification.id]: true,
+    }));
+    setJoinRequestActionErrorByNotificationId((previousRecord) =>
+      removeNotificationEntry(previousRecord, notification.id)
+    );
+
+    /* Fixed by Codex on 2026-02-25
+       Who: Codex
+       What: Added inline manager-side approve/reject workflow directly in system notifications.
+       Why: Community admins should not leave the notifications page just to process join requests.
+       How: Resolve join-request target ids from notification context, call manage endpoint, then mark as read and persist decision state. */
+    void (async () => {
+      try {
+        const resolvedTarget = await resolveManagerJoinRequestTarget(
+          managerJoinRequestContext,
+          authHeaders
+        );
+        if (!resolvedTarget) {
+          throw new Error(
+            'Unable to match this notification to a pending join request. Please refresh and try again.'
+          );
+        }
+
+        await manageJoinRequest({
+          communityId: resolvedTarget.communityId,
+          joinRequestId: resolvedTarget.joinRequestId,
+          action,
+        });
+
+        setJoinRequestActionByNotificationId((previousRecord) => ({
+          ...previousRecord,
+          [notification.id]: action,
+        }));
+        setOptimisticReadByNotificationId((previousRecord) => ({
+          ...previousRecord,
+          [notification.id]: true,
+        }));
+
+        await markNotificationAsRead({ notificationId: notification.id });
+        void refetch();
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error && error.message.trim()
+            ? error.message
+            : 'Unable to process this join request right now.';
+        setJoinRequestActionErrorByNotificationId((previousRecord) => ({
+          ...previousRecord,
+          [notification.id]: errorMessage,
+        }));
+      } finally {
+        setJoinRequestActionPendingByNotificationId((previousRecord) =>
+          removeNotificationEntry(previousRecord, notification.id)
+        );
+      }
+    })();
   };
 
   const handleMentionClick = (mentionId: string) => {
@@ -297,22 +853,39 @@ const NotificationPage: React.FC = () => {
     markMentionAsRead(user.id, mentionId);
   };
 
-  const notifications = data?.data ?? [];
-
   return (
     <div className="mx-auto max-w-4xl p-4">
-      <h1 className="mb-6 text-center text-4xl font-bold text-text-primary sm:my-6">
-        Notifications
-      </h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:my-6">
+        <h1 className="text-center text-4xl font-bold text-text-primary">Notifications</h1>
+        <Button
+          type="button"
+          variant="outline"
+          className="px-3 py-1.5"
+          disabled={isMarkingAllAsRead || unreadSystemNotifications.length === 0}
+          onClick={markAllSystemNotificationsAsRead}
+        >
+          <ButtonIcon>
+            <CheckCheck size={14} />
+          </ButtonIcon>
+          <ButtonTitle className="sm:text-xs">
+            {isMarkingAllAsRead ? 'Marking...' : 'Mark All as Read'}
+          </ButtonTitle>
+        </Button>
+      </div>
       <TabNavigation
         tabs={[
           {
-            title: 'System',
+            title:
+              unreadSystemNotifications.length > 0
+                ? `System (${unreadSystemNotifications.length})`
+                : 'System',
             content: () => (
               <SystemNotificationsTab
                 isPending={isPending}
-                notifications={notifications}
+                unreadNotifications={unreadSystemNotifications}
+                readNotifications={readSystemNotifications}
                 onMarkAsRead={markAsRead}
+                onManagerJoinRequestAction={handleManagerJoinRequestAction}
               />
             ),
           },

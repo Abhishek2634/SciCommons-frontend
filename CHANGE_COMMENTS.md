@@ -1,3 +1,17 @@
+## 2026-02-25 - System Notifications Unread/Read Piles + Inline Join-Request Actions
+
+Problem: In the notifications System tab, unread and read items were mixed in one list, and manager-facing join requests required opening a separate page via `View` before admins could approve or reject.
+
+Root Cause: The System tab rendered a uniform notification card without role-aware action handling, and read state changes were only represented as a single per-card button.
+
+Solution: Split System notifications into explicit unread (top) and read (bottom) sections while preserving chronological order inside each section. Added manager join-request detection from notification type/message/link/content metadata, showed target group name on the card, removed `View` for those cards, and added inline `Accept`/`Reject` actions wired to the join-request management endpoint. After action success, the card is marked read, moved to the read section, and displays the final decision state (`Approved`/`Rejected`) on the button.
+
+Result: Users now get clearer System triage with unread-first ordering, own-request notifications naturally move to the lower read pile when marked read, and community admins can process incoming join requests directly from notifications without navigating away.
+
+Follow-up (same day): Kept both manager decision buttons (`Accept` + `Reject`) visible and actionable even after a choice is made, and changed the selected state to button highlighting so admins can revise their decision from the same card. Added a top-level `Mark All as Read` action to bulk-clear unread System notifications in one click.
+
+Files Modified: `src/app/(main)/(users)/notifications/page.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-25 - Notifications Button Mention Indicator
 
 Problem: New discussion mentions appeared in the Mentions inbox, but the top notifications button had no visible cue that unread mentions existed.
