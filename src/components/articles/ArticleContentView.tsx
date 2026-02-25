@@ -31,6 +31,7 @@ interface ArticleContentViewProps {
   submitReviewExternal?: boolean;
   defaultTab?: 'reviews' | 'discussions';
   tabResetKey?: string | number;
+  initialDiscussionId?: number | null;
 }
 
 /**
@@ -62,6 +63,7 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
   submitReviewExternal,
   defaultTab = 'reviews',
   tabResetKey,
+  initialDiscussionId = null,
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
   const pathname = usePathname();
@@ -229,6 +231,7 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
                 communityArticleId={resolvedCommunityArticleId}
                 showSubscribeButton={shouldShowSubscribeButton}
                 isAdmin={isAdmin}
+                initialDiscussionId={initialDiscussionId}
               />
             ) : null,
         },

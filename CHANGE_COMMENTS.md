@@ -1,3 +1,15 @@
+## 2026-02-25 - Discussion Mention Capture + Mentions Inbox Tab
+
+Problem: Discussion/comment `@member` mentions were composable in the editor, but there was no in-app mention inbox for recipients, no backend-payload scanning for mentions, and no one-time suppression to avoid duplicate mention alerts.
+
+Root Cause: Mention autocomplete existed only at input time; incoming discussion payloads (initial loads + realtime) were not parsed for current-user mentions, and the notifications page had no mention-specific view/state model.
+
+Solution: Added shared mention parsing and capture helpers, plus a persisted per-user mention store with unread/read state, dedupe-by-source keys, and 30-day retention cleanup. Wired mention scanning into discussion list fetches, recursive discussion comment-tree fetches, and realtime `new_*`/`updated_*` discussion-comment events. Added discussion-thread deep-link support via `discussionId` query param in discussions split view (`/discussions?articleId=...&discussionId=...`). Reworked `/notifications` into a tabbed interface with `System` and `Mentions`; mention items are grouped into unread/read sections and move to read when clicked.
+
+Result: Mention recipients now get durable, non-toast mention entries with one-click navigation to the relevant discussion thread, and each mention source is surfaced only once within a rolling 30-day window.
+
+Files Modified: `src/lib/discussionMentions.ts`, `src/lib/mentionNotifications.ts`, `src/stores/mentionNotificationsStore.ts`, `src/components/articles/DiscussionForum.tsx`, `src/components/articles/DiscussionComments.tsx`, `src/components/articles/DiscussionCard.tsx`, `src/components/articles/DiscussionThread.tsx`, `src/hooks/useRealtime.tsx`, `src/app/(main)/discussions/DiscussionsPageClient.tsx`, `src/components/articles/ArticleContentView.tsx`, `src/app/(main)/(users)/notifications/page.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-25 - Discussions Split View Default Selection on First Load
 
 Problem: On initial load of the discussions page, the right panel could remain empty until the user manually selected an article from the left sidebar.

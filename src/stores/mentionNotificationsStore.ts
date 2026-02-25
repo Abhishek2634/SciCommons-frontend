@@ -1,0 +1,199 @@
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+
+export type MentionSourceType = 'discussion' | 'comment';
+
+export interface MentionNotificationItem {
+  id: string;
+  sourceType: MentionSourceType;
+  sourceId: number;
+  discussionId: number;
+  articleId: number;
+  communityId: number | null;
+  authorUsername: string;
+  excerpt: string;
+  link: string;
+  createdAt: string;
+  detectedAt: number;
+  isRead: boolean;
+  targetUsername: string;
+}
+
+export interface MentionNotificationInput {
+  sourceType: MentionSourceType;
+  sourceId: number;
+  discussionId: number;
+  articleId: number;
+  communityId?: number | null;
+  authorUsername: string;
+  excerpt: string;
+  createdAt?: string;
+  targetUsername: string;
+}
+
+interface MentionNotificationsState {
+  ownerUserId: number | null;
+  mentions: MentionNotificationItem[];
+  setOwnerIfNeeded: (userId: number) => void;
+  addMention: (userId: number, mention: MentionNotificationInput) => void;
+  markMentionAsRead: (userId: number, mentionId: string) => void;
+  cleanupExpired: (userId: number) => void;
+  reset: () => void;
+}
+
+const MENTION_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+const MAX_STORED_MENTIONS = 500;
+
+const normalizeTargetUsername = (username: string) => username.trim().toLowerCase();
+
+const buildMentionId = (targetUsername: string, sourceType: MentionSourceType, sourceId: number) =>
+  `${targetUsername}:${sourceType}:${sourceId}`;
+
+const pruneExpiredMentions = (mentions: MentionNotificationItem[], now: number) =>
+  mentions
+    .filter((mention) => now - mention.detectedAt < MENTION_RETENTION_MS)
+    .sort((a, b) => b.detectedAt - a.detectedAt)
+    .slice(0, MAX_STORED_MENTIONS);
+
+const getScopedMentions = (
+  ownerUserId: number | null,
+  mentions: MentionNotificationItem[],
+  userId: number
+) => {
+  if (ownerUserId === userId) {
+    return mentions;
+  }
+  return [];
+};
+
+/* Fixed by Codex on 2026-02-25
+   Who: Codex
+   What: Added a persisted discussion-mention notification store with unread/read state.
+   Why: Mention alerts should be created once per mention source and remain available in-app without toast spam.
+   How: Store mention entries in localStorage, scope them per authenticated user, dedupe by mention source key,
+   and prune entries older than 30 days. */
+export const useMentionNotificationsStore = create<MentionNotificationsState>()(
+  persist(
+    (set) => ({
+      ownerUserId: null,
+      mentions: [],
+
+      setOwnerIfNeeded: (userId) => {
+        set((state) => {
+          if (state.ownerUserId === userId) {
+            const now = Date.now();
+            const prunedMentions = pruneExpiredMentions(state.mentions, now);
+            if (prunedMentions.length === state.mentions.length) return state;
+            return { mentions: prunedMentions };
+          }
+
+          return {
+            ownerUserId: userId,
+            mentions: [],
+          };
+        });
+      },
+
+      addMention: (userId, mention) => {
+        set((state) => {
+          const now = Date.now();
+          const targetUsername = normalizeTargetUsername(mention.targetUsername);
+          if (!targetUsername) return state;
+
+          const scopedMentions = getScopedMentions(state.ownerUserId, state.mentions, userId);
+          const prunedMentions = pruneExpiredMentions(scopedMentions, now);
+          const mentionId = buildMentionId(targetUsername, mention.sourceType, mention.sourceId);
+
+          if (prunedMentions.some((storedMention) => storedMention.id === mentionId)) {
+            if (state.ownerUserId === userId && prunedMentions.length === state.mentions.length) {
+              return state;
+            }
+
+            return {
+              ownerUserId: userId,
+              mentions: prunedMentions,
+            };
+          }
+
+          const createdAt =
+            mention.createdAt && !Number.isNaN(Date.parse(mention.createdAt))
+              ? mention.createdAt
+              : new Date(now).toISOString();
+
+          const nextMention: MentionNotificationItem = {
+            id: mentionId,
+            sourceType: mention.sourceType,
+            sourceId: mention.sourceId,
+            discussionId: mention.discussionId,
+            articleId: mention.articleId,
+            communityId: mention.communityId ?? null,
+            authorUsername: mention.authorUsername,
+            excerpt: mention.excerpt,
+            link: `/discussions?articleId=${mention.articleId}&discussionId=${mention.discussionId}`,
+            createdAt,
+            detectedAt: now,
+            isRead: false,
+            targetUsername,
+          };
+
+          return {
+            ownerUserId: userId,
+            mentions: [nextMention, ...prunedMentions].slice(0, MAX_STORED_MENTIONS),
+          };
+        });
+      },
+
+      markMentionAsRead: (userId, mentionId) => {
+        set((state) => {
+          const now = Date.now();
+          const scopedMentions = getScopedMentions(state.ownerUserId, state.mentions, userId);
+          const prunedMentions = pruneExpiredMentions(scopedMentions, now);
+
+          let hasChanged = state.ownerUserId !== userId || prunedMentions.length !== state.mentions.length;
+
+          const updatedMentions = prunedMentions.map((mention) => {
+            if (mention.id !== mentionId || mention.isRead) return mention;
+            hasChanged = true;
+            return { ...mention, isRead: true };
+          });
+
+          if (!hasChanged) return state;
+
+          return {
+            ownerUserId: userId,
+            mentions: updatedMentions,
+          };
+        });
+      },
+
+      cleanupExpired: (userId) => {
+        set((state) => {
+          const now = Date.now();
+          const scopedMentions = getScopedMentions(state.ownerUserId, state.mentions, userId);
+          const prunedMentions = pruneExpiredMentions(scopedMentions, now);
+
+          if (state.ownerUserId === userId && prunedMentions.length === state.mentions.length) {
+            return state;
+          }
+
+          return {
+            ownerUserId: userId,
+            mentions: prunedMentions,
+          };
+        });
+      },
+
+      reset: () => {
+        set({
+          ownerUserId: null,
+          mentions: [],
+        });
+      },
+    }),
+    {
+      name: 'mention-notifications-storage',
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);
+

@@ -28,6 +28,13 @@ interface SelectedArticle {
 
 const LAST_SELECTED_DISCUSSION_ARTICLE_ID_KEY = 'discussions-last-selected-article-id';
 
+const parsePositiveIntegerParam = (value: string | null): number | null => {
+  if (!value) return null;
+  const parsed = parseInt(value, 10);
+  if (Number.isNaN(parsed) || parsed <= 0) return null;
+  return parsed;
+};
+
 const DiscussionsPageClientInner: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
@@ -37,6 +44,11 @@ const DiscussionsPageClientInner: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const sidebarScrollPositionRef = useRef<number>(0);
   const hasInitializedSelection = useRef(false);
+
+  const urlArticleId = parsePositiveIntegerParam(searchParams?.get('articleId') ?? null);
+  const urlDiscussionId = parsePositiveIntegerParam(searchParams?.get('discussionId') ?? null);
+  const initialDiscussionId =
+    selectedArticle && urlArticleId === selectedArticle.id ? urlDiscussionId : null;
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
      Problem: When navigating to article page and using back button, sidebar resets to top article
@@ -61,6 +73,12 @@ const DiscussionsPageClientInner: React.FC = () => {
     // Update URL with selected article ID
     const params = new URLSearchParams(searchParams?.toString() || '');
     params.set('articleId', article.id.toString());
+    /* Fixed by Codex on 2026-02-25
+       Who: Codex
+       What: Clear stale discussion deep-link param on manual article switches.
+       Why: `discussionId` from a prior mention link can point to a different article and reopen the wrong thread.
+       How: Remove `discussionId` whenever the user explicitly selects a different article tile. */
+    params.delete('discussionId');
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
 
     // Close mobile sidebar when article is selected
@@ -103,19 +121,13 @@ const DiscussionsPageClientInner: React.FC = () => {
         return articles.find((article) => article.articleId === articleId) ?? null;
       };
 
-      const parseArticleId = (value: string | null) => {
-        if (!value) return null;
-        const parsed = parseInt(value, 10);
-        return Number.isNaN(parsed) ? null : parsed;
-      };
-
-      const urlArticleId = parseArticleId(searchParams?.get('articleId') ?? null);
+      const urlArticleId = parsePositiveIntegerParam(searchParams?.get('articleId') ?? null);
 
       let lastSelectedArticleId: number | null = null;
       const savedLastSelectedArticleId = sessionStorage.getItem(
         LAST_SELECTED_DISCUSSION_ARTICLE_ID_KEY
       );
-      lastSelectedArticleId = parseArticleId(savedLastSelectedArticleId);
+      lastSelectedArticleId = parsePositiveIntegerParam(savedLastSelectedArticleId);
 
       const clearedArticles = useReadItemsStore.getState().clearedArticles;
       const previouslyReadArticle =
@@ -148,6 +160,7 @@ const DiscussionsPageClientInner: React.FC = () => {
       if (pathname && urlArticleId !== nextSelectedArticle.id) {
         const params = new URLSearchParams(searchParams?.toString() || '');
         params.set('articleId', nextSelectedArticle.id.toString());
+        params.delete('discussionId');
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       }
     },
@@ -220,6 +233,7 @@ const DiscussionsPageClientInner: React.FC = () => {
                 isAdmin={selectedArticle.isAdmin}
                 showPdfViewerButton={true}
                 handleOpenPdfViewer={handleOpenPdfViewer}
+                initialDiscussionId={initialDiscussionId}
                 {...discussionTabDefaults}
               />
             </div>
@@ -270,6 +284,7 @@ const DiscussionsPageClientInner: React.FC = () => {
                   isAdmin={selectedArticle.isAdmin}
                   showPdfViewerButton={true}
                   handleOpenPdfViewer={handleOpenPdfViewer}
+                  initialDiscussionId={initialDiscussionId}
                   {...discussionTabDefaults}
                 />
               </div>

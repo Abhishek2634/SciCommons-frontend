@@ -18,6 +18,7 @@ import EmptyState from '@/components/common/EmptyState';
 import { Button, ButtonIcon, ButtonTitle } from '@/components/ui/button';
 import { ErrorMessage } from '@/constants';
 import { FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
+import { captureMentionNotification } from '@/lib/mentionNotifications';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
@@ -35,6 +36,7 @@ interface DiscussionForumProps {
   communityArticleId?: number | null;
   showSubscribeButton?: boolean;
   isAdmin?: boolean;
+  initialDiscussionId?: number | null;
 }
 
 const DiscussionForum: React.FC<DiscussionForumProps> = ({
@@ -44,13 +46,14 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
   communityArticleId,
   showSubscribeButton = false,
   isAdmin = false,
+  initialDiscussionId = null,
 }) => {
   dayjs.extend(relativeTime);
   const accessToken = useAuthStore((state) => state.accessToken);
   const queryClient = useQueryClient();
 
   const [showForm, setShowForm] = useState<boolean>(false);
-  const [discussionId, setDiscussionId] = useState<number | null>(null);
+  const [discussionId, setDiscussionId] = useState<number | null>(initialDiscussionId);
   const normalizedCommunitySlug = communitySlug?.trim() || '';
 
   const { data, isPending, error, refetch } = useArticlesDiscussionApiListDiscussions(
@@ -191,6 +194,40 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
       toast.error(`${error.response?.data.message || ErrorMessage}`);
     }
   }, [error]);
+
+  /* Fixed by Codex on 2026-02-25
+     Who: Codex
+     What: Sync initial discussion deep-link selection to the current article context.
+     Why: Mention links now open `/discussions?articleId=...&discussionId=...` and should land in the thread view.
+     How: Reapply `initialDiscussionId` whenever article context changes; reset to list view when absent. */
+  useEffect(() => {
+    setDiscussionId(initialDiscussionId ?? null);
+  }, [articleId, initialDiscussionId]);
+
+  /* Fixed by Codex on 2026-02-25
+     Who: Codex
+     What: Scan fetched discussions for `@username` mentions.
+     Why: Mention notifications must be captured from initial backend payloads, not only realtime events.
+     How: Walk loaded discussions and register each matching mention once through the shared helper/store. */
+  useEffect(() => {
+    const discussions = data?.data.items;
+    if (!Array.isArray(discussions) || discussions.length === 0) return;
+
+    discussions.forEach((discussion) => {
+      if (discussion.id === undefined) return;
+
+      captureMentionNotification({
+        sourceType: 'discussion',
+        sourceId: Number(discussion.id),
+        discussionId: Number(discussion.id),
+        articleId: discussion.article_id,
+        communityId: communityId ?? null,
+        content: discussion.content,
+        authorUsername: discussion.user?.username,
+        createdAt: discussion.created_at,
+      });
+    });
+  }, [communityId, data?.data.items]);
 
   const handleNewDiscussion = (): void => {
     setShowForm((prev) => !prev);

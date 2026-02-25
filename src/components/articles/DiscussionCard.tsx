@@ -472,6 +472,14 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
         <div id={`discussion-${discussion.id}-comments`}>
           <DiscussionComments
             discussionId={Number(discussion.id)}
+            mentionContext={
+              typeof articleId === 'number'
+                ? {
+                    articleId,
+                    communityId: communityId ?? null,
+                  }
+                : undefined
+            }
             articleContext={communityId && articleId ? { communityId, articleId } : undefined}
             mentionCandidates={mentionCandidates}
           />

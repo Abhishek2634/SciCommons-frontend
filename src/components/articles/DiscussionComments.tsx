@@ -16,6 +16,7 @@ import CommentInput from '@/components/common/CommentInput';
 import RenderComments from '@/components/common/RenderComments';
 import { TEN_MINUTES_IN_MS } from '@/constants/common.constants';
 import { convertToDiscussionCommentData } from '@/lib/converToCommentData';
+import { captureMentionNotification } from '@/lib/mentionNotifications';
 import { showErrorToast } from '@/lib/toastHelpers';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
@@ -26,6 +27,10 @@ import InfiniteSpinnerAnimation from '../animations/InfiniteSpinnerAnimation';
 interface DiscussionCommentsProps {
   discussionId: number;
   mentionCandidates?: string[];
+  mentionContext?: {
+    articleId: number;
+    communityId?: number | null;
+  };
   /** Article context for tracking read state */
   articleContext?: {
     communityId: number;
@@ -36,6 +41,7 @@ interface DiscussionCommentsProps {
 const DiscussionComments: React.FC<DiscussionCommentsProps> = ({
   discussionId,
   mentionCandidates = [],
+  mentionContext,
   articleContext,
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -136,6 +142,37 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({
   const comments = data?.data ?? [];
   const hasComments = comments.length > 0;
   const depthSelectId = `discussion-${discussionId}-depth-select`;
+
+  /* Fixed by Codex on 2026-02-25
+     Who: Codex
+     What: Scan fetched discussion comment trees for `@username` mentions.
+     Why: Mention notifications should be captured from initial backend comment payloads, not just realtime events.
+     How: Recursively walk top-level comments and replies, then register matching mentions once in the shared store. */
+  useEffect(() => {
+    if (!mentionContext?.articleId) return;
+    if (!Array.isArray(data?.data) || data.data.length === 0) return;
+
+    const scanCommentTree = (comment: DiscussionCommentOut): void => {
+      if (comment.id !== undefined) {
+        captureMentionNotification({
+          sourceType: 'comment',
+          sourceId: Number(comment.id),
+          discussionId,
+          articleId: mentionContext.articleId,
+          communityId: mentionContext.communityId ?? null,
+          content: comment.content,
+          authorUsername: comment.author?.username,
+          createdAt: comment.created_at,
+        });
+      }
+
+      if (Array.isArray(comment.replies) && comment.replies.length > 0) {
+        comment.replies.forEach((reply) => scanCommentTree(reply));
+      }
+    };
+
+    data.data.forEach((comment) => scanCommentTree(comment));
+  }, [data?.data, discussionId, mentionContext?.articleId, mentionContext?.communityId]);
 
   return (
     <div className="mt-2 flex flex-col">

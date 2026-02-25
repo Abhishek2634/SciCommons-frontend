@@ -381,7 +381,11 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
             </div>
           </div>
           <h3 className="mb-2 font-bold res-text-base">Comments</h3>
-          <DiscussionComments discussionId={discussionId} mentionCandidates={mentionCandidates} />
+          <DiscussionComments
+            discussionId={discussionId}
+            mentionContext={{ articleId: discussion.article_id }}
+            mentionCandidates={mentionCandidates}
+          />
         </div>
       </>
     )
