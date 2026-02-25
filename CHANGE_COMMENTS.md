@@ -1,3 +1,15 @@
+## 2026-02-25 - Notifications "View" Link Routing Fix (System Tab)
+
+Problem: "View" links in non-mention notifications could open dead destinations instead of navigating to the intended in-app page.
+
+Root Cause: Notification links were always rendered as external anchors after URL sanitization, so relative app paths were treated like off-site URLs.
+
+Solution: Added a safe navigable URL resolver that classifies links as internal vs external, then updated notifications UIs to render Next `Link` for internal paths and external anchors only for off-origin URLs.
+
+Result: System notification "View" links now navigate correctly for in-app routes while retaining safe handling for external links.
+
+Files Modified: `src/lib/safeUrl.ts`, `src/app/(main)/(users)/notifications/page.tsx`, `src/components/common/Notifications.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-25 - Discussion Mention Capture + Mentions Inbox Tab
 
 Problem: Discussion/comment `@member` mentions were composable in the editor, but there was no in-app mention inbox for recipients, no backend-payload scanning for mentions, and no one-time suppression to avoid duplicate mention alerts.

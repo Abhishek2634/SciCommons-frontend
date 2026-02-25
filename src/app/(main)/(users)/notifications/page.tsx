@@ -11,7 +11,7 @@ import { BlockSkeleton, Skeleton } from '@/components/common/Skeleton';
 import { Button, ButtonIcon, ButtonTitle } from '@/components/ui/button';
 import TabNavigation from '@/components/ui/tab-navigation';
 import { useAuthHeaders } from '@/hooks/useAuthHeaders';
-import { getSafeExternalUrl } from '@/lib/safeUrl';
+import { getSafeNavigableUrl } from '@/lib/safeUrl';
 import { useAuthStore } from '@/stores/authStore';
 import {
   MentionNotificationItem,
@@ -141,7 +141,12 @@ const SystemNotificationsTab: React.FC<SystemNotificationsTabProps> = ({
   return (
     <ul className="flex w-full flex-col items-center gap-4">
       {notifications.map((notification) => {
-        const safeLink = getSafeExternalUrl(notification.link);
+        /* Fixed by Codex on 2026-02-25
+           Who: Codex
+           What: Resolve notification targets as internal or external before rendering the View link.
+           Why: Relative links were opening as dead external URLs instead of routing inside the app.
+           How: Use shared safe URL parsing and render Next `Link` for internal routes, anchor tags for off-site links. */
+        const safeLink = getSafeNavigableUrl(notification.link);
 
         return (
           <li
@@ -166,17 +171,26 @@ const SystemNotificationsTab: React.FC<SystemNotificationsTabProps> = ({
               <p className="mt-2 text-sm text-text-secondary">{notification.content}</p>
             )}
             <div className="mt-2 flex items-center justify-between">
-              {safeLink && (
-                <a
-                  href={safeLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-functional-green hover:text-functional-greenContrast"
-                >
-                  View
-                  <SquareArrowOutUpRight size={12} className="inline" />
-                </a>
-              )}
+              {safeLink &&
+                (safeLink.isExternal ? (
+                  <a
+                    href={safeLink.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-sm text-functional-green hover:text-functional-greenContrast"
+                  >
+                    View
+                    <SquareArrowOutUpRight size={12} className="inline" />
+                  </a>
+                ) : (
+                  <Link
+                    href={safeLink.href}
+                    className="flex items-center gap-1 text-sm text-functional-green hover:text-functional-greenContrast"
+                  >
+                    View
+                    <SquareArrowOutUpRight size={12} className="inline" />
+                  </Link>
+                ))}
               {!notification.isRead ? (
                 <Button onClick={() => onMarkAsRead(notification.id)} className="px-3 py-1.5">
                   <ButtonIcon>
@@ -312,4 +326,3 @@ const NotificationCardSkeletonLoader: React.FC = () => {
     </Skeleton>
   );
 };
-
