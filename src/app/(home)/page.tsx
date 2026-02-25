@@ -232,12 +232,7 @@ const Home = () => {
                 aria-label="Visit International Neuroinformatics Coordinating Facility"
                 className="inline-flex items-center justify-center"
               >
-                <Image
-                  width={74}
-                  height={40}
-                  src="/images/INCF.png"
-                  alt="INCF"
-                />
+                <Image width={74} height={40} src="/images/INCF.png" alt="INCF" />
               </Link>
             </div>
           </div>

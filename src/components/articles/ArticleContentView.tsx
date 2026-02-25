@@ -223,7 +223,9 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
               <DiscussionForum
                 articleId={Number(articleData.data.id)}
                 communityId={resolvedCommunityId}
-                communitySlug={communityName ?? articleData.data.community_article?.community?.name ?? null}
+                communitySlug={
+                  communityName ?? articleData.data.community_article?.community?.name ?? null
+                }
                 communityArticleId={resolvedCommunityArticleId}
                 showSubscribeButton={shouldShowSubscribeButton}
                 isAdmin={isAdmin}

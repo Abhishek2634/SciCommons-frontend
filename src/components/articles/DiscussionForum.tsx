@@ -6,6 +6,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import { BellOff, BellPlus, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useCommunitiesApiGetCommunity } from '@/api/communities/communities';
 import {
   getArticlesDiscussionApiGetSubscriptionStatusQueryKey,
   useArticlesDiscussionApiGetSubscriptionStatus,
@@ -13,7 +14,6 @@ import {
   useArticlesDiscussionApiSubscribeToDiscussion,
   useArticlesDiscussionApiUnsubscribeFromDiscussion,
 } from '@/api/discussions/discussions';
-import { useCommunitiesApiGetCommunity } from '@/api/communities/communities';
 import EmptyState from '@/components/common/EmptyState';
 import { Button, ButtonIcon, ButtonTitle } from '@/components/ui/button';
 import { ErrorMessage } from '@/constants';

@@ -119,8 +119,9 @@ const DiscussionsPageClientInner: React.FC = () => {
 
       const clearedArticles = useReadItemsStore.getState().clearedArticles;
       const previouslyReadArticle =
-        articles.find((article) => clearedArticles.has(`${article.communityId}-${article.articleId}`)) ??
-        null;
+        articles.find((article) =>
+          clearedArticles.has(`${article.communityId}-${article.articleId}`)
+        ) ?? null;
 
       const preferredArticle =
         getArticleById(urlArticleId) ??

@@ -124,9 +124,9 @@ export default function InitializedMDXEditor({
     }
 
     const editorRoot = editorRootRef.current;
-    const contentEditable = editorRoot?.querySelector('[contenteditable="true"]') as
-      | HTMLElement
-      | null;
+    const contentEditable = editorRoot?.querySelector(
+      '[contenteditable="true"]'
+    ) as HTMLElement | null;
 
     if (!editorRoot || !contentEditable) {
       clearMentionMenu();
@@ -222,18 +222,14 @@ export default function InitializedMDXEditor({
     if (highlightedMentionIndex >= filteredMentionCandidates.length) {
       setHighlightedMentionIndex(0);
     }
-  }, [
-    filteredMentionCandidates.length,
-    highlightedMentionIndex,
-    updateMentionMenuPlacement,
-  ]);
+  }, [filteredMentionCandidates.length, highlightedMentionIndex, updateMentionMenuPlacement]);
 
   const handleEditorKeyDownCapture = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       const editorRoot = editorRootRef.current;
-      const contentEditable = editorRoot?.querySelector('[contenteditable="true"]') as
-        | HTMLElement
-        | null;
+      const contentEditable = editorRoot?.querySelector(
+        '[contenteditable="true"]'
+      ) as HTMLElement | null;
       if (!contentEditable || !contentEditable.contains(event.target as Node)) return;
       if (!isMentionMenuOpen || filteredMentionCandidates.length === 0) return;
 
@@ -278,9 +274,9 @@ export default function InitializedMDXEditor({
   const handleEditorKeyUpCapture = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       const editorRoot = editorRootRef.current;
-      const contentEditable = editorRoot?.querySelector('[contenteditable="true"]') as
-        | HTMLElement
-        | null;
+      const contentEditable = editorRoot?.querySelector(
+        '[contenteditable="true"]'
+      ) as HTMLElement | null;
       if (!contentEditable || !contentEditable.contains(event.target as Node)) return;
 
       if (
@@ -300,9 +296,9 @@ export default function InitializedMDXEditor({
   const handleEditorClickCapture = React.useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
       const editorRoot = editorRootRef.current;
-      const contentEditable = editorRoot?.querySelector('[contenteditable="true"]') as
-        | HTMLElement
-        | null;
+      const contentEditable = editorRoot?.querySelector(
+        '[contenteditable="true"]'
+      ) as HTMLElement | null;
       if (!contentEditable || !contentEditable.contains(event.target as Node)) return;
       updateMentionContext();
     },
