@@ -51,6 +51,7 @@ interface PreparedSystemNotification extends SystemNotification {
 
 const NOTIFICATION_PARSING_BASE = 'https://scicommons.org';
 const MANAGER_JOIN_REQUEST_TYPES = new Set(['join_request_received', 'join request received']);
+const VISIT_COMMUNITY_TYPES = new Set(['join_request_approved', 'join request approved']);
 
 const formatMentionTimestamp = (timestamp: string): string => {
   const parsedTimestamp = Date.parse(timestamp);
@@ -187,6 +188,11 @@ const extractCommunityNameFromMessage = (message: string): string | null => {
   }
 
   return null;
+};
+
+const getNotificationLinkLabel = (notificationType: string): string => {
+  const normalizedType = notificationType.trim().toLowerCase();
+  return VISIT_COMMUNITY_TYPES.has(normalizedType) ? 'Visit Community' : 'View';
 };
 
 const extractManagerJoinRequestContext = (
@@ -416,6 +422,7 @@ const SystemNotificationsTab: React.FC<SystemNotificationsTabProps> = ({
     const managerContext = notification.managerJoinRequestContext;
     const isManagerJoinRequest = Boolean(managerContext);
     const safeLink = isManagerJoinRequest ? null : getSafeNavigableUrl(notification.link);
+    const linkLabel = getNotificationLinkLabel(notification.notificationType);
 
     return (
       <li
@@ -455,7 +462,7 @@ const SystemNotificationsTab: React.FC<SystemNotificationsTabProps> = ({
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-sm text-functional-green hover:text-functional-greenContrast"
               >
-                View
+                {linkLabel}
                 <SquareArrowOutUpRight size={12} className="inline" />
               </a>
             ) : (
@@ -463,7 +470,7 @@ const SystemNotificationsTab: React.FC<SystemNotificationsTabProps> = ({
                 href={safeLink.href}
                 className="flex items-center gap-1 text-sm text-functional-green hover:text-functional-greenContrast"
               >
-                View
+                {linkLabel}
                 <SquareArrowOutUpRight size={12} className="inline" />
               </Link>
             ))}
