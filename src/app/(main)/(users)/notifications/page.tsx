@@ -426,7 +426,9 @@ const SystemNotificationsTab: React.FC<SystemNotificationsTabProps> = ({
             : 'border-common-contrast bg-common-cardBackground'
         }`}
       >
-        <p className={`text-base font-medium ${isRead ? 'text-text-secondary' : 'text-text-primary'}`}>
+        <p
+          className={`text-base font-medium ${isRead ? 'text-text-secondary' : 'text-text-primary'}`}
+        >
           {notification.message}
         </p>
         <p className="text-sm text-text-tertiary">
@@ -434,7 +436,8 @@ const SystemNotificationsTab: React.FC<SystemNotificationsTabProps> = ({
         </p>
         {managerContext && (
           <p className="mt-1 text-xs text-text-secondary">
-            Group: <span className="font-semibold text-text-primary">{managerContext.communityLabel}</span>
+            Group:{' '}
+            <span className="font-semibold text-text-primary">{managerContext.communityLabel}</span>
           </p>
         )}
         {notification.content && !managerContext && (
@@ -490,7 +493,9 @@ const SystemNotificationsTab: React.FC<SystemNotificationsTabProps> = ({
               <Button
                 onClick={() => onManagerJoinRequestAction(notification, 'reject')}
                 className={`px-3 py-1.5 ${
-                  notification.actionDecision === 'reject' ? 'ring-1 ring-functional-redContrast/40' : ''
+                  notification.actionDecision === 'reject'
+                    ? 'ring-1 ring-functional-redContrast/40'
+                    : ''
                 }`}
                 variant={notification.actionDecision === 'reject' ? 'danger' : 'outline'}
                 disabled={notification.actionPending}
@@ -507,7 +512,11 @@ const SystemNotificationsTab: React.FC<SystemNotificationsTabProps> = ({
               </Button>
             </div>
           ) : !notification.isRead ? (
-            <Button onClick={() => onMarkAsRead(notification.id)} className="px-3 py-1.5" type="button">
+            <Button
+              onClick={() => onMarkAsRead(notification.id)}
+              className="px-3 py-1.5"
+              type="button"
+            >
               <ButtonIcon>
                 <Check size={14} />
               </ButtonIcon>
@@ -548,7 +557,9 @@ const SystemNotificationsTab: React.FC<SystemNotificationsTabProps> = ({
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-text-secondary">Read System Notifications</h2>
+        <h2 className="mb-3 text-sm font-semibold text-text-secondary">
+          Read System Notifications
+        </h2>
         {readNotifications.length === 0 ? (
           <div className="rounded-xl border border-common-minimal bg-common-background p-4 text-xs text-text-tertiary">
             No read system notifications.
@@ -578,9 +589,14 @@ const resolveManagerJoinRequestTarget = async (
     return null;
   }
 
-  const joinRequestsResponse = await communitiesApiJoinGetJoinRequests(context.communityName, authHeaders);
+  const joinRequestsResponse = await communitiesApiJoinGetJoinRequests(
+    context.communityName,
+    authHeaders
+  );
   const joinRequests = joinRequestsResponse.data ?? [];
-  const pendingJoinRequests = joinRequests.filter((joinRequest) => joinRequest.status === 'pending');
+  const pendingJoinRequests = joinRequests.filter(
+    (joinRequest) => joinRequest.status === 'pending'
+  );
   const normalizedRequester = context.requesterUsername?.toLowerCase() ?? null;
 
   let resolvedJoinRequest =
