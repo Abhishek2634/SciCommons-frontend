@@ -42,4 +42,3 @@ export const decodeHtmlEntities = (input: string): string => {
 
   return decoded;
 };
-

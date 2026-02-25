@@ -41,7 +41,7 @@ interface ReviewFormProps {
   onSubmitSuccess?: () => void;
 }
 
-type ActionType = 'create' | 'edit' | 'delete';
+type ActionType = 'create' | 'edit';
 
 const ReviewForm: React.FC<ReviewFormProps> = ({
   articleId,
@@ -59,8 +59,10 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   const queryClient = useQueryClient();
   const accessToken = useAuthStore((state) => state.accessToken);
   const axiosConfig = { headers: { Authorization: `Bearer ${accessToken}` } };
-
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [action, setAction] = React.useState<ActionType>('create');
+  const reviewDeleteDialogTitleId = React.useId();
+  const reviewDeleteDialogDescriptionId = React.useId();
   const reviewEditorRef = React.useRef<MDXEditorMethods>(null);
   const markdownRef = React.useRef<string>(content || '');
   const [markdown, setMarkdown] = React.useState<string>(content || '');
@@ -138,21 +140,6 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
           },
         }
       );
-    } else if (action === 'delete' && reviewId) {
-      deleteReview(
-        { reviewId: reviewId },
-        {
-          onSuccess: () => {
-            toast.success('Review deleted successfully');
-            refetch && refetch();
-            invalidateReviewQueries();
-            setEdit && setEdit(false);
-          },
-          onError: (error) => {
-            showErrorToast(error);
-          },
-        }
-      );
     } else {
       createReview(
         { articleId, data: reviewData, params: { community_id: communityId } },
@@ -174,6 +161,27 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
         }
       );
     }
+  };
+
+  const handleDeleteReview = () => {
+    if (!reviewId) return;
+
+    deleteReview(
+      { reviewId },
+      {
+        onSuccess: () => {
+          toast.success('Review deleted successfully');
+          refetch?.();
+          invalidateReviewQueries();
+          setEdit?.(false);
+        },
+        onError: (error) => {
+          showErrorToast(error);
+        },
+      }
+    );
+
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -281,9 +289,9 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
                 </Button>
                 <Button
                   variant={'danger'}
-                  onClick={() => setAction('delete')}
+                  onClick={() => setShowDeleteConfirm(true)}
                   loading={deletePending}
-                  type="submit"
+                  type="button"
                 >
                   <ButtonTitle>{deletePending ? 'Deleting...' : 'Delete'}</ButtonTitle>
                 </Button>
@@ -316,6 +324,53 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
               </div>
             )}
           </form>
+          {/* Fixed by Codex on 2026-02-24
+              Who: Codex
+              What: Hardened review-delete confirmation modal accessibility and layering.
+              Why: z-50 can render behind fixed mobile nav (z-[1000]), and dialog semantics were missing.
+              How: Raised overlay z-index and added role/aria labelling for assistive technology. */}
+          {showDeleteConfirm && (
+            <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/50">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={reviewDeleteDialogTitleId}
+                aria-describedby={reviewDeleteDialogDescriptionId}
+                className="w-[320px] rounded-xl bg-common-cardBackground p-6"
+              >
+                <p id={reviewDeleteDialogTitleId} className="mb-2 text-lg font-semibold">
+                  Delete this review?
+                </p>
+                <p
+                  id={reviewDeleteDialogDescriptionId}
+                  className="mb-4 text-sm text-text-secondary"
+                >
+                  This action cannot be undone.
+                </p>
+
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button
+                    variant="gray"
+                    size="sm"
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    <ButtonTitle>Cancel</ButtonTitle>
+                  </Button>
+
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    loading={deletePending}
+                    type="button"
+                    onClick={handleDeleteReview}
+                  >
+                    <ButtonTitle>Delete</ButtonTitle>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </>

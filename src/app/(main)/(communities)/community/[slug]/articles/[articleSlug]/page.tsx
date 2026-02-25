@@ -2,25 +2,29 @@
 
 import { useEffect, useState } from 'react';
 
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
+
+import { List } from 'lucide-react';
 
 import { withAuthRedirect } from '@/HOCs/withAuthRedirect';
 import { useArticlesApiGetArticle } from '@/api/articles/articles';
 import { useArticlesReviewApiListReviews } from '@/api/reviews/reviews';
 import DiscussionForum from '@/components/articles/DiscussionForum';
 import DisplayArticle, { DisplayArticleSkeleton } from '@/components/articles/DisplayArticle';
-import ReviewCard, { ReviewCardSkeleton } from '@/components/articles/ReviewCard';
-import ReviewForm from '@/components/articles/ReviewForm';
-import EmptyState from '@/components/common/EmptyState';
+import ReviewsTabBody from '@/components/articles/ReviewsTabBody';
 import CommunityBreadcrumb from '@/components/communities/CommunityBreadcrumb';
+import { Button, ButtonIcon, ButtonTitle } from '@/components/ui/button';
 import TabNavigation from '@/components/ui/tab-navigation';
 import { FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
 import { showErrorToast } from '@/lib/toastHelpers';
+import { useArticlesViewStore } from '@/stores/articlesViewStore';
 import { useAuthStore } from '@/stores/authStore';
 
 const CommunityArticleDisplayPage: React.FC = () => {
   const accessToken = useAuthStore((state) => state.accessToken);
   const params = useParams<{ articleSlug: string; slug: string }>();
+  const setViewType = useArticlesViewStore((state) => state.setViewType);
   const [submitReview, setSubmitReview] = useState(false);
 
   const { data, error, isPending } = useArticlesApiGetArticle(
@@ -80,58 +84,26 @@ const CommunityArticleDisplayPage: React.FC = () => {
         {
           title: 'Reviews',
           content: () => (
-            <div className="flex flex-col gap-2">
-              {/* Todo: Uncomment this after testing */}
-              {/* {!data.data.is_submitter && (
-                <ReviewForm
-                  articleId={data?.data.id || 0}
-                  refetch={reviewsRefetch}
-                  communityId={data?.data.community_article?.community.id}
-                />
-              )} */}
-              {!hasUserReviewed && (
-                <div className="flex items-center justify-between rounded-md bg-functional-green/5 px-4 py-2">
-                  <span className="text-sm font-semibold text-text-secondary">
-                    Have your reviews? (You can add a review only once.)
-                  </span>
-                  {/* Fixed by Codex on 2026-02-15
-                      Who: Codex
-                      What: Make the review toggle a real button with aria state.
-                      Why: Span clicks are not keyboard accessible for screen reader users.
-                      How: Swap to a button with aria-expanded/controls and focus styling. */}
-                  <button
-                    type="button"
-                    className="text-xs text-functional-green hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"
-                    onClick={() => setSubmitReview(!submitReview)}
-                    aria-expanded={submitReview}
-                    aria-controls="community-article-review-form"
-                  >
-                    {submitReview ? 'Cancel' : 'Add review'}
-                  </button>
-                </div>
-              )}
-              {submitReview && !hasUserReviewed && (
-                <div id="community-article-review-form">
-                  <ReviewForm
-                    articleId={Number(data.data.id)}
-                    refetch={reviewsRefetch}
-                    is_submitter={data.data.is_submitter}
-                    communityId={data?.data.community_article?.community.id}
-                    onSubmitSuccess={() => setSubmitReview(false)}
-                  />
-                </div>
-              )}
-              {reviewsIsPending && [...Array(5)].map((_, i) => <ReviewCardSkeleton key={i} />)}
-              {reviewsData?.data.items.length === 0 && (
-                <EmptyState
-                  content="No reviews yet"
-                  subcontent="Be the first to review this article"
-                />
-              )}
-              {reviewsData?.data.items.map((item) => (
-                <ReviewCard key={item.id} review={item} refetch={reviewsRefetch} />
-              ))}
-            </div>
+            /* Fixed by Codex on 2026-02-21
+               Who: Codex
+               What: Reused shared ReviewsTabBody for community article reviews tab.
+               Why: Keep review interactions identical across community/article/discussions contexts.
+               How: Inject community scope and local submit state through shared component props. */
+            <ReviewsTabBody
+              articleId={Number(data.data.id)}
+              reviews={reviewsData?.data.items}
+              reviewsIsPending={reviewsIsPending}
+              reviewsRefetch={reviewsRefetch}
+              hasUserReviewed={hasUserReviewed}
+              isReviewFormOpen={submitReview}
+              onReviewFormToggle={() => setSubmitReview((prev) => !prev)}
+              onReviewSubmitSuccess={() => setSubmitReview(false)}
+              communityId={data?.data.community_article?.community.id}
+              isSubmitter={data.data.is_submitter}
+              reviewFormContainerId="community-article-review-form"
+              className="gap-2"
+              showHeading={false}
+            />
           ),
         },
         {
@@ -159,6 +131,20 @@ const CommunityArticleDisplayPage: React.FC = () => {
     }
   }, [error]);
 
+  /* Fixed by Codex on 2026-02-23
+     Who: Codex
+     What: Added a direct "List View" convenience action on community article detail pages.
+     Why: Users navigating from community article grids needed a quick way to return to list mode.
+     How: Add a right-aligned action back to the community page, force grid mode on click, and keep it icon-only on mobile with accessible labeling. */
+  const handleGoToListView = () => {
+    setViewType('grid');
+  };
+
+  const communityListHref =
+    data?.data.id && params?.slug
+      ? `/community/${params.slug}?articleId=${data.data.id}`
+      : `/community/${params?.slug}`;
+
   return (
     <div className="w-full p-4 py-4 md:px-6">
       <CommunityBreadcrumb
@@ -167,6 +153,26 @@ const CommunityArticleDisplayPage: React.FC = () => {
         articleTitle={data?.data.title}
         isLoading={isPending}
       />
+      {!isPending && (
+        <div className="mb-3 flex justify-end">
+          <Button
+            asChild
+            withTooltip
+            tooltipData="List View"
+            variant="outline"
+            size="xs"
+            className="border border-common-minimal/70 bg-common-cardBackground px-2 hover:bg-common-minimal sm:px-3"
+            aria-label="Switch to community articles list view"
+          >
+            <Link href={communityListHref} onClick={handleGoToListView}>
+              <ButtonIcon>
+                <List size={14} className="text-text-secondary" />
+              </ButtonIcon>
+              <ButtonTitle className="hidden text-text-secondary sm:flex">List View</ButtonTitle>
+            </Link>
+          </Button>
+        </div>
+      )}
       {isPending ? (
         <DisplayArticleSkeleton />
       ) : (
@@ -174,7 +180,7 @@ const CommunityArticleDisplayPage: React.FC = () => {
           <div className="flex flex-col">
             <DisplayArticle article={data.data} />
             <div className="mt-3 inline-block rounded-md bg-functional-blue/10 px-2 py-0.5 sm:mt-5 sm:rounded-xl sm:px-3 sm:py-1">
-              <span className="text-xs leading-snug text-functional-blueContrast">
+              <span className="block text-xs leading-snug text-functional-blueContrast">
                 {data.data.community_article?.is_pseudonymous
                   ? 'Community admin has enabled pseudonymous reviews & discussions. Your name won’t be shown.'
                   : 'Community admin has disabled pseudonymous reviews & discussions. Your name will be visible.'}

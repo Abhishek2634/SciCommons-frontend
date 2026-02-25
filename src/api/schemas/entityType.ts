@@ -17,7 +17,8 @@ Future entity types (add here and in UserFlag.VALID_ENTITY_TYPES when implemente
 - article: An article
 - review: A review on an article
  */
-export type EntityType = (typeof EntityType)[keyof typeof EntityType];
+export type EntityType = typeof EntityType[keyof typeof EntityType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EntityType = {

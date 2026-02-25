@@ -5,9 +5,9 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ArticlesListOutArticleImageUrl } from './articlesListOutArticleImageUrl';
+import type { Tag } from './tag';
 import type { ArticlesListOutCommunityArticle } from './articlesListOutCommunityArticle';
 import type { ArticlesListOutIsBookmarked } from './articlesListOutIsBookmarked';
-import type { Tag } from './tag';
 import type { UserStats } from './userStats';
 
 export interface ArticlesListOut {

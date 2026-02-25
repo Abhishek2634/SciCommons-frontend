@@ -6,16 +6,16 @@
  */
 
 export type UsersCommonApiGetMyBookmarksParams = {
-  /**
-   * Filter by bookmark type
-   */
-  filter_type?: 'article' | 'community' | 'all';
-  /**
-   * Page number
-   */
-  page?: number;
-  /**
-   * Items per page
-   */
-  per_page?: number;
+/**
+ * Filter by bookmark type
+ */
+filter_type?: 'article' | 'community' | 'all';
+/**
+ * Page number
+ */
+page?: number;
+/**
+ * Items per page
+ */
+per_page?: number;
 };

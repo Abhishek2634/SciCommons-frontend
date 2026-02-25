@@ -15,9 +15,7 @@ import { useArticlesApiGetArticle } from '@/api/articles/articles';
 import { useArticlesReviewApiListReviews } from '@/api/reviews/reviews';
 import DiscussionForum from '@/components/articles/DiscussionForum';
 import DisplayArticle, { DisplayArticleSkeleton } from '@/components/articles/DisplayArticle';
-import ReviewCard, { ReviewCardSkeleton } from '@/components/articles/ReviewCard';
-import ReviewForm from '@/components/articles/ReviewForm';
-import EmptyState from '@/components/common/EmptyState';
+import ReviewsTabBody from '@/components/articles/ReviewsTabBody';
 import { BlockSkeleton, Skeleton } from '@/components/common/Skeleton';
 import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
@@ -191,71 +189,43 @@ function ArticleDisplayPageClientInner({ params }: Props) {
         {
           title: 'Reviews',
           content: () => (
-            <div className="flex flex-col">
-              {!hasUserReviewed && (
-                <div className="flex items-center justify-between rounded-md bg-functional-green/5 px-4 py-2">
-                  <span className="text-sm font-semibold text-text-secondary">
-                    Have your reviews? (You can add a review only once.)
-                  </span>
-                  {/* Fixed by Codex on 2026-02-15
-                      Who: Codex
-                      What: Switch review form toggle from span to button with aria state.
-                      Why: Ensure the control is keyboard accessible and announces state changes.
-                      How: Use a button with aria-expanded/controls targeting the form wrapper. */}
-                  <button
-                    type="button"
-                    className="text-xs text-functional-green hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"
-                    onClick={() => setSubmitReview(!submitReview)}
-                    aria-expanded={submitReview}
-                    aria-controls="article-review-form"
-                  >
-                    {submitReview ? 'Cancel' : 'Add review'}
-                  </button>
-                </div>
-              )}
-              {submitReview && !hasUserReviewed && (
-                <div id="article-review-form">
-                  <ReviewForm
-                    articleId={Number(data.data.id)}
-                    refetch={reviewsRefetch}
-                    is_submitter={data.data.is_submitter}
-                    onSubmitSuccess={() => {
-                      setSubmitReview(false);
-                      setPendingQuote(null);
-                    }}
-                  />
-                </div>
-              )}
-              {/* Show pending quote notice */}
-              {pendingQuote && submitReview && (
-                <div className="mb-4 flex items-center justify-between rounded-md bg-functional-blue/10 px-4 py-2">
-                  <span className="text-sm text-functional-blue">
-                    Quote copied! Paste it in your review with Ctrl+V / Cmd+V
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setPendingQuote(null)}
-                    className="text-functional-blue hover:text-functional-blue/80"
-                    aria-label="Dismiss quote notice"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              )}
-              <span className="mb-4 border-b border-common-minimal pb-2 text-base font-bold text-text-secondary">
-                Reviews
-              </span>
-              {reviewsIsPending && [...Array(5)].map((_, i) => <ReviewCardSkeleton key={i} />)}
-              {reviewsData?.data.items.length === 0 && (
-                <EmptyState
-                  content="No reviews yet"
-                  subcontent="Be the first to review this article"
-                />
-              )}
-              {reviewsData?.data.items.map((item) => (
-                <ReviewCard key={item.id} review={item} refetch={reviewsRefetch} />
-              ))}
-            </div>
+            /* Fixed by Codex on 2026-02-21
+               Who: Codex
+               What: Switched the article-page review tab to shared ReviewsTabBody.
+               Why: Avoid route-level duplication while preserving PDF quote-specific UX.
+               How: Pass route-specific quote notice via afterReviewFormContent prop. */
+            <ReviewsTabBody
+              articleId={Number(data.data.id)}
+              reviews={reviewsData?.data.items}
+              reviewsIsPending={reviewsIsPending}
+              reviewsRefetch={reviewsRefetch}
+              hasUserReviewed={hasUserReviewed}
+              isReviewFormOpen={submitReview}
+              onReviewFormToggle={() => setSubmitReview((prev) => !prev)}
+              onReviewSubmitSuccess={() => {
+                setSubmitReview(false);
+                setPendingQuote(null);
+              }}
+              isSubmitter={data.data.is_submitter}
+              reviewFormContainerId="article-review-form"
+              afterReviewFormContent={
+                pendingQuote && submitReview ? (
+                  <div className="mb-4 flex items-center justify-between rounded-md bg-functional-blue/10 px-4 py-2">
+                    <span className="text-sm text-functional-blue">
+                      Quote copied! Paste it in your review with Ctrl+V / Cmd+V
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPendingQuote(null)}
+                      className="text-functional-blue hover:text-functional-blue/80"
+                      aria-label="Dismiss quote notice"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : null
+              }
+            />
           ),
         },
         {

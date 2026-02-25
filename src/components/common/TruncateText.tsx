@@ -46,6 +46,11 @@ const TruncateText = ({
     ? { dangerouslySetInnerHTML: { __html: safeHtml } }
     : { children: text };
   const shouldClamp = ENABLE_SHOW_MORE && !isExpanded && isTruncated;
+  /* Fixed by Codex on 2026-02-20
+     Who: Codex
+     What: Removed global forced word breaking from the shared truncation helper.
+     Why: The PR #271 overflow fix added `break-all` at the utility level, which affected typography in non-discussion surfaces.
+     How: Keep TruncateText neutral and let callers opt-in to aggressive wrapping only where overflow is observed. */
   /* Fixed by Codex on 2026-02-16
      Who: Codex
      What: Apply WebKit line-clamp styles only when truncation is actively enabled.

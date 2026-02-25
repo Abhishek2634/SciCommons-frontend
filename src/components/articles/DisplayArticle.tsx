@@ -53,12 +53,18 @@ const SheetTrigger = lazy(() =>
 
 interface DisplayArticleProps {
   article: ArticleOut;
+  editCommunityName?: string | null;
+  editReturnTo?: string | null;
+  editReturnPath?: string | null;
   showPdfViewerButton?: boolean;
   handleOpenPdfViewer?: () => void;
 }
 
 const DisplayArticle: React.FC<DisplayArticleProps> = ({
   article,
+  editCommunityName = null,
+  editReturnTo = null,
+  editReturnPath = null,
   showPdfViewerButton = false,
   handleOpenPdfViewer = () => {},
 }) => {
@@ -146,6 +152,44 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({
       },
     });
   };
+
+  /* Fixed by Codex on 2026-02-19
+     Who: Codex
+     What: Preserve caller context in the Edit Article settings URL.
+     Why: Users editing from side-panel list views should return to the same list/panel context.
+     How: Attach returnPath (and existing community context when available) to the settings query. */
+  const editArticleHref = React.useMemo(() => {
+    if (!article.slug) return '/articles';
+    const params = new URLSearchParams();
+    const resolvedCommunityName = editCommunityName || article.community_article?.community.name;
+
+    if (resolvedCommunityName) {
+      params.set('community', resolvedCommunityName);
+      params.set('returnTo', editReturnTo || 'community');
+    } else if (editReturnTo) {
+      params.set('returnTo', editReturnTo);
+    }
+
+    if (editReturnPath) {
+      params.set('returnPath', editReturnPath);
+    }
+
+    if (article.id) {
+      params.set('articleId', String(article.id));
+    }
+
+    const query = params.toString();
+    return query
+      ? `/article/${article.slug}/settings?${query}`
+      : `/article/${article.slug}/settings`;
+  }, [
+    article.slug,
+    article.community_article,
+    article.id,
+    editCommunityName,
+    editReturnTo,
+    editReturnPath,
+  ]);
 
   return (
     <div className={`flex flex-col items-start res-text-xs ${hasImage ? 'sm:flex-row' : ''}`}>
@@ -262,11 +306,7 @@ const DisplayArticle: React.FC<DisplayArticleProps> = ({
               How: Replace hard-coded white/black utilities with semantic tokens. */}
           {article.is_submitter && (
             <Link
-              href={
-                article.community_article
-                  ? `/article/${article.slug}/settings?community=${encodeURIComponent(article.community_article.community.name)}&returnTo=community`
-                  : `/article/${article.slug}/settings`
-              }
+              href={editArticleHref}
               className="rounded-md border border-common-contrast bg-common-cardBackground px-3 py-1.5 text-xs text-text-primary"
             >
               {/* Fixed by Codex on 2026-02-15

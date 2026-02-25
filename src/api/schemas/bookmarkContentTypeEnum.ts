@@ -8,8 +8,8 @@
 /**
  * Enum for content types that can be bookmarked.
  */
-export type BookmarkContentTypeEnum =
-  (typeof BookmarkContentTypeEnum)[keyof typeof BookmarkContentTypeEnum];
+export type BookmarkContentTypeEnum = typeof BookmarkContentTypeEnum[keyof typeof BookmarkContentTypeEnum];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const BookmarkContentTypeEnum = {

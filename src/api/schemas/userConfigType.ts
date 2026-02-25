@@ -8,7 +8,8 @@
 /**
  * Enum for configuration value types.
  */
-export type UserConfigType = (typeof UserConfigType)[keyof typeof UserConfigType];
+export type UserConfigType = typeof UserConfigType[keyof typeof UserConfigType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const UserConfigType = {

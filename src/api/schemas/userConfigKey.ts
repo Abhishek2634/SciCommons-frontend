@@ -9,7 +9,8 @@
  * Enum for user configuration keys.
 This is used in the OpenAPI schema for type safety.
  */
-export type UserConfigKey = (typeof UserConfigKey)[keyof typeof UserConfigKey];
+export type UserConfigKey = typeof UserConfigKey[keyof typeof UserConfigKey];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const UserConfigKey = {

@@ -16,7 +16,8 @@ Future flags (add here and in UserFlag.VALID_FLAG_TYPES when implemented):
 - starred: Entity is starred/favorited by the user
 - muted: Entity notifications are muted by the user
  */
-export type FlagType = (typeof FlagType)[keyof typeof FlagType];
+export type FlagType = typeof FlagType[keyof typeof FlagType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const FlagType = {

@@ -8,8 +8,8 @@
 /**
  * Enum for filtering bookmarks by type.
  */
-export type BookmarkFilterTypeEnum =
-  (typeof BookmarkFilterTypeEnum)[keyof typeof BookmarkFilterTypeEnum];
+export type BookmarkFilterTypeEnum = typeof BookmarkFilterTypeEnum[keyof typeof BookmarkFilterTypeEnum];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const BookmarkFilterTypeEnum = {

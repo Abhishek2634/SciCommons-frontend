@@ -145,6 +145,22 @@ const FormInput = <TFieldValues extends FieldValues>({
     setShowPassword((prev) => !prev);
   };
 
+  /* Fixed by Codex on 2026-02-19
+     Who: Codex
+     What: Add Ctrl/Cmd+Enter submit support for plain textarea inputs.
+     Why: Abstract/note fields built with FormInput should submit quickly from keyboard.
+     How: On modifier+Enter, prevent default newline and submit the owning form. */
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!(e.ctrlKey || e.metaKey) || e.key !== 'Enter') return;
+    if (readOnly || isSubmitting) return;
+    const parentForm = e.currentTarget.form;
+    if (!parentForm) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    parentForm.requestSubmit();
+  };
+
   useEffect(() => {
     if (isSuccess) {
       setMarkdown('');
@@ -231,7 +247,7 @@ const FormInput = <TFieldValues extends FieldValues>({
                 readOnly={readOnly}
               />
             ) : (
-              <textarea {...commonProps} rows={4} />
+              <textarea {...commonProps} rows={4} onKeyDown={handleTextareaKeyDown} />
             )
           ) : (
             <div className="relative">

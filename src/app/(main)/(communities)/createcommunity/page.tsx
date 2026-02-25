@@ -172,9 +172,9 @@ const CreateCommunity: React.FC = () => {
             requiredMessage="Description is required"
             minLengthValue={1}
             maxLengthValue={500}
-            minLengthMessage="Description must be at least 1 characters"
+            minLengthMessage="Description must be at least 1 character"
             maxLengthMessage="Description must not exceed 500 characters"
-            info="Your community's name should be unique and descriptive."
+            info="Provide a brief description of your community."
             errors={errors}
             supportMarkdown={true}
           />

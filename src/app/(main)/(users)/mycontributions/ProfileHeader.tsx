@@ -49,9 +49,11 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           className="aspect-square h-10 w-10 rounded-full object-cover sm:h-14 sm:w-14"
         />
       </div>
-      <div className="text-left">
+      <div className="min-w-0 flex-1 text-left">
         <h2 className="text-xl font-bold text-text-primary">{name}</h2>
-        <p className="mt-2 max-w-2xl text-sm text-text-tertiary">{bio}</p>
+        <p className="mt-2 break-words text-sm text-text-tertiary [overflow-wrap:anywhere]">
+          {bio}
+        </p>
         <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs sm:justify-start">
           {email && (
             <div className="flex items-center text-text-tertiary">

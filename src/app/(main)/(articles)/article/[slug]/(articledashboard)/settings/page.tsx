@@ -18,6 +18,7 @@ const ArticleSettings = ({ params }: { params: { slug: string } }) => {
   const searchParams = useSearchParams();
   const communityName = searchParams?.get('community') ?? null;
   const returnTo = searchParams?.get('returnTo') ?? null;
+  const returnPath = searchParams?.get('returnPath') ?? null;
   // const [activeTab, setActiveTab] = React.useState<ActiveTab>('Details');
 
   const { data, isPending, error } = useArticlesApiGetArticle(
@@ -76,6 +77,7 @@ const ArticleSettings = ({ params }: { params: { slug: string } }) => {
             articleSlug={params.slug}
             communityName={communityName}
             returnTo={returnTo}
+            returnPath={returnPath}
           />
         )}
       </div>

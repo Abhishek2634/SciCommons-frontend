@@ -5,8 +5,8 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type MyappFlagsApiGetFlagsEntityType =
-  (typeof MyappFlagsApiGetFlagsEntityType)[keyof typeof MyappFlagsApiGetFlagsEntityType];
+export type MyappFlagsApiGetFlagsEntityType = typeof MyappFlagsApiGetFlagsEntityType[keyof typeof MyappFlagsApiGetFlagsEntityType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const MyappFlagsApiGetFlagsEntityType = {

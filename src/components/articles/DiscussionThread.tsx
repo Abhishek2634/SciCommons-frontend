@@ -223,7 +223,7 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
           </button>
           <div className="mb-4 rounded bg-common-cardBackground p-4 shadow">
             <div className="mb-2 flex items-start justify-between">
-              <div className="flex flex-col gap-4">
+              <div className="flex w-full min-w-0 flex-col gap-4">
                 <div className="flex items-center gap-2">
                   <Image
                     src={
@@ -248,7 +248,7 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
                     </span>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex w-full min-w-0 flex-col gap-2 overflow-hidden">
                   {isEditing ? (
                     <form
                       ref={formRef}
@@ -293,11 +293,24 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
                     </form>
                   ) : (
                     <>
-                      <div className="mr-4 flex-grow cursor-pointer font-bold res-text-base">
-                        <TruncateText text={decodedTopic} maxLines={2} />
+                      {/* Fixed by Codex on 2026-02-20
+                          Who: Codex
+                          What: Corrected thread preview wrapping classes and fixed malformed JSX class attributes.
+                          Why: The previous PR left a `div` with bare attributes (`break-all min-w-0 ...`) instead of `className`, so wrapping styles were not reliably applied.
+                          How: Move wrap controls into valid `className`/`textClassName` props and use `break-words` + `overflow-wrap:anywhere` for safer word flow. */}
+                      <div className="mr-4 min-w-0 flex-grow cursor-pointer break-words font-bold res-text-base [overflow-wrap:anywhere]">
+                        <TruncateText
+                          text={decodedTopic}
+                          maxLines={2}
+                          textClassName="block w-full break-words [overflow-wrap:anywhere]"
+                        />
                       </div>
-                      <div>
-                        <TruncateText text={decodedContent} maxLines={3} />
+                      <div className="w-full min-w-0 break-words text-text-secondary [overflow-wrap:anywhere]">
+                        <TruncateText
+                          text={decodedContent}
+                          maxLines={3}
+                          textClassName="block w-full break-words [overflow-wrap:anywhere]"
+                        />
                       </div>
                     </>
                   )}

@@ -4,6 +4,8 @@
    Result: ~180 lines of shared logic, eliminated ~100 lines of duplication, single source of truth */
 import React, { useEffect, useState } from 'react';
 
+import { usePathname, useSearchParams } from 'next/navigation';
+
 import { useArticlesApiGetArticle } from '@/api/articles/articles';
 import { useArticlesReviewApiListReviews } from '@/api/reviews/reviews';
 import { FIVE_MINUTES_IN_MS, TEN_MINUTES_IN_MS } from '@/constants/common.constants';
@@ -14,8 +16,7 @@ import EmptyState from '../common/EmptyState';
 import TabNavigation from '../ui/tab-navigation';
 import DiscussionForum from './DiscussionForum';
 import DisplayArticle, { DisplayArticleSkeleton } from './DisplayArticle';
-import ReviewCard, { ReviewCardSkeleton } from './ReviewCard';
-import ReviewForm from './ReviewForm';
+import ReviewsTabBody from './ReviewsTabBody';
 
 interface ArticleContentViewProps {
   articleSlug: string;
@@ -63,6 +64,8 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
   tabResetKey,
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [submitReviewInternal, setSubmitReviewInternal] = useState(false);
 
   // Fetch full article data
@@ -168,64 +171,49 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
      How: Convert the defaultTab name into a stable tab index for TabNavigation. */
   const initialTabIndex = defaultTab === 'discussions' ? 1 : 0;
 
+  /* Fixed by Codex on 2026-02-19
+     Who: Codex
+     What: Build a context-preserving return path for article settings.
+     Why: Editing from list/preview contexts should return users to the same panel and selected article.
+     How: Reuse current pathname/query params and enforce articleId in the generated return URL. */
+  const editReturnPath = React.useMemo(() => {
+    if (!pathname || !articleId) return null;
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    params.set('articleId', String(articleId));
+    const query = params.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }, [pathname, searchParams, articleId]);
+
   // Create tabs configuration
   const tabs = articleData
     ? [
         {
           title: 'Reviews',
           content: () => (
-            <div className="flex flex-col">
-              {!hasUserReviewed && (
-                <div className="flex items-center justify-between rounded-md bg-functional-green/5 px-4 py-2">
-                  <span className="text-sm font-semibold text-text-secondary">
-                    Have your reviews? (You can add a review only once.)
-                  </span>
-                  {/* Fixed by Codex on 2026-02-15
-                      Who: Codex
-                      What: Use a button for the review toggle with aria state.
-                      Why: Span-based click targets are not keyboard accessible.
-                      How: Switch to button with aria-expanded and focus-visible ring. */}
-                  <button
-                    type="button"
-                    className="text-xs text-functional-green hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-blue"
-                    onClick={handleReviewFormToggle}
-                    aria-expanded={isReviewFormOpen}
-                  >
-                    {isReviewFormOpen ? 'Cancel' : 'Add review'}
-                  </button>
-                </div>
-              )}
-              {isReviewFormOpen && !hasUserReviewed && (
-                <div id="article-content-view-review-form">
-                  <ReviewForm
-                    articleId={Number(articleId)}
-                    refetch={reviewsRefetch}
-                    communityId={resolvedCommunityId}
-                    is_submitter={articleData.data.is_submitter}
-                    onSubmitSuccess={() => {
-                      if (isReviewFormControlled && onReviewFormToggle) {
-                        onReviewFormToggle(false);
-                        return;
-                      }
-                      setSubmitReviewInternal(false);
-                    }}
-                  />
-                </div>
-              )}
-              <span className="mb-4 border-b border-common-minimal pb-2 text-base font-bold text-text-secondary">
-                Reviews
-              </span>
-              {reviewsIsPending && [...Array(5)].map((_, i) => <ReviewCardSkeleton key={i} />)}
-              {reviewsData?.data.items.length === 0 && (
-                <EmptyState
-                  content="No reviews yet"
-                  subcontent="Be the first to review this article"
-                />
-              )}
-              {reviewsData?.data.items.map((item) => (
-                <ReviewCard key={item.id} review={item} refetch={reviewsRefetch} />
-              ))}
-            </div>
+            /* Fixed by Codex on 2026-02-21
+               Who: Codex
+               What: Replaced inline review-tab rendering with shared ReviewsTabBody.
+               Why: Keep article/discussions review UI behavior consistent without copy drift.
+               How: Delegate notice, form toggle, and review list states to a shared component. */
+            <ReviewsTabBody
+              articleId={Number(articleId)}
+              reviews={reviewsData?.data.items}
+              reviewsIsPending={reviewsIsPending}
+              reviewsRefetch={reviewsRefetch}
+              hasUserReviewed={hasUserReviewed}
+              isReviewFormOpen={isReviewFormOpen}
+              onReviewFormToggle={handleReviewFormToggle}
+              onReviewSubmitSuccess={() => {
+                if (isReviewFormControlled && onReviewFormToggle) {
+                  onReviewFormToggle(false);
+                  return;
+                }
+                setSubmitReviewInternal(false);
+              }}
+              communityId={resolvedCommunityId}
+              isSubmitter={articleData.data.is_submitter}
+              reviewFormContainerId="article-content-view-review-form"
+            />
           ),
         },
         {
@@ -256,6 +244,10 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
     <>
       <DisplayArticle
         article={articleData.data}
+        editCommunityName={
+          communityName ?? articleData.data.community_article?.community?.name ?? null
+        }
+        editReturnPath={editReturnPath}
         showPdfViewerButton={showPdfViewerButton}
         handleOpenPdfViewer={handleOpenPdfViewer}
       />

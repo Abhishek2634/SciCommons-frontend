@@ -99,7 +99,10 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
      What: Decode backend-escaped discussion text for card rendering and edit defaults.
      Why: Some discussion payloads include entity artifacts like `&#x20` that leaked into UI text.
      How: Normalize topic/content once with a shared decoder and reuse the normalized values. */
-  const decodedTopic = useMemo(() => decodeHtmlEntities(discussion.topic ?? ''), [discussion.topic]);
+  const decodedTopic = useMemo(
+    () => decodeHtmlEntities(discussion.topic ?? ''),
+    [discussion.topic]
+  );
   const decodedContent = useMemo(
     () => decodeHtmlEntities(discussion.content ?? ''),
     [discussion.content]
@@ -346,7 +349,7 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
               </DropdownMenu>
             )}
           </div>
-          <div className="flex w-full flex-col gap-0">
+          <div className="flex w-full min-w-0 flex-col gap-0">
             {/* Fixed by Codex on 2026-02-15
                Who: Codex
                What: Make discussion titles keyboard accessible.
@@ -391,24 +394,31 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
               </form>
             ) : (
               <>
+                {/* Fixed by Codex on 2026-02-20
+                   Who: Codex
+                   What: Reworked discussion preview wrapping to avoid horizontal overflow without splitting normal words aggressively.
+                   Why: `break-all` solved overflow but produced hard mid-word breaks and diverged from repository text-wrapping patterns.
+                   How: Use `break-words` with `overflow-wrap:anywhere` on discussion-local containers/content instead of global helper overrides. */}
                 <button
                   type="button"
                   aria-label="Open discussion"
                   onClick={handleOpenThread}
-                  className="line-clamp-2 flex-grow cursor-pointer text-left text-sm font-semibold text-text-primary hover:text-functional-blue hover:underline"
+                  className="line-clamp-2 min-w-0 flex-grow cursor-pointer break-words text-left text-sm font-semibold text-text-primary [overflow-wrap:anywhere] hover:text-functional-blue hover:underline"
                 >
                   {decodedTopic}
                 </button>
                 {/* <span className="text-text-secondary res-text-xs">{discussion.content}</span> */}
-                <RenderParsedHTML
-                  rawContent={decodedContent}
-                  isShrinked={true}
-                  containerClassName="mb-0"
-                  supportMarkdown={true}
-                  supportLatex={true}
-                  contentClassName="text-xs sm:text-sm"
-                  gradientClassName="sm:from-common-background"
-                />
+                <div className="w-full min-w-0 overflow-hidden break-words [overflow-wrap:anywhere]">
+                  <RenderParsedHTML
+                    rawContent={decodedContent}
+                    isShrinked={true}
+                    containerClassName="mb-0"
+                    supportMarkdown={true}
+                    supportLatex={true}
+                    contentClassName="text-xs sm:text-sm break-words [overflow-wrap:anywhere]"
+                    gradientClassName="sm:from-common-background"
+                  />
+                </div>
               </>
             )}
           </div>
