@@ -1,3 +1,27 @@
+## 2026-02-25 - Add External Destination Links for Home Supporter Logos
+
+Problem: The four supporter logos on the homepage were visual-only and did not navigate to the supporters' websites.
+
+Root Cause: The supporters block rendered plain image components without outbound anchor/link wrappers.
+
+Solution: Wrapped each supporter logo group with an external link and mapped URLs as follows: KCDHA -> Ashoka Koita Centre, DRAC -> Digital Research Alliance of Canada, GSoC -> Google Summer of Code, INCF -> INCF.
+
+Result: Users can now click/tap each supporter logo to open the correct supporter page in a new tab.
+
+Files Modified: `src/app/(home)/page.tsx`, `CHANGE_COMMENTS.md`
+
+## 2026-02-25 - Add INCF to Home Supporters and Split Supporters into Two Rows
+
+Problem: The homepage supporters section did not include the newly provided INCF logo, and a single desktop row was becoming visually long.
+
+Root Cause: The supporters block in `src/app/(home)/page.tsx` was hard-coded as a horizontal row at `sm` breakpoints and had no INCF image entry.
+
+Solution: Moved the provided `incf.png` asset into `public/images/INCF.png`, added an INCF logo image in the supporters list, and changed the supporters logo layout to a responsive grid (1 column on mobile, 2 columns from `sm` onward).
+
+Result: INCF now appears in the front-page "Our Supporters" section, and desktop/tablet rendering is balanced across two rows instead of one long strip.
+
+Files Modified: `public/images/INCF.png`, `src/app/(home)/page.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-24 - Community Admin Requests Split into Pending and Approved Tabs
 
 Problem: The admin `Requests` screen showed a mixed history by default, so pending join requests were buried alongside previously approved entries.
