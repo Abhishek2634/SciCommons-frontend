@@ -1,5 +1,8 @@
 import { useAuthStore } from '@/stores/authStore';
-import { MentionSourceType, useMentionNotificationsStore } from '@/stores/mentionNotificationsStore';
+import {
+  MentionSourceType,
+  useMentionNotificationsStore,
+} from '@/stores/mentionNotificationsStore';
 
 import {
   buildMentionExcerpt,
@@ -54,4 +57,3 @@ export function captureMentionNotification(input: MentionCaptureInput): void {
     targetUsername: normalizedCurrentUsername,
   });
 }
-

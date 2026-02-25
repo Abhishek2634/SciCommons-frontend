@@ -149,7 +149,8 @@ export const useMentionNotificationsStore = create<MentionNotificationsState>()(
           const scopedMentions = getScopedMentions(state.ownerUserId, state.mentions, userId);
           const prunedMentions = pruneExpiredMentions(scopedMentions, now);
 
-          let hasChanged = state.ownerUserId !== userId || prunedMentions.length !== state.mentions.length;
+          let hasChanged =
+            state.ownerUserId !== userId || prunedMentions.length !== state.mentions.length;
 
           const updatedMentions = prunedMentions.map((mention) => {
             if (mention.id !== mentionId || mention.isRead) return mention;
@@ -196,4 +197,3 @@ export const useMentionNotificationsStore = create<MentionNotificationsState>()(
     }
   )
 );
-

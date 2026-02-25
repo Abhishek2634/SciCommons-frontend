@@ -24,8 +24,12 @@ const formatMentionTimestamp = (timestamp: string): string => {
   return new Date(parsedTimestamp).toLocaleString();
 };
 
-const sortMentionsByDetectedTime = (mentions: MentionNotificationItem[]): MentionNotificationItem[] =>
-  [...mentions].sort((firstMention, secondMention) => secondMention.detectedAt - firstMention.detectedAt);
+const sortMentionsByDetectedTime = (
+  mentions: MentionNotificationItem[]
+): MentionNotificationItem[] =>
+  [...mentions].sort(
+    (firstMention, secondMention) => secondMention.detectedAt - firstMention.detectedAt
+  );
 
 interface MentionsTabProps {
   unreadMentions: MentionNotificationItem[];
@@ -33,7 +37,11 @@ interface MentionsTabProps {
   onMentionClick: (mentionId: string) => void;
 }
 
-const MentionsTab: React.FC<MentionsTabProps> = ({ unreadMentions, readMentions, onMentionClick }) => {
+const MentionsTab: React.FC<MentionsTabProps> = ({
+  unreadMentions,
+  readMentions,
+  onMentionClick,
+}) => {
   if (unreadMentions.length === 0 && readMentions.length === 0) {
     return (
       <div className="rounded-xl border border-common-minimal bg-common-background p-6 text-center">
@@ -46,7 +54,8 @@ const MentionsTab: React.FC<MentionsTabProps> = ({ unreadMentions, readMentions,
   }
 
   const renderMentionRow = (mention: MentionNotificationItem, isRead: boolean) => {
-    const mentionLabel = mention.sourceType === 'comment' ? 'Comment mention' : 'Discussion mention';
+    const mentionLabel =
+      mention.sourceType === 'comment' ? 'Comment mention' : 'Discussion mention';
 
     return (
       <li
@@ -93,7 +102,9 @@ const MentionsTab: React.FC<MentionsTabProps> = ({ unreadMentions, readMentions,
             No unread mentions.
           </div>
         ) : (
-          <ul className="space-y-3">{unreadMentions.map((mention) => renderMentionRow(mention, false))}</ul>
+          <ul className="space-y-3">
+            {unreadMentions.map((mention) => renderMentionRow(mention, false))}
+          </ul>
         )}
       </section>
 
@@ -104,7 +115,9 @@ const MentionsTab: React.FC<MentionsTabProps> = ({ unreadMentions, readMentions,
             No read mentions yet.
           </div>
         ) : (
-          <ul className="space-y-3">{readMentions.map((mention) => renderMentionRow(mention, true))}</ul>
+          <ul className="space-y-3">
+            {readMentions.map((mention) => renderMentionRow(mention, true))}
+          </ul>
         )}
       </section>
     </div>
@@ -165,7 +178,8 @@ const SystemNotificationsTab: React.FC<SystemNotificationsTabProps> = ({
               {notification.message}
             </p>
             <p className="text-sm text-text-tertiary">
-              {notification.notificationType} - {new Date(notification.createdAt).toLocaleDateString()}
+              {notification.notificationType} -{' '}
+              {new Date(notification.createdAt).toLocaleDateString()}
             </p>
             {notification.content && (
               <p className="mt-2 text-sm text-text-secondary">{notification.content}</p>
@@ -269,7 +283,10 @@ const NotificationPage: React.FC = () => {
     () => mentionItems.filter((mention) => !mention.isRead),
     [mentionItems]
   );
-  const readMentions = useMemo(() => mentionItems.filter((mention) => mention.isRead), [mentionItems]);
+  const readMentions = useMemo(
+    () => mentionItems.filter((mention) => mention.isRead),
+    [mentionItems]
+  );
 
   const markAsRead = (id: number) => {
     mutate({ notificationId: id });

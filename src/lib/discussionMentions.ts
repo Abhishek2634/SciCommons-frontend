@@ -21,11 +21,7 @@ export function contentMentionsUsername(content: string, username: string): bool
   }
 }
 
-export function buildMentionExcerpt(
-  content: string,
-  username: string,
-  maxLength = 170
-): string {
+export function buildMentionExcerpt(content: string, username: string, maxLength = 170): string {
   const condensedContent = content.replace(/\s+/g, ' ').trim();
   if (!condensedContent) return '';
   if (condensedContent.length <= maxLength) return condensedContent;
@@ -41,7 +37,10 @@ export function buildMentionExcerpt(
 
   const contextPadding = Math.max(20, Math.floor((maxLength - mentionToken.length) / 2));
   let sliceStart = Math.max(0, mentionIndex - contextPadding);
-  let sliceEnd = Math.min(condensedContent.length, mentionIndex + mentionToken.length + contextPadding);
+  let sliceEnd = Math.min(
+    condensedContent.length,
+    mentionIndex + mentionToken.length + contextPadding
+  );
 
   if (sliceEnd - sliceStart < maxLength) {
     if (sliceStart === 0) {
@@ -56,4 +55,3 @@ export function buildMentionExcerpt(
 
   return `${prefix}${condensedContent.slice(sliceStart, sliceEnd).trim()}${suffix}`;
 }
-
