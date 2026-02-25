@@ -45,6 +45,7 @@ import DiscussionComments from './DiscussionComments';
 interface DiscussionThreadProps {
   discussionId: number;
   setDiscussionId: (discussionId: React.SetStateAction<number | null>) => void;
+  mentionCandidates?: string[];
   refetchDiscussions?: () => void;
 }
 
@@ -56,6 +57,7 @@ interface DiscussionEditFormValues {
 const DiscussionThread: React.FC<DiscussionThreadProps> = ({
   discussionId,
   setDiscussionId,
+  mentionCandidates = [],
   refetchDiscussions,
 }) => {
   dayjs.extend(relativeTime);
@@ -276,6 +278,7 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
                         errors={errors}
                         textArea
                         supportMarkdown
+                        mentionCandidates={mentionCandidates}
                       />
                       <div className="flex flex-wrap items-center gap-2">
                         <Button
@@ -378,7 +381,7 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({
             </div>
           </div>
           <h3 className="mb-2 font-bold res-text-base">Comments</h3>
-          <DiscussionComments discussionId={discussionId} />
+          <DiscussionComments discussionId={discussionId} mentionCandidates={mentionCandidates} />
         </div>
       </>
     )

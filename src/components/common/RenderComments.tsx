@@ -8,6 +8,7 @@ interface RenderCommentsProps {
   maxDepth: number;
   isAllCollapsed: boolean;
   autoExpandOnUnread?: boolean;
+  mentionCandidates?: string[];
   onAddReply: (parentId: number, content: string) => void;
   onUpdateComment: (id: number, content: string) => void;
   onDeleteComment: (id: number) => void;
@@ -25,6 +26,7 @@ const RenderComments: React.FC<RenderCommentsProps> = ({
   maxDepth,
   isAllCollapsed,
   autoExpandOnUnread = false,
+  mentionCandidates = [],
   onAddReply,
   onUpdateComment,
   onDeleteComment,
@@ -47,6 +49,7 @@ const RenderComments: React.FC<RenderCommentsProps> = ({
         maxDepth={maxDepth}
         isAllCollapsed={isAllCollapsed}
         autoExpandOnUnread={autoExpandOnUnread}
+        mentionCandidates={mentionCandidates}
         onAddReply={onAddReply}
         onUpdateComment={onUpdateComment}
         onDeleteComment={onDeleteComment}

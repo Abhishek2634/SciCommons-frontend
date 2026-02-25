@@ -62,6 +62,7 @@ export interface CommentProps extends CommentData {
   maxDepth: number;
   isAllCollapsed: boolean;
   autoExpandOnUnread?: boolean;
+  mentionCandidates?: string[];
   onAddReply: (parentId: number, content: string, rating?: number) => void;
   onUpdateComment: (id: number, content: string, rating?: number) => void;
   onDeleteComment: (id: number) => void;
@@ -87,6 +88,7 @@ const Comment: React.FC<CommentProps> = ({
   maxDepth,
   isAllCollapsed,
   autoExpandOnUnread = false,
+  mentionCandidates = [],
   is_author,
   is_deleted,
   rating,
@@ -353,6 +355,7 @@ const Comment: React.FC<CommentProps> = ({
               initialContent={content}
               initialRating={rating}
               isReview={isReview}
+              mentionCandidates={mentionCandidates}
             />
           </div>
         ) : (
@@ -483,6 +486,7 @@ const Comment: React.FC<CommentProps> = ({
               buttonText="Post Reply"
               isReview={isReview}
               isReply
+              mentionCandidates={mentionCandidates}
             />
           </div>
         )}
@@ -494,6 +498,7 @@ const Comment: React.FC<CommentProps> = ({
               maxDepth={maxDepth}
               isAllCollapsed={isAllCollapsed}
               autoExpandOnUnread={autoExpandOnUnread}
+              mentionCandidates={mentionCandidates}
               onAddReply={onAddReply}
               onUpdateComment={onUpdateComment}
               onDeleteComment={onDeleteComment}

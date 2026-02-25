@@ -25,6 +25,7 @@ import InfiniteSpinnerAnimation from '../animations/InfiniteSpinnerAnimation';
 
 interface DiscussionCommentsProps {
   discussionId: number;
+  mentionCandidates?: string[];
   /** Article context for tracking read state */
   articleContext?: {
     communityId: number;
@@ -34,6 +35,7 @@ interface DiscussionCommentsProps {
 
 const DiscussionComments: React.FC<DiscussionCommentsProps> = ({
   discussionId,
+  mentionCandidates = [],
   articleContext,
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -211,6 +213,7 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({
           placeholder="Write a new comment..."
           buttonText="Post Comment"
           isPending={isCreateCommentPending}
+          mentionCandidates={mentionCandidates}
         />
       )}
       {isPending && (
@@ -240,6 +243,7 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({
             onDeleteComment={deleteCommentbyId}
             contentType={ContentTypeEnum.articlesdiscussioncomment}
             articleContext={articleContext}
+            mentionCandidates={mentionCandidates}
           />
         </div>
       )}

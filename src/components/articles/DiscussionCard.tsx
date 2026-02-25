@@ -46,6 +46,7 @@ interface DiscussionCardProps {
   refetch?: () => void;
   articleId?: number;
   communityId?: number | null;
+  mentionCandidates?: string[];
 }
 
 interface DiscussionEditFormValues {
@@ -61,6 +62,7 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
   refetch,
   articleId,
   communityId,
+  mentionCandidates = [],
 }) => {
   dayjs.extend(relativeTime);
 
@@ -382,6 +384,7 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
                   errors={errors}
                   textArea={true}
                   supportMarkdown={true}
+                  mentionCandidates={mentionCandidates}
                 />
                 <div className="flex flex-wrap items-center gap-2">
                   <Button type="submit" variant="blue" loading={isUpdating} showLoadingSpinner>
@@ -470,6 +473,7 @@ const DiscussionCard: React.FC<DiscussionCardProps> = ({
           <DiscussionComments
             discussionId={Number(discussion.id)}
             articleContext={communityId && articleId ? { communityId, articleId } : undefined}
+            mentionCandidates={mentionCandidates}
           />
         </div>
       )}

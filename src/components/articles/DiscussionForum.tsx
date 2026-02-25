@@ -13,6 +13,7 @@ import {
   useArticlesDiscussionApiSubscribeToDiscussion,
   useArticlesDiscussionApiUnsubscribeFromDiscussion,
 } from '@/api/discussions/discussions';
+import { useCommunitiesApiGetCommunity } from '@/api/communities/communities';
 import EmptyState from '@/components/common/EmptyState';
 import { Button, ButtonIcon, ButtonTitle } from '@/components/ui/button';
 import { ErrorMessage } from '@/constants';
@@ -30,6 +31,7 @@ import DiscussionThread from './DiscussionThread';
 interface DiscussionForumProps {
   articleId: number;
   communityId?: number | null;
+  communitySlug?: string | null;
   communityArticleId?: number | null;
   showSubscribeButton?: boolean;
   isAdmin?: boolean;
@@ -38,6 +40,7 @@ interface DiscussionForumProps {
 const DiscussionForum: React.FC<DiscussionForumProps> = ({
   articleId,
   communityId,
+  communitySlug,
   communityArticleId,
   showSubscribeButton = false,
   isAdmin = false,
@@ -48,6 +51,7 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
 
   const [showForm, setShowForm] = useState<boolean>(false);
   const [discussionId, setDiscussionId] = useState<number | null>(null);
+  const normalizedCommunitySlug = communitySlug?.trim() || '';
 
   const { data, isPending, error, refetch } = useArticlesDiscussionApiListDiscussions(
     articleId,
@@ -83,6 +87,35 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
 
   const isSubscribed = subscriptionData?.data?.is_subscribed || false;
   const subscriptionId = subscriptionData?.data?.subscription?.id;
+
+  const { data: communityData } = useCommunitiesApiGetCommunity(normalizedCommunitySlug, {
+    request: { headers: { Authorization: `Bearer ${accessToken}` } },
+    query: {
+      enabled: !!accessToken && !!communityId && !!normalizedCommunitySlug,
+      staleTime: FIFTEEN_MINUTES_IN_MS,
+      refetchOnWindowFocus: false,
+    },
+  });
+
+  /* Fixed by Codex on 2026-02-25
+     Who: Codex
+     What: Added discussion mention candidates sourced from community membership.
+     Why: `@` tagging should only suggest valid members for communities the user belongs to.
+     How: Read `community.members` from the community API response and normalize/dedupe names before passing to comment inputs. */
+  const mentionCandidates = React.useMemo(() => {
+    const members = communityData?.data?.members;
+    if (!Array.isArray(members)) return [];
+
+    const dedupedMembers = new Set<string>();
+    members.forEach((memberName) => {
+      const normalizedMemberName = memberName.trim();
+      if (normalizedMemberName.length > 0) {
+        dedupedMembers.add(normalizedMemberName);
+      }
+    });
+
+    return Array.from(dedupedMembers);
+  }, [communityData?.data?.members]);
 
   // Subscribe mutation
   const { mutate: subscribe, isPending: isSubscribing } =
@@ -190,6 +223,7 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
       <DiscussionThread
         discussionId={discussionId}
         setDiscussionId={setDiscussionId}
+        mentionCandidates={mentionCandidates}
         refetchDiscussions={refetch}
       />
     );
@@ -272,6 +306,7 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
           setShowForm={setShowForm}
           articleId={articleId}
           communityId={communityId}
+          mentionCandidates={mentionCandidates}
           refetchDiscussions={refetch}
         />
       ) : (
@@ -303,6 +338,7 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
               refetch={refetch}
               articleId={articleId}
               communityId={communityId}
+              mentionCandidates={mentionCandidates}
             />
           ))}
       </div>

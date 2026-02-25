@@ -1,3 +1,17 @@
+## 2026-02-25 - Community-Member `@mention` Suggestions in Discussion Comments
+
+Problem: Discussion comments/replies did not provide guided `@name` tagging, so users had to guess exact member names and could not reliably mention the intended community member.
+
+Root Cause: Discussion comment inputs were plain textareas with no mention-token parsing or candidate source from the community API.
+
+Solution: Added mention-autocomplete behavior to the shared discussion comment input flow: typing `@` followed by letters now parses an active mention token, filters candidates in real time, and inserts the selected name via keyboard or mouse. Wired `DiscussionForum` to fetch the active community payload and derive `members` as normalized mention candidates, then passed those candidates through discussion-only comment components (new comment, reply, edit, nested replies).
+
+Result: In community discussions, users now get continuously filtered `@member` suggestions while typing in comments/replies, with no impact on non-discussion comment surfaces.
+
+Follow-up (same day): Extended `@mention` suggestions to discussion markdown content editors (new + edit) by wiring mention candidates through `DiscussionForm`/discussion edit forms -> `FormInput` -> MDX editor wrapper and adding caret-based mention detection + suffix insertion in the markdown editor component.
+
+Files Modified: `src/components/common/CommentInput.tsx`, `src/components/articles/DiscussionForum.tsx`, `src/components/articles/DiscussionCard.tsx`, `src/components/articles/DiscussionThread.tsx`, `src/components/articles/DiscussionComments.tsx`, `src/components/common/RenderComments.tsx`, `src/components/common/Comment.tsx`, `src/components/articles/DiscussionForm.tsx`, `src/components/common/FormInput.tsx`, `src/components/common/MarkdownEditor/ForwardRefEditor.tsx`, `src/components/common/MarkdownEditor/InitializedMDXEditor.tsx`, `src/components/articles/ArticleContentView.tsx`, `src/components/articles/ArticlePreviewSection.tsx`, `src/app/(main)/(communities)/community/[slug]/articles/[articleSlug]/page.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-25 - Add External Destination Links for Home Supporter Logos
 
 Problem: The four supporter logos on the homepage were visual-only and did not navigate to the supporters' websites.

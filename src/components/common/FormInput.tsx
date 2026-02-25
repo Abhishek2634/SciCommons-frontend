@@ -42,6 +42,7 @@ interface InputProps<TFieldValues extends FieldValues> {
   eyeBtnClassName?: string;
   supportMarkdown?: boolean;
   supportLatex?: boolean;
+  mentionCandidates?: string[];
   isSuccess?: boolean;
   validateFn?: (value: string) => true | string;
   autoFocus?: boolean;
@@ -93,6 +94,7 @@ const FormInput = <TFieldValues extends FieldValues>({
   eyeBtnClassName,
   supportMarkdown = false,
   supportLatex = false,
+  mentionCandidates = [],
   isSuccess = false,
   validateFn,
   autoFocus = false,
@@ -229,6 +231,7 @@ const FormInput = <TFieldValues extends FieldValues>({
               <ForwardRefEditor
                 markdown={markdown}
                 ref={reviewEditorRef}
+                mentionCandidates={mentionCandidates}
                 onChange={(newMarkdown) => {
                   markdownRef.current = newMarkdown;
                   // Notify react-hook-form of the value change
