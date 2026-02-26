@@ -14,6 +14,8 @@ Follow-up (same day): Resolved static-export prerender failure for `/notificatio
 
 Follow-up (same day): Removed a redundant nested Suspense wrapper from `NotificationsPageClient.tsx` after introducing the server-level `page.tsx` Suspense boundary, so the route now has a single canonical boundary without behavior changes.
 
+Follow-up (same day): Updated manager join-request actions in System notifications to move cards to the Read section after `Accept`/`Reject` succeeds (success-based transition, no extra manual mark-read step).
+
 ## 2026-02-26 - Discussions Guest Empty-State Redirect + Private Access Notice
 
 Problem: Logged-out users could open `/discussions` and see an empty sidebar state that looked stale/broken, with no clear direction about private-community access.

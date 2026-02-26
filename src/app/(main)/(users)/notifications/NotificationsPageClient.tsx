@@ -912,6 +912,11 @@ const NotificationPageContent: React.FC = () => {
     setJoinRequestActionErrorByNotificationId((previousRecord) =>
       removeNotificationEntry(previousRecord, notification.id)
     );
+    /* Fixed by Codex on 2026-02-26
+       Who: Codex
+       What: Move manager join-request notifications to the read section only after successful actions.
+       Why: Avoid optimistic state changes when the manager action fails.
+       How: Persist decision/read state after `manageJoinRequest` succeeds, while still skipping any extra manual mark-read step. */
 
     /* Fixed by Codex on 2026-02-25
        Who: Codex
@@ -944,9 +949,6 @@ const NotificationPageContent: React.FC = () => {
           ...previousRecord,
           [notification.id]: true,
         }));
-
-        await markNotificationAsRead({ notificationId: notification.id });
-        void refetch();
       } catch (error) {
         const errorMessage =
           error instanceof Error && error.message.trim()
@@ -956,7 +958,15 @@ const NotificationPageContent: React.FC = () => {
           ...previousRecord,
           [notification.id]: errorMessage,
         }));
+        return;
+      }
+
+      try {
+        await markNotificationAsRead({ notificationId: notification.id });
+      } catch {
+        // Keep the action in read state locally; persistence can recover on subsequent fetches/actions.
       } finally {
+        void refetch();
         setJoinRequestActionPendingByNotificationId((previousRecord) =>
           removeNotificationEntry(previousRecord, notification.id)
         );
