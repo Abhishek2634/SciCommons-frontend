@@ -60,7 +60,9 @@ const buildMentionLink = (mention: MentionNotificationInput): string => {
   return `${basePath}&commentId=${mention.sourceId}`;
 };
 
-const resolveMentionTimestamp = (mention: Pick<MentionNotificationItem, 'createdAt' | 'detectedAt'>) => {
+const resolveMentionTimestamp = (
+  mention: Pick<MentionNotificationItem, 'createdAt' | 'detectedAt'>
+) => {
   const parsedCreatedAt = Date.parse(mention.createdAt);
   if (Number.isNaN(parsedCreatedAt)) {
     return mention.detectedAt;
@@ -123,7 +125,9 @@ export const useMentionNotificationsStore = create<MentionNotificationsState>()(
           const scopedMentions = getScopedMentions(state.ownerUserId, state.mentions, userId);
           const prunedMentions = pruneExpiredMentions(scopedMentions, now);
           const mentionId = buildMentionId(targetUsername, mention.sourceType, mention.sourceId);
-          const parsedSourceCreatedAt = mention.createdAt ? Date.parse(mention.createdAt) : Number.NaN;
+          const parsedSourceCreatedAt = mention.createdAt
+            ? Date.parse(mention.createdAt)
+            : Number.NaN;
 
           /* Fixed by Codex on 2026-02-26
              Who: Codex
