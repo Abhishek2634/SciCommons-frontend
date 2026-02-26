@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { MENTION_NOTIFICATION_RETENTION_MS } from '@/constants/notifications.constants';
+
 export type MentionSourceType = 'discussion' | 'comment';
 
 export interface MentionNotificationItem {
@@ -42,7 +44,6 @@ interface MentionNotificationsState {
   reset: () => void;
 }
 
-const MENTION_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_STORED_MENTIONS = 500;
 
 const normalizeTargetUsername = (username: string) => username.trim().toLowerCase();
@@ -59,9 +60,18 @@ const buildMentionLink = (mention: MentionNotificationInput): string => {
   return `${basePath}&commentId=${mention.sourceId}`;
 };
 
+const resolveMentionTimestamp = (mention: Pick<MentionNotificationItem, 'createdAt' | 'detectedAt'>) => {
+  const parsedCreatedAt = Date.parse(mention.createdAt);
+  if (Number.isNaN(parsedCreatedAt)) {
+    return mention.detectedAt;
+  }
+
+  return parsedCreatedAt;
+};
+
 const pruneExpiredMentions = (mentions: MentionNotificationItem[], now: number) =>
   mentions
-    .filter((mention) => now - mention.detectedAt < MENTION_RETENTION_MS)
+    .filter((mention) => now - resolveMentionTimestamp(mention) < MENTION_NOTIFICATION_RETENTION_MS)
     .sort((a, b) => b.detectedAt - a.detectedAt)
     .slice(0, MAX_STORED_MENTIONS);
 
@@ -113,6 +123,26 @@ export const useMentionNotificationsStore = create<MentionNotificationsState>()(
           const scopedMentions = getScopedMentions(state.ownerUserId, state.mentions, userId);
           const prunedMentions = pruneExpiredMentions(scopedMentions, now);
           const mentionId = buildMentionId(targetUsername, mention.sourceType, mention.sourceId);
+          const parsedSourceCreatedAt = mention.createdAt ? Date.parse(mention.createdAt) : Number.NaN;
+
+          /* Fixed by Codex on 2026-02-26
+             Who: Codex
+             What: Suppressed re-adding mentions whose source timestamp is outside the 30-day retention window.
+             Why: Opening old discussion/comment threads should not regenerate stale mention notifications after local cleanup.
+             How: Parse mention source `createdAt`; if it is older than retention, keep only pruned current state and skip insertion. */
+          if (
+            !Number.isNaN(parsedSourceCreatedAt) &&
+            now - parsedSourceCreatedAt >= MENTION_NOTIFICATION_RETENTION_MS
+          ) {
+            if (state.ownerUserId === userId && prunedMentions.length === state.mentions.length) {
+              return state;
+            }
+
+            return {
+              ownerUserId: userId,
+              mentions: prunedMentions,
+            };
+          }
 
           if (prunedMentions.some((storedMention) => storedMention.id === mentionId)) {
             if (state.ownerUserId === userId && prunedMentions.length === state.mentions.length) {

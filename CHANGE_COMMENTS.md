@@ -26,6 +26,10 @@ Follow-up (same day): Seeded new-owner notification activity timestamps to curre
 
 Follow-up (same day): Implemented mention deep-link v2 for comment targets. Comment mentions now include `commentId` in navigation links, discussions route parses and propagates that target, comment trees auto-expand the target branch once, scroll to the exact comment, and then clear one-shot target state to avoid repeated forced expansions. Added backward-compatible fallback so older stored mention rows (without `commentId`) still route to the correct comment.
 
+Follow-up (same day): Prevented stale mention regeneration from old threads by enforcing retention against source `createdAt` during mention capture/storage. Mentions older than 30 days are now skipped instead of being re-added after local history cleanup.
+
+Follow-up (same day): Moved mention-retention duration into a shared constant (`src/constants/notifications.constants.ts`) so the 30-day window is centrally configurable and easier to audit.
+
 ## 2026-02-26 - Discussions Guest Empty-State Redirect + Private Access Notice
 
 Problem: Logged-out users could open `/discussions` and see an empty sidebar state that looked stale/broken, with no clear direction about private-community access.
