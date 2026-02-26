@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import Image from 'next/image';
 
-import { Edit, Pencil, Save } from 'lucide-react';
+import { Edit, Pencil, Save, X } from 'lucide-react';
 import { FieldErrors, useFormContext } from 'react-hook-form';
 
 import FormInput from '@/components/common/FormInput';
@@ -14,25 +14,31 @@ interface ProfileProps {
   editMode: boolean;
   setEditMode: React.Dispatch<React.SetStateAction<boolean>>;
   profilePicture: string;
+  isPending: boolean;
+  isActuallyDirty: boolean;
 }
 
-const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profilePicture }) => {
-  const { register } = useFormContext();
+const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profilePicture, isPending, isActuallyDirty }) => {
+  const { register, reset } = useFormContext();
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const profileImageInputRef = React.useRef<HTMLInputElement | null>(null);
 
-  const profilePictureRegister = register('profilePicture', {
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setPreviewImage(reader.result as string);
-        };
-        reader.readAsDataURL(file);
+  const profilePictureRegister = register('profilePicture');
+
+  useEffect(() => {
+    if (!editMode) {
+      setPreviewImage(null);
+      if (profileImageInputRef.current) {
+        profileImageInputRef.current.value = '';
       }
-    },
-  });
+    }
+  }, [editMode]);
+
+  const handleCancel = () => {
+    reset();
+    setPreviewImage(null);
+    setEditMode(false);
+  };
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col rounded-xl border border-common-contrast bg-common-cardBackground p-4 md:flex-row md:p-6">
@@ -54,7 +60,19 @@ const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profil
             type="file"
             accept="image/*"
             className="hidden"
-            {...profilePictureRegister}
+            name={profilePictureRegister.name}
+            onBlur={profilePictureRegister.onBlur}
+            onChange={(e) => {
+              profilePictureRegister.onChange(e);
+              const file = e.target.files?.[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  setPreviewImage(reader.result as string);
+                };
+                reader.readAsDataURL(file);
+              }
+            }}
             ref={(element) => {
               profilePictureRegister.ref(element);
               profileImageInputRef.current = element;
@@ -90,11 +108,25 @@ const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profil
                 setEditMode(true);
               }
             }}
-            className="ml-4 text-functional-blue hover:text-functional-blueContrast"
+            disabled={editMode && (!isActuallyDirty || isPending)}
+            className={`ml-4 ${editMode && (!isActuallyDirty || isPending)
+              ? 'cursor-not-allowed text-text-tertiary opacity-50'
+              : 'text-functional-blue hover:text-functional-blueContrast'
+              }`}
             aria-label={editMode ? 'Save profile' : 'Edit profile'}
           >
             {editMode ? <Save size={18} /> : <Edit size={18} />}
           </button>
+          {editMode && (
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="ml-2 text-functional-red transition-colors hover:text-red-700"
+              aria-label="Cancel editing"
+            >
+              <X size={18} />
+            </button>
+          )}
         </h2>
         <div className="space-y-4">
           <FormInput

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 
 import { FormProvider, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -52,6 +52,20 @@ const Home: React.FC = () => {
   const { data, error } = useCurrentUser();
   const { invalidateUser } = useInvalidateCurrentUser();
 
+  const methods = useForm<IProfileForm>({
+    defaultValues: {
+      professionalStatuses: [],
+    },
+    mode: 'onChange',
+  });
+
+  const {
+    handleSubmit,
+    formState: { errors },
+    reset,
+    watch,
+  } = methods;
+
   const { mutate, isPending } = useUsersApiUpdateUser({
     request: {
       headers: {
@@ -64,6 +78,7 @@ const Home: React.FC = () => {
         // Invalidate user cache to refetch and update all components using user data
         invalidateUser();
         setEditMode(false);
+        reset();
       },
       onError: (error) => {
         showErrorToast(error);
@@ -71,17 +86,7 @@ const Home: React.FC = () => {
     },
   });
 
-  const methods = useForm<IProfileForm>({
-    defaultValues: {
-      professionalStatuses: [],
-    },
-    mode: 'onChange',
-  });
 
-  const {
-    handleSubmit,
-    formState: { errors },
-  } = methods;
 
   const onSubmit = (formData: IProfileForm) => {
     const dataToSend = {
@@ -130,7 +135,7 @@ const Home: React.FC = () => {
     mutate({
       data: {
         payload: { details: dataToSend },
-        profile_image: formData.profilePicture ? formData.profilePicture[0] : undefined,
+        profile_image: formData.profilePicture && formData.profilePicture.length > 0 ? formData.profilePicture[0] : undefined,
       },
     });
   };
@@ -141,7 +146,7 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     if (data) {
-      methods.reset(
+      reset(
         {
           username: data.data.username,
           firstName: data.data.first_name || '',
@@ -152,8 +157,7 @@ const Home: React.FC = () => {
           linkedIn: data.data.linkedin_url || '',
           github: data.data.github_url || '',
           googleScholar: data.data.google_scholar_url || '',
-
-          profilePicture: undefined,
+          profilePicture: undefined as any,
           professionalStatuses: data.data.academic_statuses.map((status) => ({
             status: status.academic_email,
             startYear: String(status.start_year),
@@ -168,13 +172,24 @@ const Home: React.FC = () => {
         { keepValues: false }
       );
     }
-  }, [data, methods]);
+  }, [data, reset]);
 
   useEffect(() => {
     if (error) {
       showErrorToast(error);
     }
   }, [error]);
+
+  const currentValues = watch();
+
+  const isActuallyDirty = useMemo(() => {
+    if (!data) return false;
+    const { profilePicture: currentPic, ...cleanCurrentData } = currentValues as any;
+    const { profilePicture: defaultPic, ...cleanDefaultData } = methods.formState.defaultValues || {};
+    const isDataChanged = JSON.stringify(cleanCurrentData) !== JSON.stringify(cleanDefaultData);
+    const isPicChanged = currentPic && currentPic.length > 0;
+    return isDataChanged || isPicChanged;
+  }, [currentValues, methods.formState.defaultValues, data]);
 
   return (
     <FormProvider {...methods}>
@@ -185,13 +200,30 @@ const Home: React.FC = () => {
             editMode={editMode}
             setEditMode={setEditMode}
             profilePicture={data?.data.profile_pic_url || `data:image/png;base64,${imageData}`}
+            isPending={isPending}
+            isActuallyDirty={isActuallyDirty}
           />
           <PersonalLinks errors={errors} editMode={editMode} />
           <ProfessionalStatus errors={errors} editMode={editMode} />
           <ResearchInterests editMode={editMode} />
           {editMode && (
-            <div className="mx-auto mt-6 max-w-4xl">
-              <Button type="submit" disabled={isPending} className="w-full">
+            <div className="mx-auto mt-6 flex max-w-4xl gap-4">
+              <Button
+                type="button"
+                disabled={isPending}
+                onClick={() => {
+                  reset();
+                  setEditMode(false);
+                }}
+                className="w-full border border-common-contrast bg-common-cardBackground text-text-primary hover:bg-common-minimal"
+              >
+                <ButtonTitle>Cancel</ButtonTitle>
+              </Button>
+              <Button
+                type="submit"
+                disabled={isPending || !isActuallyDirty}
+                className={`w-full ${!isActuallyDirty ? 'cursor-not-allowed opacity-50' : ''}`}
+              >
                 <ButtonTitle>Save Changes</ButtonTitle>
               </Button>
             </div>
