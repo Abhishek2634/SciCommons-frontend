@@ -66,6 +66,27 @@ const resolveNotificationTabFromQuery = (rawTab: string | null): NotificationTab
     : NOTIFICATION_TAB_KEYS.system;
 };
 
+const renderTabTitleWithActivityBadge = (
+  baseLabel: 'System' | 'Mentions',
+  showNewBadge: boolean
+): React.ReactNode => {
+  if (!showNewBadge) return baseLabel;
+
+  /* Fixed by Codex on 2026-02-26
+     Who: Codex
+     What: Replaced textual `(New)` tab suffixes with the shared badge-pill visual style.
+     Why: Keep notification tab activity indicators consistent with existing "New" badges elsewhere in the app.
+     How: Compose tab titles as inline label + badge node when a non-active tab has unseen activity. */
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span>{baseLabel}</span>
+      <span className="rounded-full border border-functional-red/50 bg-functional-red/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-functional-red">
+        New
+      </span>
+    </span>
+  );
+};
+
 const formatMentionTimestamp = (timestamp: string): string => {
   const parsedTimestamp = Date.parse(timestamp);
   if (Number.isNaN(parsedTimestamp)) return 'Unknown time';
@@ -991,8 +1012,8 @@ const NotificationPageContent: React.FC = () => {
 
   const showSystemTabNewIndicator = hasNewSystemTabActivity && activeTabIndex !== 0;
   const showMentionsTabNewIndicator = hasNewMentionsTabActivity && activeTabIndex !== 1;
-  const systemTabTitle = showSystemTabNewIndicator ? 'System (New)' : 'System';
-  const mentionsTabTitle = showMentionsTabNewIndicator ? 'Mentions (New)' : 'Mentions';
+  const systemTabTitle = renderTabTitleWithActivityBadge('System', showSystemTabNewIndicator);
+  const mentionsTabTitle = renderTabTitleWithActivityBadge('Mentions', showMentionsTabNewIndicator);
 
   return (
     <div className="mx-auto max-w-4xl p-4">

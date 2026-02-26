@@ -2,7 +2,7 @@ import React, { ReactNode, useEffect, useRef, useState } from 'react';
 
 interface Tab {
   id?: string;
-  title: string;
+  title: ReactNode;
   // Performance: Support both static content and lazy-loaded content functions
   // Functions prevent unnecessary component rendering until tab is active
   content: ReactNode | (() => ReactNode);
@@ -107,7 +107,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
               }`}
               onClick={() => handleTabClick(index)}
             >
-              <span>{tab.title}</span>
+              {tab.title}
             </button>
           ))}
         </div>

@@ -16,6 +16,8 @@ Follow-up (same day): Removed a redundant nested Suspense wrapper from `Notifica
 
 Follow-up (same day): Updated manager join-request actions in System notifications to move cards to the Read section after `Accept`/`Reject` succeeds (success-based transition, no extra manual mark-read step).
 
+Follow-up (same day): Updated Notifications tab "New" labels from plain text suffixes to the existing pill badge style used elsewhere (e.g., navbar/discussions), for consistent visual language.
+
 ## 2026-02-26 - Discussions Guest Empty-State Redirect + Private Access Notice
 
 Problem: Logged-out users could open `/discussions` and see an empty sidebar state that looked stale/broken, with no clear direction about private-community access.
