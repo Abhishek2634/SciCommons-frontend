@@ -58,10 +58,6 @@ const NavBar: React.FC = () => {
     (state) => state.ownerUserId
   );
   const lastBellSeenAt = useNotificationActivityStore((state) => state.lastBellSeenAt);
-  const lastSystemTabSeenAt = useNotificationActivityStore((state) => state.lastSystemTabSeenAt);
-  const lastMentionsTabSeenAt = useNotificationActivityStore(
-    (state) => state.lastMentionsTabSeenAt
-  );
   const setNotificationActivityOwnerIfNeeded = useNotificationActivityStore(
     (state) => state.setOwnerIfNeeded
   );
@@ -102,25 +98,20 @@ const NavBar: React.FC = () => {
 
   const effectiveLastBellSeenAt =
     user?.id && notificationActivityOwnerUserId === user.id ? lastBellSeenAt : 0;
-  const effectiveLastSystemTabSeenAt =
-    user?.id && notificationActivityOwnerUserId === user.id ? lastSystemTabSeenAt : 0;
-  const effectiveLastMentionsTabSeenAt =
-    user?.id && notificationActivityOwnerUserId === user.id ? lastMentionsTabSeenAt : 0;
-
-  const hasNewSystemNotificationActivity =
-    latestSystemNotificationActivityAt > effectiveLastSystemTabSeenAt;
-  const hasNewMentionNotificationActivity =
-    latestMentionNotificationActivityAt > effectiveLastMentionsTabSeenAt;
+  const hasNewSystemNotificationActivitySinceBell =
+    latestSystemNotificationActivityAt > effectiveLastBellSeenAt;
+  const hasNewMentionNotificationActivitySinceBell =
+    latestMentionNotificationActivityAt > effectiveLastBellSeenAt;
   const latestNotificationActivityAt = Math.max(
     latestSystemNotificationActivityAt,
     latestMentionNotificationActivityAt
   );
   const hasNewNotificationsActivity = latestNotificationActivityAt > effectiveLastBellSeenAt;
 
+  const shouldOpenMentionsFromBell =
+    hasNewMentionNotificationActivitySinceBell && !hasNewSystemNotificationActivitySinceBell;
   const notificationsHref =
-    hasNewMentionNotificationActivity && !hasNewSystemNotificationActivity
-      ? '/notifications?tab=mentions'
-      : '/notifications?tab=system';
+    shouldOpenMentionsFromBell ? '/notifications?tab=mentions' : '/notifications?tab=system';
 
   // Get count of articles with new realtime events for discussions badge
   const newEventsCount = useSubscriptionUnreadStore((state) => state.getNewEventsCount());
