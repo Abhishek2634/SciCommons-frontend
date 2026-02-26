@@ -22,13 +22,13 @@ import {
   Users,
 } from 'lucide-react';
 
+import { useUsersApiGetNotifications } from '@/api/users/users';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useUsersApiGetNotifications } from '@/api/users/users';
 import { useAuthHeaders } from '@/hooks/useAuthHeaders';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import useIdenticon from '@/hooks/useIdenticons';
@@ -38,8 +38,8 @@ import { useTabTitleNotification } from '@/hooks/useTabTitleNotification';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
-import { useNotificationActivityStore } from '@/stores/notificationActivityStore';
 import { useMentionNotificationsStore } from '@/stores/mentionNotificationsStore';
+import { useNotificationActivityStore } from '@/stores/notificationActivityStore';
 import { useSubscriptionUnreadStore } from '@/stores/subscriptionUnreadStore';
 
 import { Button } from '../ui/button';
@@ -54,7 +54,9 @@ const NavBar: React.FC = () => {
   const mentionItems = useMentionNotificationsStore((state) => state.mentions);
   const setMentionOwnerIfNeeded = useMentionNotificationsStore((state) => state.setOwnerIfNeeded);
   const cleanupMentionNotifications = useMentionNotificationsStore((state) => state.cleanupExpired);
-  const notificationActivityOwnerUserId = useNotificationActivityStore((state) => state.ownerUserId);
+  const notificationActivityOwnerUserId = useNotificationActivityStore(
+    (state) => state.ownerUserId
+  );
   const lastBellSeenAt = useNotificationActivityStore((state) => state.lastBellSeenAt);
   const lastSystemTabSeenAt = useNotificationActivityStore((state) => state.lastSystemTabSeenAt);
   const lastMentionsTabSeenAt = useNotificationActivityStore(

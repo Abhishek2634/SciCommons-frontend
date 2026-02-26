@@ -18,11 +18,11 @@ import TabNavigation from '@/components/ui/tab-navigation';
 import { useAuthHeaders } from '@/hooks/useAuthHeaders';
 import { getSafeNavigableUrl } from '@/lib/safeUrl';
 import { useAuthStore } from '@/stores/authStore';
-import { useNotificationActivityStore } from '@/stores/notificationActivityStore';
 import {
   MentionNotificationItem,
   useMentionNotificationsStore,
 } from '@/stores/mentionNotificationsStore';
+import { useNotificationActivityStore } from '@/stores/notificationActivityStore';
 
 type SystemNotification = {
   id: number;
@@ -680,7 +680,9 @@ const NotificationPage: React.FC = () => {
   const cleanupExpired = useMentionNotificationsStore((state) => state.cleanupExpired);
   const markMentionAsRead = useMentionNotificationsStore((state) => state.markMentionAsRead);
   const clearReadMentions = useMentionNotificationsStore((state) => state.clearReadMentions);
-  const notificationActivityOwnerUserId = useNotificationActivityStore((state) => state.ownerUserId);
+  const notificationActivityOwnerUserId = useNotificationActivityStore(
+    (state) => state.ownerUserId
+  );
   const lastSystemTabSeenAt = useNotificationActivityStore((state) => state.lastSystemTabSeenAt);
   const lastMentionsTabSeenAt = useNotificationActivityStore(
     (state) => state.lastMentionsTabSeenAt
