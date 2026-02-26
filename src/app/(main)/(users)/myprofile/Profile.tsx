@@ -60,11 +60,6 @@ const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profil
               profileImageInputRef.current = element;
             }}
           />
-          {/* Fixed by Codex on 2026-02-24
-              Who: Codex
-              What: Scoped the profile image picker trigger to this component's file input ref.
-              Why: A global query selector can click the wrong input if duplicate field names exist.
-              How: Capture react-hook-form's ref and call `.click()` on the local input reference. */}
           {editMode && (
             <button
               type="button"
@@ -115,6 +110,11 @@ const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profil
               errors={errors}
               requiredMessage="First name is required"
               readOnly={!editMode}
+              validateFn={(value: string) => {
+                if (!/^[A-Za-z\s]+$/.test(value)) return "First name should only contain letters";
+                if (value.length < 3) return "First name must be at least 3 characters";
+                return true;
+              }}
             />
             <FormInput
               label="Last Name"
@@ -124,6 +124,11 @@ const Profile: React.FC<ProfileProps> = ({ errors, editMode, setEditMode, profil
               errors={errors}
               requiredMessage="Last name is required"
               readOnly={!editMode}
+              validateFn={(value: string) => {
+                if (!/^[A-Za-z\s]+$/.test(value)) return "Last name should only contain letters";
+                if (value.length < 2) return "Last name must be at least 2 characters";
+                return true;
+              }}
             />
           </div>
           <FormInput

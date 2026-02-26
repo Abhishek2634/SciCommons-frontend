@@ -3,6 +3,7 @@ import React from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 
 import MultiLabelSelector from '@/components/common/MultiLabelSelector';
+import { Option } from '@/components/ui/multiple-selector';
 
 interface ResearchInterestsProps {
   editMode: boolean;
@@ -20,17 +21,26 @@ const ResearchInterests: React.FC<ResearchInterestsProps> = ({ editMode }) => {
       <Controller
         name="researchInterests"
         control={control}
-        // rules={{ required: 'Research interests are required' }}
+        rules={{
+          validate: (value: Option[]) => {
+            if (!value || value.length === 0) return true;
+            const regex = /^[A-Za-z\s]+$/;
+            const hasInvalid = value.some((item) => !regex.test(item.label));
+            return hasInvalid ? 'Interests should only contain letters' : true;
+          },
+        }}
         render={({ field, fieldState }) => (
-          <MultiLabelSelector
-            disabled={!editMode}
-            label="Research Interests"
-            tooltipText="Select or add keywords for your research interests."
-            placeholder="Add Research Interests"
-            creatable
-            {...field}
-            fieldState={fieldState}
-          />
+          <div className="w-full">
+            <MultiLabelSelector
+              disabled={!editMode}
+              label="Research Interests"
+              tooltipText="Select or add keywords for your research interests."
+              placeholder="Add Research Interests"
+              creatable
+              {...field}
+              fieldState={fieldState}
+            />
+          </div>
         )}
       />
     </div>
