@@ -29,7 +29,7 @@ export interface IProfileForm {
   lastName: string;
   email: string;
   bio: string;
-  profilePicture: FileList;
+  profilePicture?: FileList;
   homePage: string;
   linkedIn: string;
   github: string;
@@ -76,17 +76,19 @@ const Home: React.FC = () => {
       onSuccess: () => {
         toast.success('Profile updated successfully');
         // Invalidate user cache to refetch and update all components using user data
+        /* Fixed by Codex on 2026-02-26
+           Who: Codex
+           What: Removed eager form reset on successful profile update.
+           Why: `reset()` without explicit values reused stale default values and could show pre-save data until refetch completed.
+           How: Keep the current form values intact, exit edit mode, and rely on cache invalidation/refetch to refresh canonical defaults. */
         invalidateUser();
         setEditMode(false);
-        reset();
       },
       onError: (error) => {
         showErrorToast(error);
       },
     },
   });
-
-
 
   const onSubmit = (formData: IProfileForm) => {
     const dataToSend = {
@@ -135,7 +137,10 @@ const Home: React.FC = () => {
     mutate({
       data: {
         payload: { details: dataToSend },
-        profile_image: formData.profilePicture && formData.profilePicture.length > 0 ? formData.profilePicture[0] : undefined,
+        profile_image:
+          formData.profilePicture && formData.profilePicture.length > 0
+            ? formData.profilePicture[0]
+            : undefined,
       },
     });
   };
@@ -157,7 +162,7 @@ const Home: React.FC = () => {
           linkedIn: data.data.linkedin_url || '',
           github: data.data.github_url || '',
           googleScholar: data.data.google_scholar_url || '',
-          profilePicture: undefined as any,
+          profilePicture: undefined,
           professionalStatuses: data.data.academic_statuses.map((status) => ({
             status: status.academic_email,
             startYear: String(status.start_year),
@@ -184,10 +189,16 @@ const Home: React.FC = () => {
 
   const isActuallyDirty = useMemo(() => {
     if (!data) return false;
-    const { profilePicture: currentPic, ...cleanCurrentData } = currentValues as any;
-    const { profilePicture: defaultPic, ...cleanDefaultData } = methods.formState.defaultValues || {};
+    /* Fixed by Codex on 2026-02-26
+       Who: Codex
+       What: Reworked dirty-state comparison typing for profile form.
+       Why: Previous `any` casts and unused destructuring weakened type safety and produced lint warnings.
+       How: Compare non-file form fields with typed partial defaults and detect file input changes separately. */
+    const { profilePicture: currentPic, ...cleanCurrentData } = currentValues;
+    const defaultValues = methods.formState.defaultValues as Partial<IProfileForm> | undefined;
+    const { profilePicture: _defaultPic, ...cleanDefaultData } = defaultValues || {};
     const isDataChanged = JSON.stringify(cleanCurrentData) !== JSON.stringify(cleanDefaultData);
-    const isPicChanged = currentPic && currentPic.length > 0;
+    const isPicChanged = Boolean(currentPic?.length);
     return isDataChanged || isPicChanged;
   }, [currentValues, methods.formState.defaultValues, data]);
 

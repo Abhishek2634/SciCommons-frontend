@@ -1,3 +1,15 @@
+## 2026-02-26 - Profile Save/Cancel Consistency and Dirty-State Hardening
+
+Problem: The profile edit flow could show stale pre-save data right after a successful save, and dirty-state logic introduced lint/type issues while cancel controls were duplicated in two locations.
+
+Root Cause: The success handler called `reset()` with implicit defaults before refetched user data arrived, dirty checks depended on `any` casting, and both header and footer exposed cancel actions for the same behavior.
+
+Solution: Removed eager post-save `reset()` and kept cache invalidation as the source of truth refresh, made `profilePicture` optional for typed reset defaults, replaced `any`-based dirty checks with typed partial-default comparison, and standardized to a single footer cancel button.
+
+Result: Save now preserves submitted values until canonical refetch, profile dirty-state checks remain lint-clean/type-safe, and edit actions are more consistent with one cancel path.
+
+Files Modified: `src/app/(main)/(users)/myprofile/page.tsx`, `src/app/(main)/(users)/myprofile/Profile.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-26 - Notifications Tab-Aware "New" Indicators + Mention Cleanup Controls
 
 Problem: Notifications UX could not distinguish unseen tab activity across System vs Mentions, bell "New" behavior was mention-only and persisted until read, and Mentions lacked a way to clear historical read entries.
