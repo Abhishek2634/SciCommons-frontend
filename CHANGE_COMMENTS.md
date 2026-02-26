@@ -10,6 +10,10 @@ Result: Notification entry behavior now follows activity-aware tab selection and
 
 Files Modified: `src/stores/notificationActivityStore.ts`, `src/components/common/NavBar.tsx`, `src/app/(main)/(users)/notifications/page.tsx`, `src/stores/mentionNotificationsStore.ts`, `src/components/ui/tab-navigation.tsx`, `CHANGE_COMMENTS.md`
 
+Follow-up (same day): Resolved static-export prerender failure for `/notifications` by moving route entry to a server `page.tsx` Suspense wrapper and shifting client logic (including `useSearchParams`) into `NotificationsPageClient.tsx`.
+
+Follow-up (same day): Removed a redundant nested Suspense wrapper from `NotificationsPageClient.tsx` after introducing the server-level `page.tsx` Suspense boundary, so the route now has a single canonical boundary without behavior changes.
+
 ## 2026-02-26 - Discussions Guest Empty-State Redirect + Private Access Notice
 
 Problem: Logged-out users could open `/discussions` and see an empty sidebar state that looked stale/broken, with no clear direction about private-community access.
