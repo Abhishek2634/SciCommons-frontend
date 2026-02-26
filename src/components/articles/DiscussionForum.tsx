@@ -37,6 +37,7 @@ interface DiscussionForumProps {
   showSubscribeButton?: boolean;
   isAdmin?: boolean;
   initialDiscussionId?: number | null;
+  initialCommentId?: number | null;
 }
 
 const DiscussionForum: React.FC<DiscussionForumProps> = ({
@@ -47,6 +48,7 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
   showSubscribeButton = false,
   isAdmin = false,
   initialDiscussionId = null,
+  initialCommentId = null,
 }) => {
   dayjs.extend(relativeTime);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -54,6 +56,7 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
 
   const [showForm, setShowForm] = useState<boolean>(false);
   const [discussionId, setDiscussionId] = useState<number | null>(initialDiscussionId);
+  const [focusedCommentId, setFocusedCommentId] = useState<number | null>(initialCommentId);
   const normalizedCommunitySlug = communitySlug?.trim() || '';
 
   const { data, isPending, error, refetch } = useArticlesDiscussionApiListDiscussions(
@@ -201,8 +204,14 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
      Why: Mention links now open `/discussions?articleId=...&discussionId=...` and should land in the thread view.
      How: Reapply `initialDiscussionId` whenever article context changes; reset to list view when absent. */
   useEffect(() => {
+    /* Fixed by Codex on 2026-02-26
+       Who: Codex
+       What: Synced discussion + comment deep-link targets to current article context.
+       Why: Mention URLs may carry both `discussionId` and `commentId`; both must reset when context changes.
+       How: Reapply incoming deep-link ids on article changes and clear them when absent. */
     setDiscussionId(initialDiscussionId ?? null);
-  }, [articleId, initialDiscussionId]);
+    setFocusedCommentId(initialCommentId ?? null);
+  }, [articleId, initialCommentId, initialDiscussionId]);
 
   /* Fixed by Codex on 2026-02-25
      Who: Codex
@@ -235,6 +244,7 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
 
   const handleDiscussionClick = (discussionId: number): void => {
     setDiscussionId(discussionId);
+    setFocusedCommentId(null);
   };
 
   const handleSubscriptionToggle = (): void => {
@@ -260,6 +270,7 @@ const DiscussionForum: React.FC<DiscussionForumProps> = ({
       <DiscussionThread
         discussionId={discussionId}
         setDiscussionId={setDiscussionId}
+        initialCommentId={focusedCommentId}
         mentionCandidates={mentionCandidates}
         refetchDiscussions={refetch}
       />

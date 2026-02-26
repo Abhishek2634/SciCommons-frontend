@@ -50,6 +50,15 @@ const normalizeTargetUsername = (username: string) => username.trim().toLowerCas
 const buildMentionId = (targetUsername: string, sourceType: MentionSourceType, sourceId: number) =>
   `${targetUsername}:${sourceType}:${sourceId}`;
 
+const buildMentionLink = (mention: MentionNotificationInput): string => {
+  const basePath = `/discussions?articleId=${mention.articleId}&discussionId=${mention.discussionId}`;
+  if (mention.sourceType !== 'comment') {
+    return basePath;
+  }
+
+  return `${basePath}&commentId=${mention.sourceId}`;
+};
+
 const pruneExpiredMentions = (mentions: MentionNotificationItem[], now: number) =>
   mentions
     .filter((mention) => now - mention.detectedAt < MENTION_RETENTION_MS)
@@ -130,7 +139,12 @@ export const useMentionNotificationsStore = create<MentionNotificationsState>()(
             communityId: mention.communityId ?? null,
             authorUsername: mention.authorUsername,
             excerpt: mention.excerpt,
-            link: `/discussions?articleId=${mention.articleId}&discussionId=${mention.discussionId}`,
+            /* Fixed by Codex on 2026-02-26
+               Who: Codex
+               What: Added comment-level deep-link support for mention notifications.
+               Why: Comment mentions should route to the specific target comment, not only the parent discussion thread.
+               How: Preserve existing discussion link shape and append `commentId` for comment-source mentions. */
+            link: buildMentionLink(mention),
             createdAt,
             detectedAt: now,
             isRead: false,

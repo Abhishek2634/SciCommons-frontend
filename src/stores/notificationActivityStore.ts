@@ -20,12 +20,20 @@ const EMPTY_ACTIVITY_STATE = {
   lastMentionsTabSeenAt: 0,
 } as const;
 
-const createStateForOwner = (userId: number) => ({
-  ownerUserId: userId,
-  lastBellSeenAt: 0,
-  lastSystemTabSeenAt: 0,
-  lastMentionsTabSeenAt: 0,
-});
+/* Fixed by Codex on 2026-02-26
+   Who: Codex
+   What: Seed per-owner notification seen timestamps with "now" instead of epoch.
+   Why: Initializing at `0` treats all historical system notifications as new and can incorrectly force the System tab when bell activity is mention-only.
+   How: Capture one creation timestamp and apply it to bell/system/mentions seen markers for fresh owner state. */
+const createStateForOwner = (userId: number) => {
+  const createdAt = Date.now();
+  return {
+    ownerUserId: userId,
+    lastBellSeenAt: createdAt,
+    lastSystemTabSeenAt: createdAt,
+    lastMentionsTabSeenAt: createdAt,
+  };
+};
 
 /* Fixed by Codex on 2026-02-26
    Who: Codex

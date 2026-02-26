@@ -32,6 +32,8 @@ interface ArticleContentViewProps {
   defaultTab?: 'reviews' | 'discussions';
   tabResetKey?: string | number;
   initialDiscussionId?: number | null;
+  // Optional comment-level deep-link target used by discussion mention notifications.
+  initialCommentId?: number | null;
 }
 
 /**
@@ -64,6 +66,7 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
   defaultTab = 'reviews',
   tabResetKey,
   initialDiscussionId = null,
+  initialCommentId = null,
 }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
   const pathname = usePathname();
@@ -232,6 +235,7 @@ const ArticleContentView: React.FC<ArticleContentViewProps> = ({
                 showSubscribeButton={shouldShowSubscribeButton}
                 isAdmin={isAdmin}
                 initialDiscussionId={initialDiscussionId}
+                initialCommentId={initialCommentId}
               />
             ) : null,
         },

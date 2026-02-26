@@ -47,8 +47,18 @@ const DiscussionsPageClientInner: React.FC = () => {
 
   const urlArticleId = parsePositiveIntegerParam(searchParams?.get('articleId') ?? null);
   const urlDiscussionId = parsePositiveIntegerParam(searchParams?.get('discussionId') ?? null);
+  /* Fixed by Codex on 2026-02-26
+     Who: Codex
+     What: Added comment-level deep-link query parsing for discussion mentions.
+     Why: Mention links can now target a specific comment, not just the discussion container.
+     How: Parse `commentId` from URL and pass it downstream only when it matches the selected article context. */
+  const urlCommentId = parsePositiveIntegerParam(searchParams?.get('commentId') ?? null);
   const initialDiscussionId =
     selectedArticle && urlArticleId === selectedArticle.id ? urlDiscussionId : null;
+  const initialCommentId =
+    initialDiscussionId !== null && selectedArticle && urlArticleId === selectedArticle.id
+      ? urlCommentId
+      : null;
 
   /* Fixed by Claude Sonnet 4.5 on 2026-02-09
      Problem: When navigating to article page and using back button, sidebar resets to top article
@@ -75,10 +85,11 @@ const DiscussionsPageClientInner: React.FC = () => {
     params.set('articleId', article.id.toString());
     /* Fixed by Codex on 2026-02-25
        Who: Codex
-       What: Clear stale discussion deep-link param on manual article switches.
-       Why: `discussionId` from a prior mention link can point to a different article and reopen the wrong thread.
-       How: Remove `discussionId` whenever the user explicitly selects a different article tile. */
+       What: Clear stale discussion deep-link params on manual article switches.
+       Why: `discussionId`/`commentId` from a prior mention link can point to a different article and reopen the wrong target.
+       How: Remove deep-link params whenever the user explicitly selects a different article tile. */
     params.delete('discussionId');
+    params.delete('commentId');
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
 
     // Close mobile sidebar when article is selected
@@ -161,6 +172,7 @@ const DiscussionsPageClientInner: React.FC = () => {
         const params = new URLSearchParams(searchParams?.toString() || '');
         params.set('articleId', nextSelectedArticle.id.toString());
         params.delete('discussionId');
+        params.delete('commentId');
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       }
     },
@@ -234,6 +246,7 @@ const DiscussionsPageClientInner: React.FC = () => {
                 showPdfViewerButton={true}
                 handleOpenPdfViewer={handleOpenPdfViewer}
                 initialDiscussionId={initialDiscussionId}
+                initialCommentId={initialCommentId}
                 {...discussionTabDefaults}
               />
             </div>
@@ -285,6 +298,7 @@ const DiscussionsPageClientInner: React.FC = () => {
                   showPdfViewerButton={true}
                   handleOpenPdfViewer={handleOpenPdfViewer}
                   initialDiscussionId={initialDiscussionId}
+                  initialCommentId={initialCommentId}
                   {...discussionTabDefaults}
                 />
               </div>

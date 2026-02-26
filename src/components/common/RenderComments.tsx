@@ -9,6 +9,8 @@ interface RenderCommentsProps {
   isAllCollapsed: boolean;
   autoExpandOnUnread?: boolean;
   mentionCandidates?: string[];
+  targetCommentId?: number | null;
+  onTargetCommentHandled?: () => void;
   onAddReply: (parentId: number, content: string) => void;
   onUpdateComment: (id: number, content: string) => void;
   onDeleteComment: (id: number) => void;
@@ -27,6 +29,8 @@ const RenderComments: React.FC<RenderCommentsProps> = ({
   isAllCollapsed,
   autoExpandOnUnread = false,
   mentionCandidates = [],
+  targetCommentId = null,
+  onTargetCommentHandled,
   onAddReply,
   onUpdateComment,
   onDeleteComment,
@@ -50,6 +54,13 @@ const RenderComments: React.FC<RenderCommentsProps> = ({
         isAllCollapsed={isAllCollapsed}
         autoExpandOnUnread={autoExpandOnUnread}
         mentionCandidates={mentionCandidates}
+        /* Fixed by Codex on 2026-02-26
+           Who: Codex
+           What: Forwarded deep-link target metadata through recursive comment trees.
+           Why: Any level in the tree may hold the mentioned comment id.
+           How: Pass the same target comment id/callback to every node so ancestors can expand and the target can self-scroll. */
+        targetCommentId={targetCommentId}
+        onTargetCommentHandled={onTargetCommentHandled}
         onAddReply={onAddReply}
         onUpdateComment={onUpdateComment}
         onDeleteComment={onDeleteComment}

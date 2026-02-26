@@ -360,6 +360,10 @@ const MentionsTab: React.FC<MentionsTabProps> = ({
   const renderMentionRow = (mention: MentionNotificationItem, isRead: boolean) => {
     const mentionLabel =
       mention.sourceType === 'comment' ? 'Comment mention' : 'Discussion mention';
+    const mentionDestination =
+      mention.sourceType === 'comment' && !mention.link.includes('commentId=')
+        ? `${mention.link}${mention.link.includes('?') ? '&' : '?'}commentId=${mention.sourceId}`
+        : mention.link;
 
     return (
       <li
@@ -380,7 +384,12 @@ const MentionsTab: React.FC<MentionsTabProps> = ({
         <p className="mt-2 text-sm text-text-secondary">{mention.excerpt}</p>
         <div className="mt-3">
           <Link
-            href={mention.link}
+            /* Fixed by Codex on 2026-02-26
+               Who: Codex
+               What: Added backward-compatible comment deep-link fallback for older mention entries.
+               Why: Existing localStorage mention rows created before `commentId` routing should still open the exact comment target.
+               How: Append `commentId` at render time only when the mention is comment-sourced and missing the param. */
+            href={mentionDestination}
             onClick={() => onMentionClick(mention.id)}
             className="inline-flex items-center gap-1 text-sm text-functional-green hover:text-functional-greenContrast"
           >

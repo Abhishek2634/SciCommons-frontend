@@ -22,6 +22,10 @@ Follow-up (same day): Refined navbar notifications deep-link routing to choose d
 
 Follow-up (same day): Made the top "Mark All as Read" control active-tab aware: on `System` it marks unread system notifications; on `Mentions` it marks unread mentions, preventing a misleading disabled state when mentions are the only unread items.
 
+Follow-up (same day): Seeded new-owner notification activity timestamps to current time instead of epoch (`0`) so legacy/historical system notifications no longer force `System` tab on first click when current bell activity is mention-only.
+
+Follow-up (same day): Implemented mention deep-link v2 for comment targets. Comment mentions now include `commentId` in navigation links, discussions route parses and propagates that target, comment trees auto-expand the target branch once, scroll to the exact comment, and then clear one-shot target state to avoid repeated forced expansions. Added backward-compatible fallback so older stored mention rows (without `commentId`) still route to the correct comment.
+
 ## 2026-02-26 - Discussions Guest Empty-State Redirect + Private Access Notice
 
 Problem: Logged-out users could open `/discussions` and see an empty sidebar state that looked stale/broken, with no clear direction about private-community access.

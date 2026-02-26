@@ -26,6 +26,8 @@ import InfiniteSpinnerAnimation from '../animations/InfiniteSpinnerAnimation';
 
 interface DiscussionCommentsProps {
   discussionId: number;
+  targetCommentId?: number | null;
+  onTargetCommentHandled?: () => void;
   mentionCandidates?: string[];
   mentionContext?: {
     articleId: number;
@@ -40,6 +42,8 @@ interface DiscussionCommentsProps {
 
 const DiscussionComments: React.FC<DiscussionCommentsProps> = ({
   discussionId,
+  targetCommentId = null,
+  onTargetCommentHandled,
   mentionCandidates = [],
   mentionContext,
   articleContext,
@@ -281,6 +285,13 @@ const DiscussionComments: React.FC<DiscussionCommentsProps> = ({
             contentType={ContentTypeEnum.articlesdiscussioncomment}
             articleContext={articleContext}
             mentionCandidates={mentionCandidates}
+            /* Fixed by Codex on 2026-02-26
+               Who: Codex
+               What: Threaded comment-level deep-link target into recursive comment rendering.
+               Why: Mention notifications for replies should auto-open and scroll to the exact comment.
+               How: Pass the target comment id and a one-shot handled callback to shared comment renderer. */
+            targetCommentId={targetCommentId}
+            onTargetCommentHandled={onTargetCommentHandled}
           />
         </div>
       )}
