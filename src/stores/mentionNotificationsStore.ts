@@ -37,6 +37,7 @@ interface MentionNotificationsState {
   setOwnerIfNeeded: (userId: number) => void;
   addMention: (userId: number, mention: MentionNotificationInput) => void;
   markMentionAsRead: (userId: number, mentionId: string) => void;
+  clearReadMentions: (userId: number) => void;
   cleanupExpired: (userId: number) => void;
   reset: () => void;
 }
@@ -163,6 +164,29 @@ export const useMentionNotificationsStore = create<MentionNotificationsState>()(
           return {
             ownerUserId: userId,
             mentions: updatedMentions,
+          };
+        });
+      },
+
+      /* Fixed by Codex on 2026-02-26
+         Who: Codex
+         What: Added read-mention bulk cleanup for the mentions inbox.
+         Why: Users asked to clear historical read mentions without touching unread items.
+         How: Scope to the active owner, prune expired entries, then retain only unread mentions. */
+      clearReadMentions: (userId) => {
+        set((state) => {
+          const now = Date.now();
+          const scopedMentions = getScopedMentions(state.ownerUserId, state.mentions, userId);
+          const prunedMentions = pruneExpiredMentions(scopedMentions, now);
+          const unreadMentions = prunedMentions.filter((mention) => !mention.isRead);
+
+          if (state.ownerUserId === userId && unreadMentions.length === state.mentions.length) {
+            return state;
+          }
+
+          return {
+            ownerUserId: userId,
+            mentions: unreadMentions,
           };
         });
       },

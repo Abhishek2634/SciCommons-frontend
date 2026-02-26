@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 import { Check, CheckCheck, MessageSquare, SquareArrowOutUpRight, X } from 'lucide-react';
 
@@ -17,6 +18,7 @@ import TabNavigation from '@/components/ui/tab-navigation';
 import { useAuthHeaders } from '@/hooks/useAuthHeaders';
 import { getSafeNavigableUrl } from '@/lib/safeUrl';
 import { useAuthStore } from '@/stores/authStore';
+import { useNotificationActivityStore } from '@/stores/notificationActivityStore';
 import {
   MentionNotificationItem,
   useMentionNotificationsStore,
@@ -52,6 +54,17 @@ interface PreparedSystemNotification extends SystemNotification {
 const NOTIFICATION_PARSING_BASE = 'https://scicommons.org';
 const MANAGER_JOIN_REQUEST_TYPES = new Set(['join_request_received', 'join request received']);
 const VISIT_COMMUNITY_TYPES = new Set(['join_request_approved', 'join request approved']);
+const NOTIFICATION_TAB_KEYS = {
+  system: 'system',
+  mentions: 'mentions',
+} as const;
+type NotificationTabKey = (typeof NOTIFICATION_TAB_KEYS)[keyof typeof NOTIFICATION_TAB_KEYS];
+
+const resolveNotificationTabFromQuery = (rawTab: string | null): NotificationTabKey => {
+  return rawTab === NOTIFICATION_TAB_KEYS.mentions
+    ? NOTIFICATION_TAB_KEYS.mentions
+    : NOTIFICATION_TAB_KEYS.system;
+};
 
 const formatMentionTimestamp = (timestamp: string): string => {
   const parsedTimestamp = Date.parse(timestamp);
@@ -303,12 +316,14 @@ interface MentionsTabProps {
   unreadMentions: MentionNotificationItem[];
   readMentions: MentionNotificationItem[];
   onMentionClick: (mentionId: string) => void;
+  onClearReadMentions: () => void;
 }
 
 const MentionsTab: React.FC<MentionsTabProps> = ({
   unreadMentions,
   readMentions,
   onMentionClick,
+  onClearReadMentions,
 }) => {
   if (unreadMentions.length === 0 && readMentions.length === 0) {
     return (
@@ -377,7 +392,21 @@ const MentionsTab: React.FC<MentionsTabProps> = ({
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-text-secondary">Read Mentions</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-text-secondary">Read Mentions</h2>
+          <Button
+            type="button"
+            variant="outline"
+            className="px-3 py-1.5"
+            disabled={readMentions.length === 0}
+            onClick={onClearReadMentions}
+          >
+            <ButtonIcon>
+              <X size={14} />
+            </ButtonIcon>
+            <ButtonTitle className="sm:text-xs">Clear Read Mentions</ButtonTitle>
+          </Button>
+        </div>
         {readMentions.length === 0 ? (
           <div className="rounded-xl border border-common-minimal bg-common-background p-4 text-xs text-text-tertiary">
             No read mentions yet.
@@ -637,15 +666,30 @@ const resolveManagerJoinRequestTarget = async (
 };
 
 const NotificationPage: React.FC = () => {
+  const searchParams = useSearchParams();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
   const authHeaders = useAuthHeaders();
+  const requestedTab = resolveNotificationTabFromQuery(searchParams?.get('tab') ?? null);
+  const initialActiveTabIndex = requestedTab === NOTIFICATION_TAB_KEYS.mentions ? 1 : 0;
+  const [activeTabIndex, setActiveTabIndex] = useState(initialActiveTabIndex);
 
   const ownerUserId = useMentionNotificationsStore((state) => state.ownerUserId);
   const mentions = useMentionNotificationsStore((state) => state.mentions);
   const setOwnerIfNeeded = useMentionNotificationsStore((state) => state.setOwnerIfNeeded);
   const cleanupExpired = useMentionNotificationsStore((state) => state.cleanupExpired);
   const markMentionAsRead = useMentionNotificationsStore((state) => state.markMentionAsRead);
+  const clearReadMentions = useMentionNotificationsStore((state) => state.clearReadMentions);
+  const notificationActivityOwnerUserId = useNotificationActivityStore((state) => state.ownerUserId);
+  const lastSystemTabSeenAt = useNotificationActivityStore((state) => state.lastSystemTabSeenAt);
+  const lastMentionsTabSeenAt = useNotificationActivityStore(
+    (state) => state.lastMentionsTabSeenAt
+  );
+  const setNotificationActivityOwnerIfNeeded = useNotificationActivityStore(
+    (state) => state.setOwnerIfNeeded
+  );
+  const markSystemTabSeen = useNotificationActivityStore((state) => state.markSystemTabSeen);
+  const markMentionsTabSeen = useNotificationActivityStore((state) => state.markMentionsTabSeen);
 
   const [optimisticReadByNotificationId, setOptimisticReadByNotificationId] = useState<
     Record<number, true>
@@ -658,6 +702,10 @@ const NotificationPage: React.FC = () => {
   const [joinRequestActionErrorByNotificationId, setJoinRequestActionErrorByNotificationId] =
     useState<Record<number, string>>({});
   const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState(false);
+
+  useEffect(() => {
+    setActiveTabIndex(initialActiveTabIndex);
+  }, [initialActiveTabIndex]);
 
   const { data, isPending, refetch } = useUsersApiGetNotifications(
     {},
@@ -677,16 +725,17 @@ const NotificationPage: React.FC = () => {
     request: authHeaders,
   });
 
-  /* Fixed by Codex on 2026-02-25
+  /* Fixed by Codex on 2026-02-26
      Who: Codex
-     What: Scope persisted mention notifications to the active user and prune stale entries.
-     Why: Mention history should survive sessions for one user but never leak into another account.
-     How: Align the mention store owner with the authenticated user id and apply 30-day cleanup on page load. */
+     What: Initialize mention + notification-activity ownership for the active account.
+     Why: Mention history and tab/bell "New" state should be scoped per user and reset on account switches.
+     How: Align both persisted stores to the current user id and prune expired mentions on page load. */
   useEffect(() => {
     if (!user?.id) return;
     setOwnerIfNeeded(user.id);
+    setNotificationActivityOwnerIfNeeded(user.id);
     cleanupExpired(user.id);
-  }, [cleanupExpired, setOwnerIfNeeded, user?.id]);
+  }, [cleanupExpired, setNotificationActivityOwnerIfNeeded, setOwnerIfNeeded, user?.id]);
 
   const mentionItems = useMemo(() => {
     if (!user?.id) return [];
@@ -704,6 +753,48 @@ const NotificationPage: React.FC = () => {
   );
 
   const notifications = useMemo<SystemNotification[]>(() => data?.data ?? [], [data?.data]);
+
+  const latestMentionNotificationActivityAt = useMemo(
+    () =>
+      mentionItems.reduce(
+        (latestTimestamp, mentionItem) => Math.max(latestTimestamp, mentionItem.detectedAt),
+        0
+      ),
+    [mentionItems]
+  );
+  const latestSystemNotificationActivityAt = useMemo(
+    () =>
+      notifications.reduce((latestTimestamp, notification) => {
+        const parsedTimestamp = Date.parse(notification.createdAt);
+        if (Number.isNaN(parsedTimestamp)) {
+          return latestTimestamp;
+        }
+        return Math.max(latestTimestamp, parsedTimestamp);
+      }, 0),
+    [notifications]
+  );
+  const effectiveLastSystemTabSeenAt =
+    user?.id && notificationActivityOwnerUserId === user.id ? lastSystemTabSeenAt : 0;
+  const effectiveLastMentionsTabSeenAt =
+    user?.id && notificationActivityOwnerUserId === user.id ? lastMentionsTabSeenAt : 0;
+  const hasNewSystemTabActivity = latestSystemNotificationActivityAt > effectiveLastSystemTabSeenAt;
+  const hasNewMentionsTabActivity =
+    latestMentionNotificationActivityAt > effectiveLastMentionsTabSeenAt;
+
+  useEffect(() => {
+    /* Fixed by Codex on 2026-02-26
+       Who: Codex
+       What: Clear tab-level "New" indicator when a notifications tab is opened.
+       Why: Product expectation is that "New" marks unseen tab activity and disappears once that tab is viewed.
+       How: Persist the opened tab's seen timestamp whenever active tab index changes. */
+    if (!user?.id) return;
+    if (activeTabIndex === 0) {
+      markSystemTabSeen(user.id);
+      return;
+    }
+
+    markMentionsTabSeen(user.id);
+  }, [activeTabIndex, markMentionsTabSeen, markSystemTabSeen, user?.id]);
 
   const preparedSystemNotifications = useMemo(() => {
     const enrichedNotifications = notifications.map((notification) => {
@@ -876,6 +967,21 @@ const NotificationPage: React.FC = () => {
     markMentionAsRead(user.id, mentionId);
   };
 
+  const handleClearReadMentions = () => {
+    /* Fixed by Codex on 2026-02-26
+       Who: Codex
+       What: Added bulk clear for read mentions.
+       Why: Read mentions can accumulate and users requested a one-click cleanup action.
+       How: Remove only read mention entries for the active user while preserving unread mentions. */
+    if (!user?.id || readMentions.length === 0) return;
+    clearReadMentions(user.id);
+  };
+
+  const showSystemTabNewIndicator = hasNewSystemTabActivity && activeTabIndex !== 0;
+  const showMentionsTabNewIndicator = hasNewMentionsTabActivity && activeTabIndex !== 1;
+  const systemTabTitle = showSystemTabNewIndicator ? 'System (New)' : 'System';
+  const mentionsTabTitle = showMentionsTabNewIndicator ? 'Mentions (New)' : 'Mentions';
+
   return (
     <div className="mx-auto max-w-4xl p-4">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:my-6">
@@ -896,12 +1002,13 @@ const NotificationPage: React.FC = () => {
         </Button>
       </div>
       <TabNavigation
+        initialActiveTab={initialActiveTabIndex}
+        resetKey={`notifications-${requestedTab}`}
+        onActiveTabChange={setActiveTabIndex}
         tabs={[
           {
-            title:
-              unreadSystemNotifications.length > 0
-                ? `System (${unreadSystemNotifications.length})`
-                : 'System',
+            id: 'system',
+            title: systemTabTitle,
             content: () => (
               <SystemNotificationsTab
                 isPending={isPending}
@@ -913,12 +1020,14 @@ const NotificationPage: React.FC = () => {
             ),
           },
           {
-            title: unreadMentions.length > 0 ? `Mentions (${unreadMentions.length})` : 'Mentions',
+            id: 'mentions',
+            title: mentionsTabTitle,
             content: () => (
               <MentionsTab
                 unreadMentions={unreadMentions}
                 readMentions={readMentions}
                 onMentionClick={handleMentionClick}
+                onClearReadMentions={handleClearReadMentions}
               />
             ),
           },

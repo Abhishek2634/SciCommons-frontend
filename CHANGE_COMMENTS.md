@@ -1,3 +1,15 @@
+## 2026-02-26 - Notifications Tab-Aware "New" Indicators + Mention Cleanup Controls
+
+Problem: Notifications UX could not distinguish unseen tab activity across System vs Mentions, bell "New" behavior was mention-only and persisted until read, and Mentions lacked a way to clear historical read entries.
+
+Root Cause: The app tracked unread item state, but did not track per-tab/per-bell seen timestamps for activity acknowledgment; tab titles were count-based only, and mention store exposed no read-mentions bulk cleanup action.
+
+Solution: Added a persisted, user-scoped notification activity store to track seen timestamps for the bell, System tab, and Mentions tab. Updated navbar notifications routing and badge logic to: open Mentions only when Mentions has new activity and System does not; otherwise open System (including both-new and system-only cases). Bell "New" now clears on bell click. Updated notifications page to show tab labels as `System (New)` / `Mentions (New)` for unseen activity on non-active tabs only, and clear those labels when a tab is opened. Added `clearReadMentions` in mention store and a `Clear Read Mentions` button in the Mentions tab.
+
+Result: Notification entry behavior now follows activity-aware tab selection and labeling rules, "New" indicators clear at the expected acknowledgment moments, and users can one-click clear read mentions while keeping unread mentions intact.
+
+Files Modified: `src/stores/notificationActivityStore.ts`, `src/components/common/NavBar.tsx`, `src/app/(main)/(users)/notifications/page.tsx`, `src/stores/mentionNotificationsStore.ts`, `src/components/ui/tab-navigation.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-26 - Discussions Guest Empty-State Redirect + Private Access Notice
 
 Problem: Logged-out users could open `/discussions` and see an empty sidebar state that looked stale/broken, with no clear direction about private-community access.
