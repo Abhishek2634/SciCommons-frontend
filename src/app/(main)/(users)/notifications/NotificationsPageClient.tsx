@@ -1032,8 +1032,12 @@ const NotificationPageContent: React.FC = () => {
   const systemTabTitle = renderTabTitleWithActivityBadge('System', showSystemTabNewIndicator);
   const mentionsTabTitle = renderTabTitleWithActivityBadge('Mentions', showMentionsTabNewIndicator);
   const isSystemTabActive = activeTabIndex === 0;
-  const activeUnreadCount = isSystemTabActive ? unreadSystemNotifications.length : unreadMentions.length;
-  const isMarkingActiveTabAsRead = isSystemTabActive ? isMarkingAllAsRead : isMarkingAllMentionsAsRead;
+  const activeUnreadCount = isSystemTabActive
+    ? unreadSystemNotifications.length
+    : unreadMentions.length;
+  const isMarkingActiveTabAsRead = isSystemTabActive
+    ? isMarkingAllAsRead
+    : isMarkingAllMentionsAsRead;
   const handleMarkAllAsReadForActiveTab = () => {
     if (isSystemTabActive) {
       markAllSystemNotificationsAsRead();
