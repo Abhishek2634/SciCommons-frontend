@@ -20,6 +20,8 @@ Follow-up (same day): Updated Notifications tab "New" labels from plain text suf
 
 Follow-up (same day): Refined navbar notifications deep-link routing to choose default tab based on activity since the bell was last seen (not tab-seen history), so mention-only new activity opens `Mentions` while mixed/ system activity opens `System`.
 
+Follow-up (same day): Made the top "Mark All as Read" control active-tab aware: on `System` it marks unread system notifications; on `Mentions` it marks unread mentions, preventing a misleading disabled state when mentions are the only unread items.
+
 ## 2026-02-26 - Discussions Guest Empty-State Redirect + Private Access Notice
 
 Problem: Logged-out users could open `/discussions` and see an empty sidebar state that looked stale/broken, with no clear direction about private-community access.

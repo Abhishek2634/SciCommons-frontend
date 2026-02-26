@@ -725,6 +725,7 @@ const NotificationPageContent: React.FC = () => {
   const [joinRequestActionErrorByNotificationId, setJoinRequestActionErrorByNotificationId] =
     useState<Record<number, string>>({});
   const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState(false);
+  const [isMarkingAllMentionsAsRead, setIsMarkingAllMentionsAsRead] = useState(false);
 
   useEffect(() => {
     setActiveTabIndex(initialActiveTabIndex);
@@ -919,6 +920,22 @@ const NotificationPageContent: React.FC = () => {
     })();
   };
 
+  const markAllMentionsAsRead = () => {
+    /* Fixed by Codex on 2026-02-26
+       Who: Codex
+       What: Added active-tab aware bulk mark-as-read behavior for Mentions.
+       Why: The top "Mark All as Read" button should stay useful when Mentions tab is active.
+       How: Mark each unread mention as read in the mention store for the current user. */
+    if (isMarkingAllMentionsAsRead || !user?.id) return;
+    if (unreadMentions.length === 0) return;
+
+    setIsMarkingAllMentionsAsRead(true);
+    unreadMentions.forEach((mention) => {
+      markMentionAsRead(user.id, mention.id);
+    });
+    setIsMarkingAllMentionsAsRead(false);
+  };
+
   const handleManagerJoinRequestAction = (
     notification: PreparedSystemNotification,
     action: JoinRequestAction
@@ -1014,6 +1031,17 @@ const NotificationPageContent: React.FC = () => {
   const showMentionsTabNewIndicator = hasNewMentionsTabActivity && activeTabIndex !== 1;
   const systemTabTitle = renderTabTitleWithActivityBadge('System', showSystemTabNewIndicator);
   const mentionsTabTitle = renderTabTitleWithActivityBadge('Mentions', showMentionsTabNewIndicator);
+  const isSystemTabActive = activeTabIndex === 0;
+  const activeUnreadCount = isSystemTabActive ? unreadSystemNotifications.length : unreadMentions.length;
+  const isMarkingActiveTabAsRead = isSystemTabActive ? isMarkingAllAsRead : isMarkingAllMentionsAsRead;
+  const handleMarkAllAsReadForActiveTab = () => {
+    if (isSystemTabActive) {
+      markAllSystemNotificationsAsRead();
+      return;
+    }
+
+    markAllMentionsAsRead();
+  };
 
   return (
     <div className="mx-auto max-w-4xl p-4">
@@ -1023,14 +1051,14 @@ const NotificationPageContent: React.FC = () => {
           type="button"
           variant="outline"
           className="px-3 py-1.5"
-          disabled={isMarkingAllAsRead || unreadSystemNotifications.length === 0}
-          onClick={markAllSystemNotificationsAsRead}
+          disabled={isMarkingActiveTabAsRead || activeUnreadCount === 0}
+          onClick={handleMarkAllAsReadForActiveTab}
         >
           <ButtonIcon>
             <CheckCheck size={14} />
           </ButtonIcon>
           <ButtonTitle className="sm:text-xs">
-            {isMarkingAllAsRead ? 'Marking...' : 'Mark All as Read'}
+            {isMarkingActiveTabAsRead ? 'Marking...' : 'Mark All as Read'}
           </ButtonTitle>
         </Button>
       </div>

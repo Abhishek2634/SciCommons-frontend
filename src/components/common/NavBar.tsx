@@ -110,8 +110,9 @@ const NavBar: React.FC = () => {
 
   const shouldOpenMentionsFromBell =
     hasNewMentionNotificationActivitySinceBell && !hasNewSystemNotificationActivitySinceBell;
-  const notificationsHref =
-    shouldOpenMentionsFromBell ? '/notifications?tab=mentions' : '/notifications?tab=system';
+  const notificationsHref = shouldOpenMentionsFromBell
+    ? '/notifications?tab=mentions'
+    : '/notifications?tab=system';
 
   // Get count of articles with new realtime events for discussions badge
   const newEventsCount = useSubscriptionUnreadStore((state) => state.getNewEventsCount());
