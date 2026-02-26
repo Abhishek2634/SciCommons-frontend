@@ -1,3 +1,15 @@
+## 2026-02-26 - Discussions Guest Empty-State Redirect + Private Access Notice
+
+Problem: Logged-out users could open `/discussions` and see an empty sidebar state that looked stale/broken, with no clear direction about private-community access.
+
+Root Cause: The discussions route is intentionally public-routable, while discussion subscriptions are auth-gated; when guest users had no loadable articles, the UI showed a generic empty state.
+
+Solution: Added guest-aware handling in `DiscussionsSidebar`: after auth initialization, if a logged-out user has zero loaded discussion articles, redirect to `/auth/login`. Also added a top informational banner for guests explaining that login unlocks private communities and private discussion subscriptions.
+
+Result: Empty guest discussions states now move users directly to login, and guest users get explicit context about private-access benefits when discussions content is visible.
+
+Files Modified: `src/app/(main)/discussions/DiscussionsSidebar.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-25 - System Notifications Unread/Read Piles + Inline Join-Request Actions
 
 Problem: In the notifications System tab, unread and read items were mixed in one list, and manager-facing join requests required opening a separate page via `View` before admins could approve or reject.
