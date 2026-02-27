@@ -8,6 +8,21 @@ describe('FormInput', () => {
   const mockRegister = jest.fn();
   const mockErrors = {};
 
+  /* Fixed by Codex on 2026-02-27
+     Who: Codex
+     What: Reset and stabilize register mock behavior per test case.
+     Why: FormInput now always supplies a `validate` callback, and shared mock call history made assertions brittle.
+     How: Clear mock calls before each test and return a realistic register field object shape. */
+  beforeEach(() => {
+    mockRegister.mockClear();
+    mockRegister.mockReturnValue({
+      name: 'testInput',
+      onBlur: jest.fn(),
+      onChange: jest.fn(),
+      ref: jest.fn(),
+    });
+  });
+
   const defaultProps = {
     name: 'testInput',
     type: 'text',
@@ -55,12 +70,16 @@ describe('FormInput', () => {
         maxLengthMessage="Too long"
       />
     );
-    expect(mockRegister).toHaveBeenCalledWith('testInput', {
-      required: { value: true, message: 'This field is required' },
-      pattern: { value: /test/, message: 'Invalid pattern' },
-      minLength: { value: 5, message: 'Too short' },
-      maxLength: { value: 10, message: 'Too long' },
-    });
+    expect(mockRegister).toHaveBeenCalledWith(
+      'testInput',
+      expect.objectContaining({
+        required: { value: true, message: 'This field is required' },
+        pattern: { value: /test/, message: 'Invalid pattern' },
+        minLength: { value: 5, message: 'Too short' },
+        maxLength: { value: 10, message: 'Too long' },
+        validate: expect.any(Function),
+      })
+    );
   });
 
   it('applies error styles when there is an error', () => {
