@@ -3,8 +3,8 @@ import React from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 
 import MultiLabelSelector from '@/components/common/MultiLabelSelector';
-import { researchInterestItemSchema } from '@/constants/zod-schema';
 import { Option } from '@/components/ui/multiple-selector';
+import { researchInterestItemSchema } from '@/constants/zod-schema';
 
 interface ResearchInterestsProps {
   editMode: boolean;
@@ -25,7 +25,7 @@ const ResearchInterests: React.FC<ResearchInterestsProps> = ({ editMode }) => {
         rules={{
           validate: (value: Option[]) => {
             if (!value || value.length === 0) return true;
-            
+
             for (const item of value) {
               const result = researchInterestItemSchema.safeParse(item.label);
               if (!result.success) {

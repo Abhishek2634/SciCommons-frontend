@@ -43,16 +43,19 @@ Recommendation: fix finding #1 before merging.
 
 [2026-02-26 21:46:51]
 **Findings Fixed**
+
 1. High: Commit `4ad0959` said it supports international names, but `nameSchema` still used ASCII-only validation (`[a-zA-Z]`), which rejects many valid names.
    Fixed in [src/constants/zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx:219), [src/constants/zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx:221), and [src/constants/zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx:226) with Unicode-aware validation plus `.trim()`.
 2. Low: Commit `4ad0959` introduced `ZodSchema<any>` in shared form input typing, which triggered a lint inconsistency (`no-explicit-any`).
    Fixed in [src/components/common/FormInput.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/FormInput.tsx:13) and [src/components/common/FormInput.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/FormInput.tsx:49) by switching to `ZodTypeAny`.
 
 **Additional Work**
-- Added regression tests for name validation in [src/tests/__tests__/zodSchema.test.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/zodSchema.test.ts:4) and [src/tests/__tests__/zodSchema.test.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/zodSchema.test.ts:22).
+
+- Added regression tests for name validation in [src/tests/**tests**/zodSchema.test.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/zodSchema.test.ts:4) and [src/tests/**tests**/zodSchema.test.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/zodSchema.test.ts:22).
 - Logged this follow-up in [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md:1).
 
 **Validation**
+
 - `npx eslint "src/components/common/FormInput.tsx" "src/constants/zod-schema.tsx" "src/tests/__tests__/zodSchema.test.ts"` passed.
 - `yarn tsc --noEmit` passed.
 - `yarn test --watch=false --runInBand src/tests/__tests__/zodSchema.test.ts` passed (2/2).
@@ -64,9 +67,10 @@ Merged `fix/pvhupdated` into `fix/profile-validation-hardening` and resolved the
 
 - Merge commit: `5eb2062` (parents `bc2192e` + `f7c3839`).
 - Conflict resolution applied in [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md) and [codexOutput.md](C:/Users/Suresh/scicommons/SciCommons-frontend/codexOutput.md).
-- Post-merge test contract fix applied in [src/tests/__tests__/FormInput.test.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/FormInput.test.tsx).
+- Post-merge test contract fix applied in [src/tests/**tests**/FormInput.test.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/FormInput.test.tsx).
 
 Validation run:
+
 - `yarn test:fix` executed `prettier`, `lint:fix`, and `check-types:fast`, but Jest worker spawn failed in this environment (`spawn EPERM`).
 - Fallback checks passed:
   - `npx eslint src/tests/__tests__/FormInput.test.tsx`
@@ -74,11 +78,11 @@ Validation run:
   - `yarn test --watch=false --runInBand` (9/9 suites passed)
 
 State now:
+
 - `fix/pvhupdated` is fully merged (`git merge-base --is-ancestor fix/pvhupdated HEAD` => `ancestor-ok`).
 - One local line-ending-noise working-tree entry remains: `src/app/(main)/(users)/myprofile/page.tsx` (empty content diff, not committed).
 
 You can now proceed to merge this PR branch into `sureshDev`.
-
 
 [2026-02-26 22:10:53]
 Using the pre-merge state as `bc2192e` (first parent before the merge), here is the relationship with `fix/pvhupdated` (`f7c3839`):
@@ -88,23 +92,26 @@ Using the pre-merge state as `bc2192e` (first parent before the merge), here is 
 - Ancestry: neither branch was ancestor of the other (true divergence).
 
 Commit-level split:
+
 - Pre-merge-only side: `fc0139e`, `b19fe99`, `5619bd5`, `29df317`, `f11d7f9`, `bc2192e`.
 - `fix/pvhupdated`-only side: `f7c3839`.
 
 Change-overlap analysis from the common base:
+
 - Pre-merge side changed profile workflow/edit-state areas plus docs/log files.
 - `fix/pvhupdated` changed validation internals (`FormInput`/`zod-schema`) and added a zod regression test, plus docs/log files.
 - Direct file overlap between sides was only `CHANGE_COMMENTS.md` and `codexOutput.md`, which explains why conflicts were concentrated there.
 
 Overall assessment:
+
 - The branches were mostly complementary functionally (profile UX/state work vs validation hardening).
 - Merge risk was low-to-medium and mainly in documentation/log merge context, not deep runtime logic overlap.
-
 
 [2026-02-26 22:14:46]
 Yes. The `fix/pvhupdated` improvements are still present.
 
 Verified on `HEAD` `5eb2062`:
+
 - `f7c3839` is an ancestor of current `HEAD` (`merged: yes`).
 - International-name validation is still in [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx:219) and [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx:221).
 - `FormInput` still uses `ZodTypeAny` in [FormInput.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/FormInput.tsx:13) and [FormInput.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/FormInput.tsx:49).
@@ -112,18 +119,18 @@ Verified on `HEAD` `5eb2062`:
 
 Also checked drift from `f7c3839` to `HEAD`: among those improvement files, only `CHANGE_COMMENTS.md` and `codexOutput.md` changed; the three functional files above are unchanged.
 
-
 [2026-02-26 22:29:41]
 Verdict: yes. Compared to `fix/pvhupdated`, the current branch is in good shape and safe to proceed.
 
 Why this is definitive:
+
 - `fix/pvhupdated` is fully contained in current `HEAD` (`f7c3839` is an ancestor of `5eb2062`).
 - The core improvement files from `fix/pvhupdated` are unchanged in current `HEAD`:
   - [src/components/common/FormInput.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/FormInput.tsx)
   - [src/constants/zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx)
-  - [src/tests/__tests__/zodSchema.test.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/zodSchema.test.ts)
+  - [src/tests/**tests**/zodSchema.test.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/zodSchema.test.ts)
 - Branch delta vs `fix/pvhupdated` is limited to:
-  - profile UX/state files: [Profile.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/Profile.tsx), [page.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/page.tsx)
+  - profile UX/state files: [Profile.tsx](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/Profile.tsx>), [page.tsx](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/page.tsx>)
   - test hardening: [FormInput.test.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/FormInput.test.tsx)
   - docs/log files (`CHANGE_COMMENTS.md`, `codexOutput.md`)
 - Validation passed on current state:
@@ -132,6 +139,6 @@ Why this is definitive:
   - `yarn test --watch=false --runInBand` (9/9 suites, 30/30 tests)
 
 Non-blocking local workspace note:
+
 - `src/app/(main)/(users)/myprofile/page.tsx` appears modified only due LF/CRLF line-ending noise (empty content diff).
 - `codexOutput.md` is modified due logging entries.
-
