@@ -528,3 +528,59 @@ Validation
 - Result: PASS (4/4 tests).
 
 For QA, open browser devtools console and filter by `[AuthDebug]`.
+
+[2026-02-27 18:32:00]
+**Findings**
+1. High: I do not recommend merging `artspace` as-is. In commit `811e9a0`, the title link changes from `inline-block` to `flex-1 min-w-0` in [ArticleCard.tsx](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/components/articles/ArticleCard.tsx). That makes the link fill most of the row again, which can reintroduce the prior click-target regression (title link becoming too broad).
+2. Medium: The same commit removes compact-type-specific title styles (`line-clamp-2`, minimal-specific underline/text sizing) and forces single-line truncation (`whitespace-nowrap text-ellipsis`). That is a visible behavior/UI change for `minimal` and `default` cards, not just a spacing fix.
+3. Low: The PR has no test coverage for this UI behavior change, so regression risk is unguarded.
+
+**Is It Already In `sureshDev`?**
+No.
+- `git rev-list --left-right --count sureshDev...artspace` returned `2 1`.
+- The one commit only on `artspace` is `811e9a0` (`Fixed articles naming space`).
+
+**Recommendation**
+Do not merge this PR in current form. Ask for a targeted fix that preserves the narrow link click target and existing compact-type styling behavior (unless product explicitly wants those UX changes).
+
+
+[2026-02-27 18:33:22]
+Partly yes.
+
+There is a real layout edge case in current `sureshDev`: very long or unbroken article titles can crowd the right-side action column because the title row/link doesn’t have strong width constraints in [ArticleCard.tsx](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/components/articles/ArticleCard.tsx#L145).
+
+But the PR fix is overcorrecting:
+- it forces single-line truncation (`whitespace-nowrap text-ellipsis`),
+- and it widens the title link click area again (`flex-1`), which undoes the earlier narrow-click-target fix.
+
+So the underlying issue is plausible/real, but this specific PR solution is not good to merge as-is.
+
+
+[2026-02-27 18:34:07]
+I’d fix it by separating layout width from click target in [ArticleCard.tsx](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/components/articles/ArticleCard.tsx).
+
+1. Keep the right icon/actions column `shrink-0`.
+2. Add a non-clickable wrapper around the title area: `min-w-0 flex-1`.
+3. Keep the actual `<Link>` as `inline-block max-w-full` (not `flex-1`), so only title text is clickable.
+4. Preserve current multi-line behavior (`line-clamp-2` for compact cards), but add robust wrapping for long tokens: `break-words [overflow-wrap:anywhere]`.
+
+That fixes long-title crowding without reintroducing the “whole row is link” regression or forcing single-line truncation everywhere.
+
+If you want, I can implement this exact patch now.
+
+
+[2026-02-27 18:37:23]
+Implemented.
+
+- Updated the title row layout/click-target behavior in [ArticleCard.tsx](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/components/articles/ArticleCard.tsx#L141):
+  - Added a non-clickable `min-w-0 flex-1` wrapper for layout width control.
+  - Kept the actual link narrow with `inline-block max-w-full`.
+  - Preserved compact-mode clamping while adding long-token wrapping (`break-words` + `overflow-wrap:anywhere`).
+- Added a change summary entry in [CHANGE_COMMENTS.md](/C:/Users/Suresh/scicommons/Scicommons-Frontend/CHANGE_COMMENTS.md#L1).
+
+Validation
+- Ran `npx eslint src/components/articles/ArticleCard.tsx`.
+- Result: pass (no lint errors).
+
+If you want, I can also apply the same pattern to any other card components that have long-title crowding risk.
+

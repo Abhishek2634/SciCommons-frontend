@@ -1,3 +1,15 @@
+## 2026-02-27 - Article Card Title Overflow Without Wide Link Hitbox
+
+Problem: Very long/unbroken article titles in card lists could crowd the right-side bookmark/preview actions.
+
+Root Cause: The title row did not isolate layout width constraints from clickable link sizing, so attempts to fix overflow could either push actions or make the link click target too wide.
+
+Solution: Updated `ArticleCard` title row to use a non-clickable `min-w-0 flex-1` wrapper for layout constraints while keeping the title link itself `inline-block max-w-full`. Added robust wrapping for long tokens (`break-words` + `overflow-wrap:anywhere`) while preserving existing compact-mode multi-line clamping and minimal-mode styling.
+
+Result: Long titles no longer crowd action icons, and the title link remains scoped to title text rather than expanding across most of the row.
+
+Files Modified: `src/components/articles/ArticleCard.tsx`, `CHANGE_COMMENTS.md` (commit reference: pending local commit)
+
 ## 2026-02-27 - Auth Revalidation vs Hard Expiry Separation
 
 Problem: Auth-guarded pages could show "Session Expired" even when the token itself had not expired.
