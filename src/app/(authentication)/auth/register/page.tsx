@@ -266,7 +266,7 @@ const RegisterForm: React.FC = () => {
               placeholder="Re-enter your password"
               register={register}
               requiredMessage="Confirm your password"
-              schema={matchPassword(new RegExp(`^${watch('password')}$`))}
+              schema={matchPassword(watch('password') || '')}
               errors={errors}
               labelClassName="text-text-primary"
               inputClassName="bg-common-minimal text-text-primary ring-common-contrast"

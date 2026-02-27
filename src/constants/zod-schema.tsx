@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { passwordRegex } from '@/lib/formValidation';
 
 export const testSchema = z
   .string()
@@ -138,12 +139,40 @@ export const urlSchema = z.string().superRefine((url, ctx) => {
   }
 });
 
+/* Fixed by Codex on 2026-02-27
+   Who: Codex
+   What: Add optional URL schema variants for profile link inputs.
+   Why: Profile links are optional and should allow blank values without failing URL validation.
+   How: Union strict URL validators with a trimmed-empty string schema so blank values pass while non-empty values stay strict. */
+const optionalEmptyStringSchema = z.string().trim().length(0);
+
+export const optionalScholarUrlSchema = z.union([optionalEmptyStringSchema, scholarUrlSchema]);
+export const optionalGithubUrlSchema = z.union([optionalEmptyStringSchema, githubUrlSchema]);
+export const optionalLinkedInUrlSchema = z.union([optionalEmptyStringSchema, linkedInUrlSchema]);
+export const optionalUrlSchema = z.union([optionalEmptyStringSchema, urlSchema]);
+
 export const passwordSchema = z
   .string({ error: 'Password must be a string' })
-  .min(8, { message: 'Password must be at least 8 characters' });
+  .min(8, { message: 'Password must be at least 8 characters' })
+  .regex(passwordRegex, {
+    message:
+      'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character',
+  });
 
-export const matchPassword = (reg: RegExp) =>
-  z.string().regex(reg, { message: 'Passwords do not match' });
+/* Fixed by Codex on 2026-02-27
+   Who: Codex
+   What: Replace regex-based confirm-password matching with direct string comparison.
+   Why: Building regular expressions from raw passwords can throw and mis-validate regex metacharacters.
+   How: Compare confirm password and source password with a custom zod issue instead of RegExp construction. */
+export const matchPassword = (password: string) =>
+  z.string().superRefine((confirmPassword, ctx) => {
+    if (confirmPassword !== password) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Passwords do not match',
+      });
+    }
+  });
 
 export const emailSchema = z.string().superRefine((email, ctx) => {
   if (!email.includes('@')) {
@@ -190,7 +219,7 @@ export const emailSchema = z.string().superRefine((email, ctx) => {
 export const emailOrUsernameSchema = z
   .string({ error: 'Must be a string' })
   .min(1, { message: 'This field is required' })
-  .regex(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$|^\w+$/, {
+  .regex(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$|^[\w.]+$/, {
     message: 'Enter a valid email or username (only letters, numbers, dots, underscores allowed)',
   });
 

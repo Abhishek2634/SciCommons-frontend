@@ -105,7 +105,7 @@ const ResetPasswordForm = ({ params }: { params: { token: string } }) => {
               placeholder="Confirm Password"
               register={register}
               requiredMessage="Confirm Password is required"
-              schema={matchPassword(new RegExp(`^${watch('password')}$`))}
+              schema={matchPassword(watch('password') || '')}
               errors={errors}
               inputClassName="bg-common-minimal text-text-primary ring-common-contrast"
               eyeBtnClassName="text-text-tertiary hover:text-text-secondary"

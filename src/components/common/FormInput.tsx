@@ -114,7 +114,17 @@ const FormInput = <TFieldValues extends FieldValues>({
   const registeredField = register(name as Path<TFieldValues>, {
     required: requiredMessage ? { value: true, message: requiredMessage } : undefined,
     validate: (value) => {
-      if (validateFn) return validateFn(value);
+      /* Fixed by Codex on 2026-02-27
+         Who: Codex
+         What: Chain custom and schema validators instead of returning from the first one.
+         Why: Fields that need both rules (for example, year format + start/end ordering) were skipping schema checks.
+         How: Run custom validation first, and only continue to schema validation when custom validation passes. */
+      if (validateFn) {
+        const customValidationResult = validateFn(value);
+        if (customValidationResult !== true) {
+          return customValidationResult;
+        }
+      }
       if (schema) {
         const result = schema.safeParse(value);
         if (!result.success) {
@@ -260,7 +270,7 @@ const FormInput = <TFieldValues extends FieldValues>({
                      How: Remove the negative tabIndex so it can receive focus. */
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               )}
             </div>
