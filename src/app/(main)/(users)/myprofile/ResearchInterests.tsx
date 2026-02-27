@@ -3,6 +3,7 @@ import React from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 
 import MultiLabelSelector from '@/components/common/MultiLabelSelector';
+import { researchInterestItemSchema } from '@/constants/zod-schema';
 import { Option } from '@/components/ui/multiple-selector';
 
 interface ResearchInterestsProps {
@@ -24,23 +25,26 @@ const ResearchInterests: React.FC<ResearchInterestsProps> = ({ editMode }) => {
         rules={{
           validate: (value: Option[]) => {
             if (!value || value.length === 0) return true;
-            const regex = /^[A-Za-z\s]+$/;
-            const hasInvalid = value.some((item) => !regex.test(item.label));
-            return hasInvalid ? 'Interests should only contain letters' : true;
+            
+            for (const item of value) {
+              const result = researchInterestItemSchema.safeParse(item.label);
+              if (!result.success) {
+                return result.error.errors[0].message;
+              }
+            }
+            return true;
           },
         }}
         render={({ field, fieldState }) => (
-          <div className="w-full">
-            <MultiLabelSelector
-              disabled={!editMode}
-              label="Research Interests"
-              tooltipText="Select or add keywords for your research interests."
-              placeholder="Add Research Interests"
-              creatable
-              {...field}
-              fieldState={fieldState}
-            />
-          </div>
+          <MultiLabelSelector
+            disabled={!editMode}
+            label="Research Interests"
+            tooltipText="Select or add keywords for your research interests."
+            placeholder="Add Research Interests"
+            creatable
+            {...field}
+            fieldState={fieldState}
+          />
         )}
       />
     </div>

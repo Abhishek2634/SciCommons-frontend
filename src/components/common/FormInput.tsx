@@ -10,6 +10,7 @@ import {
   UseFormRegister,
   useWatch,
 } from 'react-hook-form';
+import { ZodSchema } from 'zod';
 
 import { cn } from '@/lib/utils';
 
@@ -42,10 +43,11 @@ interface InputProps<TFieldValues extends FieldValues> {
   eyeBtnClassName?: string;
   supportMarkdown?: boolean;
   supportLatex?: boolean;
-  mentionCandidates?: string[];
   isSuccess?: boolean;
   validateFn?: (value: string) => true | string;
   autoFocus?: boolean;
+  schema?: ZodSchema<any>;
+  mentionCandidates?: string[];
 }
 
 // Wrapper component that uses useWatch - only rendered when control is provided
@@ -94,10 +96,11 @@ const FormInput = <TFieldValues extends FieldValues>({
   eyeBtnClassName,
   supportMarkdown = false,
   supportLatex = false,
-  mentionCandidates = [],
   isSuccess = false,
   validateFn,
   autoFocus = false,
+  schema,
+  mentionCandidates = [],
 }: InputProps<TFieldValues>): JSX.Element => {
   const [showPassword, setShowPassword] = useState(false);
   const error = errors[name];
@@ -132,7 +135,14 @@ const FormInput = <TFieldValues extends FieldValues>({
       maxLengthValue && maxLengthMessage
         ? { value: maxLengthValue, message: maxLengthMessage }
         : undefined,
-    validate: validateFn,
+    validate: (value) => {
+      if (validateFn) return validateFn(value);
+      if (schema) {
+        const result = schema.safeParse(value);
+        if (!result.success) return result.error.errors[0].message;
+      }
+      return true;
+    },
   });
 
   // Create a wrapper for onChange that updates both form and markdown state
@@ -191,7 +201,7 @@ const FormInput = <TFieldValues extends FieldValues>({
     ...registeredField,
     onChange: handleChange,
     className: cn(
-      'mt-1 block w-full px-3 py-2 ring-1 ring-common-contrast rounded-md shadow-sm focus:outline-none focus:ring-functional-green res-text-sm focus:ring-1 placeholder:text-text-tertiary text-text-primary bg-common-background',
+      'mt-1 block w-full px-3 py-2 ring-1 ring-common-contrast rounded-md shadow-sm focus:outline-none focus:ring-functional-green res-text-sm focus:ring-1 placeholder:text-text-tertiary text-text-primary bg-common-background break-words [overflow-wrap:anywhere] min-w-0',
       inputClassName,
       error && !readOnly && !isSubmitting ? 'border-functional-red' : 'border-common-minimal',
       readOnly ? 'bg-common-cardBackground md:bg-common-minimal focus:ring-common-contrast' : '',
@@ -231,7 +241,6 @@ const FormInput = <TFieldValues extends FieldValues>({
               <ForwardRefEditor
                 markdown={markdown}
                 ref={reviewEditorRef}
-                mentionCandidates={mentionCandidates}
                 onChange={(newMarkdown) => {
                   markdownRef.current = newMarkdown;
                   // Notify react-hook-form of the value change
@@ -248,6 +257,7 @@ const FormInput = <TFieldValues extends FieldValues>({
                 hideToolbar
                 placeholder={placeholder || commonProps.placeholder}
                 readOnly={readOnly}
+                mentionCandidates={mentionCandidates}
               />
             ) : (
               <textarea {...commonProps} rows={4} onKeyDown={handleTextareaKeyDown} />
