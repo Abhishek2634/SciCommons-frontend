@@ -237,3 +237,20 @@ Current local changes:
 - `M  codexOutput.md` (logging only)
 
 No other project files changed.
+
+[2026-02-27 01:38:26 -05:00]
+Implemented.
+
+- Improved delete-confirm flow in [DiscussionSummary.tsx](/C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/articles/DiscussionSummary.tsx): dialog now stays open during delete and closes only on successful API response; it remains open on error.
+- Added accessibility/UX handling: Escape closes dialog (when not deleting), backdrop click closes dialog, initial focus goes to Cancel, and focus is restored to prior trigger when dialog closes.
+- Cleaned dialog action wiring/markup consistency (`showLoadingSpinner`, removed premature close behavior).
+- Added required changelog entry in [CHANGE_COMMENTS.md](/C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md).
+
+Validation:
+- `npx eslint src/components/articles/DiscussionSummary.tsx` passed.
+
+Files changed:
+- [src/components/articles/DiscussionSummary.tsx](/C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/articles/DiscussionSummary.tsx)
+- [CHANGE_COMMENTS.md](/C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md)
+
+I did not commit yet.

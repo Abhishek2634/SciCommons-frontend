@@ -1,3 +1,15 @@
+## 2026-02-27 - Discussion Summary Delete Dialog UX/A11y Hardening
+
+Problem: The new in-app delete confirmation for discussion summaries closed immediately after clicking `Delete`, even before API success, and lacked robust keyboard/focus behavior.
+
+Root Cause: The dialog close state was triggered inside the delete-click handler rather than mutation success, and the modal had no Escape/backdrop-close handling or focus restoration lifecycle.
+
+Solution: Updated `DiscussionSummary` to close the dialog only on successful delete mutation, added guarded Escape key and backdrop-click dismissal, focused the cancel button on open, restored focus on close, and cleaned up dialog markup/loading behavior for consistency.
+
+Result: Delete confirmation now behaves predictably (stays open during API work and errors), keyboard/mouse dismissal is more accessible, and dialog interaction is aligned with expected app UX patterns.
+
+Files Modified: `src/components/articles/DiscussionSummary.tsx`, `CHANGE_COMMENTS.md` (commit reference: pending local commit)
+
 ## 2026-02-27 - Zod v4 Compatibility Fix for Profile Validation Build
 
 Problem: After adding `zod` as a direct dependency, Docker/Next builds failed in profile validation with TypeScript errors on `ZodError.errors`.
