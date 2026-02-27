@@ -91,15 +91,33 @@ const Home: React.FC = () => {
   });
 
   const onSubmit = (formData: IProfileForm) => {
+    /* Fixed by Codex on 2026-02-27
+       Who: Codex
+       What: Normalize optional link and status payload fields before profile update.
+       Why: Validation allowed whitespace-only optional links and untrimmed status text, which could be sent as raw spaces.
+       How: Trim link/status/year strings once at submit-time and use normalized values for validation + API payload. */
+    const normalizedLinks = {
+      homePage: formData.homePage.trim(),
+      linkedIn: formData.linkedIn.trim(),
+      github: formData.github.trim(),
+      googleScholar: formData.googleScholar.trim(),
+    };
+    const normalizedStatuses = formData.professionalStatuses.map((status) => ({
+      ...status,
+      status: status.status.trim(),
+      startYear: status.startYear.trim(),
+      endYear: status.endYear.trim(),
+    }));
+
     const dataToSend = {
       first_name: formData.firstName,
       last_name: formData.lastName,
       bio: formData.bio,
-      home_page_url: formData.homePage,
-      linkedin_url: formData.linkedIn,
-      github_url: formData.github,
-      google_scholar_url: formData.googleScholar,
-      academic_statuses: formData.professionalStatuses.map((status) => ({
+      home_page_url: normalizedLinks.homePage,
+      linkedin_url: normalizedLinks.linkedIn,
+      github_url: normalizedLinks.github,
+      google_scholar_url: normalizedLinks.googleScholar,
+      academic_statuses: normalizedStatuses.map((status) => ({
         academic_email: status.status,
         start_year: status.startYear,
         end_year: status.isOngoing ? null : status.endYear,
@@ -112,7 +130,7 @@ const Home: React.FC = () => {
        What: Harden submit-time year validation for professional statuses.
        Why: Non-numeric or malformed year strings could pass the previous Number/parse checks.
        How: Enforce 4-digit year format for start/end and keep range/order checks against the current year. */
-    const invalidYear = formData.professionalStatuses.some((s) => {
+    const invalidYear = normalizedStatuses.some((s) => {
       const currentYear = new Date().getFullYear();
 
       if (!/^\d{4}$/.test(s.startYear)) return true;

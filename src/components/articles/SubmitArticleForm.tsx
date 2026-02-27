@@ -14,7 +14,12 @@ import {
 import FileUpload from '@/components/common/FileUpload';
 import FormInput from '@/components/common/FormInput';
 import MultiLabelSelector from '@/components/common/MultiLabelSelector';
-import { articleAbstractSchema, articleTitleSchema, nameSchema, urlSchema } from '@/constants/zod-schema';
+import {
+  articleAbstractSchema,
+  articleTitleSchema,
+  nameSchema,
+  urlSchema,
+} from '@/constants/zod-schema';
 import { useSubmitOnCtrlEnter } from '@/hooks/useSubmitOnCtrlEnter';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
@@ -124,7 +129,7 @@ const SubmitArticleForm: React.FC<SubmitArticleFormProps> = ({
           name="authors"
           control={control}
           rules={{
-            validate: (value: any[]) => {
+            validate: (value: SubmitArticleFormValues['authors']) => {
               if (!value || value.length === 0) return 'Authors are required';
               for (const item of value) {
                 const result = nameSchema.safeParse(item.label);

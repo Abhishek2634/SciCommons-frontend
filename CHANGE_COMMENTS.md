@@ -1,3 +1,15 @@
+## 2026-02-27 - Zod Validation Follow-up Hardening (Email/URL/Profile Normalization)
+
+Problem: After the initial Zod migration fixes, several validation gaps remained: login/resend rejected valid long-TLD emails, URL validation rejected valid query/hash URLs, optional profile links could be submitted as whitespace-only raw strings, and professional status accepted whitespace-only values.
+
+Root Cause: `emailOrUsernameSchema` still used a short TLD cap (`2-4`), `urlSchema` path regex excluded `?` and `#`, optional-link validation accepted trimmed-empty strings but submit payload still used untrimmed form values, and `statusSchema` lacked `.trim()`.
+
+Solution: Expanded email TLD range in `emailOrUsernameSchema` to `2-63`, updated `urlSchema` final path-format regex to allow optional query/hash segments, trimmed profile link/status/year values in profile submit payload before API mutation and year checks, and added `.trim()` to `statusSchema`. Added regression tests for long-TLD emails, query/hash URL acceptance, whitespace normalization behavior, and whitespace-only status rejection.
+
+Result: Auth and profile forms now accept modern valid email/URL inputs without false negatives, optional links persist as clean empty strings instead of whitespace payloads, and status fields block blank-space submissions reliably.
+
+Files Modified: `src/constants/zod-schema.tsx`, `src/app/(main)/(users)/myprofile/page.tsx`, `src/tests/__tests__/zodSchema.test.ts`, `src/components/articles/SubmitArticleForm.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-27 - Zod Migration Regression Fixes (Auth + Profile Validation)
 
 Problem: The Zod migration branch introduced multiple regressions: confirm-password checks could throw runtime regex errors, login/resend blocked dot usernames, profile end-year format validation was bypassed, optional profile links became effectively required, signup password complexity checks were weakened, and password-visibility icon semantics were inverted.

@@ -60,13 +60,8 @@ describe('FormInput', () => {
   });
 
   it('calls register function with a zod schema', () => {
-    const testSchema = z.string().min(5, "Too short");
-    render(
-      <FormInput
-        {...defaultProps}
-        schema={testSchema}
-      />
-    );
+    const testSchema = z.string().min(5, 'Too short');
+    render(<FormInput {...defaultProps} schema={testSchema} />);
     expect(mockRegister).toHaveBeenCalledWith(
       'testInput',
       expect.objectContaining({

@@ -5,7 +5,7 @@ import { FieldErrors, useFieldArray, useFormContext } from 'react-hook-form';
 
 import FormInput from '@/components/common/FormInput';
 import { Button, ButtonIcon, ButtonTitle } from '@/components/ui/button';
-import { yearSchema, statusSchema } from '@/constants/zod-schema';
+import { statusSchema, yearSchema } from '@/constants/zod-schema';
 
 import { IProfileForm } from './page';
 

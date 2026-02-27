@@ -4,6 +4,8 @@ import {
   nameSchema,
   optionalUrlSchema,
   passwordSchema,
+  statusSchema,
+  urlSchema,
 } from '@/constants/zod-schema';
 
 describe('nameSchema', () => {
@@ -48,6 +50,10 @@ describe('emailOrUsernameSchema', () => {
   it('accepts usernames containing dots', () => {
     expect(emailOrUsernameSchema.safeParse('john.doe').success).toBe(true);
   });
+
+  it('accepts emails with modern long TLDs', () => {
+    expect(emailOrUsernameSchema.safeParse('john@domain.technology').success).toBe(true);
+  });
 });
 
 describe('passwordSchema', () => {
@@ -61,5 +67,27 @@ describe('optionalUrlSchema', () => {
   it('allows empty profile links but validates non-empty URLs', () => {
     expect(optionalUrlSchema.safeParse('').success).toBe(true);
     expect(optionalUrlSchema.safeParse('not-a-url').success).toBe(false);
+  });
+
+  it('treats whitespace-only values as empty after parsing', () => {
+    const result = optionalUrlSchema.safeParse('   ');
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBe('');
+    }
+  });
+});
+
+describe('urlSchema', () => {
+  it('accepts valid URLs containing query strings and hash fragments', () => {
+    expect(urlSchema.safeParse('https://example.com/path?x=1').success).toBe(true);
+    expect(urlSchema.safeParse('https://example.com/path#section').success).toBe(true);
+  });
+});
+
+describe('statusSchema', () => {
+  it('rejects whitespace-only status values', () => {
+    expect(statusSchema.safeParse('   ').success).toBe(false);
+    expect(statusSchema.safeParse('Researcher').success).toBe(true);
   });
 });

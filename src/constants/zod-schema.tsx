@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { passwordRegex } from '@/lib/formValidation';
 
 export const testSchema = z
@@ -131,7 +132,14 @@ export const urlSchema = z.string().superRefine((url, ctx) => {
       });
     }
   }
-  if (!/^(https?:\/\/)?([\da-z\.-]+\.[a-z\.]{2,6})([\/\w\.-]*)*\/?$/.test(url)) {
+  /* Fixed by Codex on 2026-02-27
+     Who: Codex
+     What: Expand URL path validation to support query strings and hash fragments.
+     Why: Valid URLs like `https://example.com/path?x=1#section` were incorrectly rejected.
+     How: Keep strict scheme/domain checks, then allow optional `?query` and `#hash` segments in the final format regex. */
+  if (
+    !/^(https?:\/\/)?([\da-z\.-]+\.[a-z\.]{2,6})([\/\w\.-]*)*\/?(\?[^#\s]*)?(#[^\s]*)?$/.test(url)
+  ) {
     ctx.addIssue({
       code: 'custom',
       message: 'Invalid path format in URL',
@@ -219,7 +227,12 @@ export const emailSchema = z.string().superRefine((email, ctx) => {
 export const emailOrUsernameSchema = z
   .string({ error: 'Must be a string' })
   .min(1, { message: 'This field is required' })
-  .regex(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$|^[\w.]+$/, {
+  /* Fixed by Codex on 2026-02-27
+     Who: Codex
+     What: Relax email TLD length limit in email-or-username validation.
+     Why: Modern valid emails with long TLDs (for example, `.technology`) were blocked on login/resend flows.
+     How: Keep existing username behavior but increase email TLD allowance from 2-4 to 2-63 characters. */
+  .regex(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,63}$|^[\w.]+$/, {
     message: 'Enter a valid email or username (only letters, numbers, dots, underscores allowed)',
   });
 
@@ -255,6 +268,7 @@ export const researchInterestItemSchema = z
 
 export const statusSchema = z
   .string({ error: 'Status must be a string' })
+  .trim()
   .min(1, { message: 'Status is required' })
   .max(50, { message: 'Status is too long' });
 

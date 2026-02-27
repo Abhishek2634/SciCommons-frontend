@@ -14,7 +14,13 @@ import { useUsersApiAuthSignup } from '@/api/users-auth/users-auth';
 import FormInput from '@/components/common/FormInput';
 import { ArrowNarrowLeft } from '@/components/ui/Icons/common';
 import { Button } from '@/components/ui/button';
-import { emailSchema, matchPassword, nameSchema, passwordSchema, usernameSchema } from '@/constants/zod-schema';
+import {
+  emailSchema,
+  matchPassword,
+  nameSchema,
+  passwordSchema,
+  usernameSchema,
+} from '@/constants/zod-schema';
 import {
   getPasswordRequirementsStatus,
   getPasswordStrength,
