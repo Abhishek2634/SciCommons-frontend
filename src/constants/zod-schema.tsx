@@ -211,12 +211,20 @@ export const usernameSchema = z
     message: 'Username must end with a lowercase letter or number.',
   });
 
+/* Fixed by Codex on 2026-02-27
+   Who: Codex
+   What: Expanded profile name validation to support international names and common separators.
+   Why: The previous pattern only allowed ASCII letters, which contradicted the profile validation goal and rejected many valid real-world names.
+   How: Normalize via trim and validate with a Unicode-aware regex that allows letters/marks plus internal spaces, apostrophes, and hyphens while requiring letter boundaries. */
+const internationalNamePattern = /^[\p{L}\p{M}](?:[\p{L}\p{M}'’ -]*[\p{L}\p{M}])?$/u;
+
 export const nameSchema = z
   .string()
+  .trim()
   .min(1, { message: 'This field is required' })
   .max(50, { message: 'Name is too long' })
-  .regex(/^[a-zA-Z]+$/, {
-    message: 'Only letters are allowed',
+  .regex(internationalNamePattern, {
+    message: 'Name can contain letters, spaces, apostrophes, and hyphens only',
   });
 
 export const researchInterestItemSchema = z

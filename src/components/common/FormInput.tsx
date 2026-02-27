@@ -10,7 +10,7 @@ import {
   UseFormRegister,
   useWatch,
 } from 'react-hook-form';
-import { ZodSchema } from 'zod';
+import { ZodTypeAny } from 'zod';
 
 import { cn } from '@/lib/utils';
 
@@ -46,7 +46,7 @@ interface InputProps<TFieldValues extends FieldValues> {
   isSuccess?: boolean;
   validateFn?: (value: string) => true | string;
   autoFocus?: boolean;
-  schema?: ZodSchema<any>;
+  schema?: ZodTypeAny;
   mentionCandidates?: string[];
 }
 
