@@ -1,3 +1,15 @@
+## 2026-02-27 - Profile Validation Consistency Follow-up (Zod + International Names)
+
+Problem: The latest profile-validation commits introduced two consistency issues: name validation still rejected many international names, and the new `schema` prop typing in `FormInput` triggered lint warnings (`no-explicit-any`).
+
+Root Cause: `nameSchema` used an ASCII-only regex (`[a-zA-Z]`), and `FormInput` typed schemas as `ZodSchema<any>`.
+
+Solution: Updated `nameSchema` to use trim + Unicode-aware validation that supports letters/combining marks with internal spaces, apostrophes, and hyphens. Replaced `FormInput` schema typing with `ZodTypeAny` to remove explicit `any`. Added a new regression test suite for valid/invalid `nameSchema` cases.
+
+Result: Profile name validation now aligns with the intended international-name support, lint consistency is restored in shared form input types, and test coverage now guards against future regex regressions.
+
+Files Modified: `src/constants/zod-schema.tsx`, `src/components/common/FormInput.tsx`, `src/tests/__tests__/zodSchema.test.ts`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-26 - Notifications Tab-Aware "New" Indicators + Mention Cleanup Controls
 
 Problem: Notifications UX could not distinguish unseen tab activity across System vs Mentions, bell "New" behavior was mention-only and persisted until read, and Mentions lacked a way to clear historical read entries.
