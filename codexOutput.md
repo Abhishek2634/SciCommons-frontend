@@ -531,18 +531,19 @@ For QA, open browser devtools console and filter by `[AuthDebug]`.
 
 [2026-02-27 18:32:00]
 **Findings**
+
 1. High: I do not recommend merging `artspace` as-is. In commit `811e9a0`, the title link changes from `inline-block` to `flex-1 min-w-0` in [ArticleCard.tsx](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/components/articles/ArticleCard.tsx). That makes the link fill most of the row again, which can reintroduce the prior click-target regression (title link becoming too broad).
 2. Medium: The same commit removes compact-type-specific title styles (`line-clamp-2`, minimal-specific underline/text sizing) and forces single-line truncation (`whitespace-nowrap text-ellipsis`). That is a visible behavior/UI change for `minimal` and `default` cards, not just a spacing fix.
 3. Low: The PR has no test coverage for this UI behavior change, so regression risk is unguarded.
 
 **Is It Already In `sureshDev`?**
 No.
+
 - `git rev-list --left-right --count sureshDev...artspace` returned `2 1`.
 - The one commit only on `artspace` is `811e9a0` (`Fixed articles naming space`).
 
 **Recommendation**
 Do not merge this PR in current form. Ask for a targeted fix that preserves the narrow link click target and existing compact-type styling behavior (unless product explicitly wants those UX changes).
-
 
 [2026-02-27 18:33:22]
 Partly yes.
@@ -550,11 +551,11 @@ Partly yes.
 There is a real layout edge case in current `sureshDev`: very long or unbroken article titles can crowd the right-side action column because the title row/link doesn’t have strong width constraints in [ArticleCard.tsx](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/components/articles/ArticleCard.tsx#L145).
 
 But the PR fix is overcorrecting:
+
 - it forces single-line truncation (`whitespace-nowrap text-ellipsis`),
 - and it widens the title link click area again (`flex-1`), which undoes the earlier narrow-click-target fix.
 
 So the underlying issue is plausible/real, but this specific PR solution is not good to merge as-is.
-
 
 [2026-02-27 18:34:07]
 I’d fix it by separating layout width from click target in [ArticleCard.tsx](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/components/articles/ArticleCard.tsx).
@@ -568,7 +569,6 @@ That fixes long-title crowding without reintroducing the “whole row is link”
 
 If you want, I can implement this exact patch now.
 
-
 [2026-02-27 18:37:23]
 Implemented.
 
@@ -579,27 +579,89 @@ Implemented.
 - Added a change summary entry in [CHANGE_COMMENTS.md](/C:/Users/Suresh/scicommons/Scicommons-Frontend/CHANGE_COMMENTS.md#L1).
 
 Validation
+
 - Ran `npx eslint src/components/articles/ArticleCard.tsx`.
 - Result: pass (no lint errors).
 
 If you want, I can also apply the same pattern to any other card components that have long-title crowding risk.
 
-
 [2026-02-27 18:42:07]
 Done. I applied the same pattern to the other cards that have real title-vs-right-column crowding risk.
 
 Updated
-- [ItemCard.tsx](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/app/(main)/(users)/mycontributions/ItemCard.tsx:57)
+
+- [ItemCard.tsx](</C:/Users/Suresh/scicommons/Scicommons-Frontend/src/app/(main)/(users)/mycontributions/ItemCard.tsx:57>)
   - Added `min-w-0 flex-1` content wrapper.
   - Kept link narrow (`inline-block max-w-full`).
   - Added robust wrapping (`break-words` + `overflow-wrap:anywhere`).
-- [ContributionCard.tsx](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/app/(main)/(users)/mycontributions/ContributionCard.tsx:23)
+- [ContributionCard.tsx](</C:/Users/Suresh/scicommons/Scicommons-Frontend/src/app/(main)/(users)/mycontributions/ContributionCard.tsx:23>)
   - Hardened header row with `min-w-0` + flexible title.
   - Made right-side count `shrink-0` so it doesn’t get crowded.
 - [CHANGE_COMMENTS.md](/C:/Users/Suresh/scicommons/Scicommons-Frontend/CHANGE_COMMENTS.md:13)
   - Added same-day follow-up summary for these cross-card changes.
 
 Validation
+
 - Ran `npx eslint src/components/articles/ArticleCard.tsx 'src/app/(main)/(users)/mycontributions/ItemCard.tsx' 'src/app/(main)/(users)/mycontributions/ContributionCard.tsx'`
 - Result: pass.
+
+[2026-02-27 18:50:04]
+Checked.
+
+- Your functional changes are applied and committed on `sureshDev`.
+- I can see these commits at HEAD:
+  - `b34f90f` (`same fix for other cards`)
+  - `24f84dd` (`long title fix`)
+
+Current working tree is not fully clean:
+- Real uncommitted change: [codexOutput.md](/C:/Users/Suresh/scicommons/Scicommons-Frontend/codexOutput.md)
+- `src/components/articles/ArticleCard.tsx`, `src/stores/authStore.ts`, and `src/tests/__tests__/authStore.test.ts` show as modified but `git diff` is empty (LF/CRLF noise only).
+
+So: code fixes are committed; only `codexOutput.md` has actual pending content.
+
+
+[2026-02-27 18:51:57]
+Yes. Safe/reliable way is to fix line-ending policy, not hide files.
+
+Right now your repo has:
+- `core.autocrlf=true`
+- no EOL rules in `.gitattributes`
+
+That combination causes this noise.
+
+Recommended (safe) setup:
+1. Set local git behavior:
+```bash
+git config core.autocrlf false
+git config core.safecrlf warn
+```
+2. Add `.gitattributes` EOL rules (example):
+```gitattributes
+* text=auto
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.css text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+```
+3. One-time normalize:
+```bash
+git add --renormalize .
+git commit -m "Normalize line endings"
+```
+
+For immediate current noise:
+```bash
+git update-index --refresh
+git status
+```
+
+Do not use `assume-unchanged`/`skip-worktree` for this; those can hide real future edits.
 
