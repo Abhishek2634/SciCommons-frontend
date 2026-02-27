@@ -352,72 +352,83 @@ Useful checks:
 
 [2026-02-27 11:56:59 -05:00]
 Fixed first:
+
 - Replaced `any[]` with `SubmitArticleFormValues['authors']` in [SubmitArticleForm.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/articles/SubmitArticleForm.tsx#L132).
 - Verified with `npx eslint src/components/articles/SubmitArticleForm.tsx` (passes).
 
 Deep Zod review findings (remaining):
 
 1. High: login/resend still rejects valid long-TLD emails.
+
 - `emailOrUsernameSchema` hard-limits email TLDs to 2-4 chars, so addresses like `user@domain.technology` fail client validation.
 - [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx#L223)
-- [login/page.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(authentication)/auth/login/page.tsx#L147)
-- [resendverificationemail/page.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(authentication)/auth/resendverificationemail/page.tsx#L119)
+- [login/page.tsx](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(authentication)/auth/login/page.tsx#L147>)
+- [resendverificationemail/page.tsx](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(authentication)/auth/resendverificationemail/page.tsx#L119>)
 
 2. High: `urlSchema` rejects valid URLs with query/hash parts.
+
 - The path regex does not allow `?` or `#`, so valid links like `https://example.com/path?x=1` fail.
 - [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx#L101)
 - [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx#L138)
 - [SubmitArticleForm.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/articles/SubmitArticleForm.tsx#L193)
-- [PersonalLinks.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/PersonalLinks.tsx#L42)
+- [PersonalLinks.tsx](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/PersonalLinks.tsx#L42>)
 
 3. Medium: optional profile URL validation allows whitespace-only values and sends them unnormalized.
+
 - `optionalEmptyStringSchema` trims only for validation success, but form submission still sends the original raw value because parsed output is not applied.
 - [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx#L148)
 - [FormInput.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/FormInput.tsx#L129)
-- [myprofile/page.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/page.tsx#L98)
+- [myprofile/page.tsx](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/page.tsx#L98>)
 
 4. Medium: `statusSchema` allows whitespace-only status values.
+
 - It uses `.min(1)` without trim, so `'   '` passes validation.
 - [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx#L257)
-- [ProfessionalStatus.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/ProfessionalStatus.tsx#L54)
-- [myprofile/page.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/page.tsx#L103)
+- [ProfessionalStatus.tsx](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/ProfessionalStatus.tsx#L54>)
+- [myprofile/page.tsx](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/page.tsx#L103>)
 
 If you want, I can patch these four next in one pass.
-
 
 [2026-02-27 12:00:55 -05:00]
 Applied the requested fixes.
 
 1. Removed the `any` type in article-author validation.
+
 - [SubmitArticleForm.tsx:132](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/articles/SubmitArticleForm.tsx:132)
 
 2. Updated `emailOrUsernameSchema` so valid long-TLD emails are accepted in login/resend flows.
+
 - [zod-schema.tsx:227](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx:227)
 - [zod-schema.tsx:235](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx:235)
 
 3. Updated `urlSchema` to allow valid query/hash URL forms.
+
 - [zod-schema.tsx:135](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx:135)
 - [zod-schema.tsx:141](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx:141)
 
 4. Prevented whitespace-only optional profile links/status values from being sent unnormalized by trimming before payload construction.
-- [myprofile/page.tsx:99](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/page.tsx:99)
-- [myprofile/page.tsx:116](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/page.tsx:116)
-- [myprofile/page.tsx:133](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/page.tsx:133)
+
+- [myprofile/page.tsx:99](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/page.tsx:99>)
+- [myprofile/page.tsx:116](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/page.tsx:116>)
+- [myprofile/page.tsx:133](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/page.tsx:133>)
 
 5. Tightened `statusSchema` so whitespace-only status values fail validation.
+
 - [zod-schema.tsx:269](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx:269)
 
 6. Added regression coverage for all of the above.
+
 - [zodSchema.test.ts:54](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/zodSchema.test.ts:54)
 - [zodSchema.test.ts:72](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/zodSchema.test.ts:72)
 - [zodSchema.test.ts:82](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/zodSchema.test.ts:82)
 - [zodSchema.test.ts:89](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/zodSchema.test.ts:89)
 
 7. Logged the change in the repo changelog summary.
+
 - [CHANGE_COMMENTS.md:1](C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md:1)
 
 Validation run:
+
 - `npx eslint src/components/articles/SubmitArticleForm.tsx src/constants/zod-schema.tsx "src/app/(main)/(users)/myprofile/page.tsx" src/tests/__tests__/zodSchema.test.ts` passed.
 - `yarn test --runInBand src/tests/__tests__/zodSchema.test.ts` passed (10/10).
 - `yarn check-types:fast` passed.
-
