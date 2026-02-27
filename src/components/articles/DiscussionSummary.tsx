@@ -43,6 +43,9 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
   const accessToken = useAuthStore((state) => state.accessToken);
   const queryClient = useQueryClient();
   const formRef = React.useRef<HTMLFormElement>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const deleteDialogTitleId = React.useId();
+  const deleteDialogDescriptionId = React.useId();
 
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -170,10 +173,9 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
     reset();
   };
 
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this discussion summary?')) {
-      deleteSummary({ communityArticleId });
-    }
+  const handleDeleteConfirmed = () => {
+  deleteSummary({ communityArticleId });
+  setShowDeleteConfirm(false);
   };
 
   const onSubmit: SubmitHandler<FormValues> = (formData) => {
@@ -202,6 +204,7 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
   // Has summary - show it with edit/delete buttons for admin
   if (hasSummary) {
     return (
+      <>
       <div className="mb-4 border-b border-common-minimal pb-4">
         <div className="mb-2 flex items-center justify-between">
           <button
@@ -235,7 +238,7 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
               </button>
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={() => setShowDeleteConfirm(true)}
                 disabled={isDeleting}
                 className="rounded p-1.5 text-text-tertiary hover:bg-functional-red/10 hover:text-functional-red disabled:opacity-50"
                 title="Delete summary"
@@ -311,6 +314,33 @@ const DiscussionSummary: React.FC<DiscussionSummaryProps> = ({ communityArticleI
           )}
         </div>
       </div>
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/50">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={deleteDialogTitleId}
+            aria-describedby={deleteDialogDescriptionId}
+            className="w-[320px] rounded-xl bg-common-cardBackground p-6"
+          >
+          <p id={deleteDialogTitleId} className="mb-2 text-lg font-semibold">
+              Delete this summary?
+          </p>
+          <p id={deleteDialogDescriptionId} className="mb-4 text-sm text-text-secondary">
+            This action cannot be undone.
+          </p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="gray" size="sm" type="button" onClick={() => setShowDeleteConfirm(false)}>
+              <ButtonTitle>Cancel</ButtonTitle>
+            </Button>
+            <Button variant="danger" size="sm" loading={isDeleting} type="button" onClick={handleDeleteConfirmed}>
+            < ButtonTitle>Delete</ButtonTitle>
+            </Button>
+          </div>
+        </div>
+      </div>
+      )}
+    </>
     );
   }
 
