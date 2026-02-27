@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 
 import { FormProvider, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -29,7 +29,7 @@ export interface IProfileForm {
   lastName: string;
   email: string;
   bio: string;
-  profilePicture: FileList;
+  profilePicture?: FileList;
   homePage: string;
   linkedIn: string;
   github: string;
@@ -52,25 +52,6 @@ const Home: React.FC = () => {
   const { data, error } = useCurrentUser();
   const { invalidateUser } = useInvalidateCurrentUser();
 
-  const { mutate, isPending } = useUsersApiUpdateUser({
-    request: {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
-    mutation: {
-      onSuccess: () => {
-        toast.success('Profile updated successfully');
-        // Invalidate user cache to refetch and update all components using user data
-        invalidateUser();
-        setEditMode(false);
-      },
-      onError: (error) => {
-        showErrorToast(error);
-      },
-    },
-  });
-
   const methods = useForm<IProfileForm>({
     defaultValues: {
       professionalStatuses: [],
@@ -81,7 +62,33 @@ const Home: React.FC = () => {
   const {
     handleSubmit,
     formState: { errors },
+    reset,
+    watch,
   } = methods;
+
+  const { mutate, isPending } = useUsersApiUpdateUser({
+    request: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+    mutation: {
+      onSuccess: () => {
+        toast.success('Profile updated successfully');
+        // Invalidate user cache to refetch and update all components using user data
+        /* Fixed by Codex on 2026-02-26
+           Who: Codex
+           What: Removed eager form reset on successful profile update.
+           Why: `reset()` without explicit values reused stale default values and could show pre-save data until refetch completed.
+           How: Keep the current form values intact, exit edit mode, and rely on cache invalidation/refetch to refresh canonical defaults. */
+        invalidateUser();
+        setEditMode(false);
+      },
+      onError: (error) => {
+        showErrorToast(error);
+      },
+    },
+  });
 
   const onSubmit = (formData: IProfileForm) => {
     const dataToSend = {
@@ -130,7 +137,10 @@ const Home: React.FC = () => {
     mutate({
       data: {
         payload: { details: dataToSend },
-        profile_image: formData.profilePicture ? formData.profilePicture[0] : undefined,
+        profile_image:
+          formData.profilePicture && formData.profilePicture.length > 0
+            ? formData.profilePicture[0]
+            : undefined,
       },
     });
   };
@@ -141,7 +151,7 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     if (data) {
-      methods.reset(
+      reset(
         {
           username: data.data.username,
           firstName: data.data.first_name || '',
@@ -152,7 +162,6 @@ const Home: React.FC = () => {
           linkedIn: data.data.linkedin_url || '',
           github: data.data.github_url || '',
           googleScholar: data.data.google_scholar_url || '',
-
           profilePicture: undefined,
           professionalStatuses: data.data.academic_statuses.map((status) => ({
             status: status.academic_email,
@@ -168,13 +177,30 @@ const Home: React.FC = () => {
         { keepValues: false }
       );
     }
-  }, [data, methods]);
+  }, [data, reset]);
 
   useEffect(() => {
     if (error) {
       showErrorToast(error);
     }
   }, [error]);
+
+  const currentValues = watch();
+
+  const isActuallyDirty = useMemo(() => {
+    if (!data) return false;
+    /* Fixed by Codex on 2026-02-26
+       Who: Codex
+       What: Reworked dirty-state comparison typing for profile form.
+       Why: Previous `any` casts and unused destructuring weakened type safety and produced lint warnings.
+       How: Compare non-file form fields with typed partial defaults and detect file input changes separately. */
+    const { profilePicture: currentPic, ...cleanCurrentData } = currentValues;
+    const defaultValues = methods.formState.defaultValues as Partial<IProfileForm> | undefined;
+    const { profilePicture: _defaultPic, ...cleanDefaultData } = defaultValues || {};
+    const isDataChanged = JSON.stringify(cleanCurrentData) !== JSON.stringify(cleanDefaultData);
+    const isPicChanged = Boolean(currentPic?.length);
+    return isDataChanged || isPicChanged;
+  }, [currentValues, methods.formState.defaultValues, data]);
 
   return (
     <FormProvider {...methods}>
@@ -185,13 +211,30 @@ const Home: React.FC = () => {
             editMode={editMode}
             setEditMode={setEditMode}
             profilePicture={data?.data.profile_pic_url || `data:image/png;base64,${imageData}`}
+            isPending={isPending}
+            isActuallyDirty={isActuallyDirty}
           />
           <PersonalLinks errors={errors} editMode={editMode} />
           <ProfessionalStatus errors={errors} editMode={editMode} />
           <ResearchInterests editMode={editMode} />
           {editMode && (
-            <div className="mx-auto mt-6 max-w-4xl">
-              <Button type="submit" disabled={isPending} className="w-full">
+            <div className="mx-auto mt-6 flex max-w-4xl gap-4">
+              <Button
+                type="button"
+                disabled={isPending}
+                onClick={() => {
+                  reset();
+                  setEditMode(false);
+                }}
+                className="w-full border border-common-contrast bg-common-cardBackground text-text-primary hover:bg-common-minimal"
+              >
+                <ButtonTitle>Cancel</ButtonTitle>
+              </Button>
+              <Button
+                type="submit"
+                disabled={isPending || !isActuallyDirty}
+                className={`w-full ${!isActuallyDirty ? 'cursor-not-allowed opacity-50' : ''}`}
+              >
                 <ButtonTitle>Save Changes</ButtonTitle>
               </Button>
             </div>
