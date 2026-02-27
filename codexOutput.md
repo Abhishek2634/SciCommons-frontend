@@ -440,6 +440,7 @@ Short answer: not in the most recent commit.
 - The Zod/validation fixes are in the previous commit `79a3db8` (`more zod fixes and cleanup`).
 
 `79a3db8` includes the files we cared about:
+
 - `src/components/articles/SubmitArticleForm.tsx`
 - `src/constants/zod-schema.tsx`
 - `src/app/(main)/(users)/myprofile/page.tsx`
@@ -448,7 +449,6 @@ Short answer: not in the most recent commit.
 
 So everything is committed on `sureshDev`, but not in HEAD commit `dc4e879`; it is in `79a3db8`.
 
-
 [2026-02-27 12:56:15 -05:00]
 Use backticks.
 
@@ -456,13 +456,13 @@ Inline code:
 `your_code_here`
 
 Code block:
+
 ```js
 const x = 1;
 console.log(x);
 ```
 
 You can replace `js` with `ts`, `tsx`, `bash`, `json`, etc.
-
 
 [2026-02-27 14:52:01]
 I checked the frontend auth/session flow and recent commits.
@@ -477,15 +477,16 @@ This is probably a backend token-lifetime issue, but frontend changes can absolu
 So if backend is issuing ~2-minute JWTs, frontend will force expiry around 2 minutes by design. That means root cause is most likely backend token TTL/config, with frontend strict expiry enforcement making it visible.
 
 One frontend bug I found:
+
 - `isTokenExpired()` returns `true` after 5 minutes to signal revalidation ([authStore.ts#L330](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/stores/authStore.ts#L330), [authStore.ts#L338](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/stores/authStore.ts#L338)), but `withAuthRedirect` interprets that as hard expiry/logout. That is a frontend logic issue (5-minute path, separate from your 2-minute symptom).
 
 Quick check to confirm backend side: decode the login JWT `exp` and compare it to login time; if it is ~120 seconds, backend token settings are the primary cause.
-
 
 [2026-02-27 14:53:44]
 Yes, this needs fixing.
 
 Right now `isTokenExpired()` is doing two different jobs:
+
 - Hard expiry check (`now >= expiresAt`)
 - Revalidation signal after 5 minutes
 
@@ -495,11 +496,11 @@ We should split these concerns (for example: `isHardExpired()` vs `needsServerRe
 
 If you want me to implement it now, say `do this` and I’ll patch it.
 
-
 [2026-02-27 14:58:50]
 Implemented the fix.
 
 What I changed
+
 - Split periodic server revalidation from hard expiry in [authStore.ts](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/stores/authStore.ts#L266).
 - `isTokenExpired()` is now strict hard-expiry only (`expiresAt` check) in [authStore.ts](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/stores/authStore.ts#L354).
 - Added periodic revalidation handling inside `initializeAuth` that only forces logout on `401/403` during revalidation, not on revalidation-window timing alone in [authStore.ts](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/stores/authStore.ts#L308).
@@ -507,12 +508,12 @@ What I changed
 - Added change summary entry in [CHANGE_COMMENTS.md](/C:/Users/Suresh/scicommons/Scicommons-Frontend/CHANGE_COMMENTS.md#L1).
 
 Validation
+
 - Ran `yarn test src/tests/__tests__/authStore.test.ts --watch=false --runInBand`.
 - Result: PASS (4/4 tests).
 - Note: the first run without `--runInBand` failed in this environment with `spawn EPERM`; single-process mode succeeded.
 
 If you want, I can also add a tiny manual debug log (dev-only) around auth revalidation decisions to make this easier to observe in browser during QA.
-
 
 [2026-02-27 15:00:49]
 Added.
@@ -522,8 +523,8 @@ Added.
 - Documented this as a same-day follow-up in [CHANGE_COMMENTS.md](/C:/Users/Suresh/scicommons/Scicommons-Frontend/CHANGE_COMMENTS.md#L13).
 
 Validation
+
 - Ran `yarn test src/tests/__tests__/authStore.test.ts --watch=false --runInBand`.
 - Result: PASS (4/4 tests).
 
 For QA, open browser devtools console and filter by `[AuthDebug]`.
-
