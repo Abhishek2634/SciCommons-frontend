@@ -258,3 +258,90 @@ Files changed:
 - [CHANGE_COMMENTS.md](/C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md)
 
 I did not commit yet.
+
+[2026-02-27 10:41:46 -05:00]
+Here’s how `complet-zod-migration` and `sureshDev` relate in git history:
+
+1. `sureshDev` is the common base (merge-base): `e9f217d` (`linting`, 2026-02-27).
+2. `complet-zod-migration` is ahead of `sureshDev` by 2 commits.
+3. `sureshDev` is ahead of `complet-zod-migration` by 0 commits.
+4. Commits unique to `complet-zod-migration` are:
+   - `0dc1c24` `adding issue_templates (#277)`
+   - `27649f2` `Zod v4 migration`
+5. There are no commits unique to `sureshDev` after the branch point.
+
+So they have not diverged; `complet-zod-migration` is a straight continuation of `sureshDev` (fast-forward relationship).
+
+
+[2026-02-27 10:42:03 -05:00]
+Here’s how `complet-zod-migration` and `sureshDev` relate in git history:
+
+1. `sureshDev` is the common base (merge-base): `e9f217d` (`linting`, 2026-02-27).
+2. `complet-zod-migration` is ahead of `sureshDev` by 2 commits.
+3. `sureshDev` is ahead of `complet-zod-migration` by 0 commits.
+4. One commit unique to `complet-zod-migration` is `0dc1c24` (`adding issue_templates (#277)`).
+5. Another commit unique to `complet-zod-migration` is `27649f2` (`Zod v4 migration`).
+6. There are no commits unique to `sureshDev` after the branch point.
+
+So they have not diverged; `complet-zod-migration` is a straight continuation of `sureshDev` (fast-forward relationship).
+
+
+[2026-02-27 10:44:59 -05:00]
+Yes. In `sureshDev`, those three files are already present and in a cleaner/correct state:
+
+1. `.github/ISSUE_TEMPLATE/bug_report.md`
+2. `.github/ISSUE_TEMPLATE/enhancement.md`
+3. `.github/ISSUE_TEMPLATE/feature_request.md`
+
+What `0dc1c24` changes vs `sureshDev` is only formatting (quote style, extra blank lines, markdown list indentation, missing final newline), not template meaning/fields.
+
+History-wise, `sureshDev` already had `adding issue_templates (#277)` as `c286108`, then `d7df34f` (`cleanup lint`) normalized formatting. So `sureshDev` already has the correct version; applying `0dc1c24` would mostly reintroduce older formatting.
+
+
+[2026-02-27 10:56:19 -05:00]
+Implemented all six findings on `complet-zod-migration`.
+
+1. Confirm-password runtime regex risk is fixed by removing regex construction from user input.
+- [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx#L167)
+- [register/page.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(authentication)/auth/register/page.tsx#L269)
+- [resetpassword/[token]/page.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(authentication)/auth/resetpassword/[token]/page.tsx#L108)
+
+2. Username login/resend now accepts dot usernames (for example `john.doe`).
+- [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx#L219)
+
+3. End Year format validation bypass is fixed by chaining `validateFn` and schema validation in `FormInput`.
+- [FormInput.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/FormInput.tsx#L116)
+
+4. Optional personal link fields are optional again while still validating non-empty URLs.
+- [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx#L149)
+- [PersonalLinks.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/PersonalLinks.tsx#L42)
+
+5. Signup password complexity policy is restored (length + upper + lower + digit + special).
+- [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx#L154)
+
+6. Password visibility icons are corrected (`Eye` when hidden, `EyeOff` when visible).
+- [FormInput.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/FormInput.tsx#L273)
+
+Also updated changelog and regression tests:
+- [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md#L1)
+- [zodSchema.test.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/tests/__tests__/zodSchema.test.ts#L1)
+
+Validation run:
+- `yarn test --runInBand src/tests/__tests__/zodSchema.test.ts` passed.
+- `yarn check-types:fast` passed.
+- `npx eslint <touched-files>` passed.
+- `yarn eslint ...` failed due pre-existing repo-wide lint errors in `backend/...` vendor/admin files (unrelated to these changes).
+
+
+[2026-02-27 10:58:16 -05:00]
+Use:
+
+`git add -u`
+
+That stages only changes to already tracked files (modified/deleted), and skips untracked files.
+
+Useful checks:
+- `git status --short` before/after
+- stage specific modified files only: `git add path/to/file1 path/to/file2`
+- interactive hunks: `git add -p`
+

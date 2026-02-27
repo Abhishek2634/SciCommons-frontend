@@ -10,7 +10,7 @@ import {
   UseFormRegister,
   useWatch,
 } from 'react-hook-form';
-import { ZodTypeAny } from 'zod';
+import { z } from 'zod';
 
 import { cn } from '@/lib/utils';
 
@@ -22,12 +22,6 @@ interface InputProps<TFieldValues extends FieldValues> {
   type: string;
   placeholder?: string;
   requiredMessage?: string;
-  patternMessage?: string;
-  patternValue?: RegExp;
-  minLengthValue?: number;
-  minLengthMessage?: string;
-  maxLengthValue?: number;
-  maxLengthMessage?: string;
   name: keyof TFieldValues;
   register: UseFormRegister<TFieldValues>;
   errors: FieldErrors<TFieldValues>;
@@ -46,7 +40,7 @@ interface InputProps<TFieldValues extends FieldValues> {
   isSuccess?: boolean;
   validateFn?: (value: string) => true | string;
   autoFocus?: boolean;
-  schema?: ZodTypeAny;
+  schema?: z.ZodTypeAny;
   mentionCandidates?: string[];
 }
 
@@ -77,12 +71,6 @@ const FormInput = <TFieldValues extends FieldValues>({
   placeholder,
   register,
   requiredMessage,
-  patternMessage,
-  patternValue,
-  minLengthValue,
-  minLengthMessage,
-  maxLengthValue,
-  maxLengthMessage,
   errors,
   control,
   isSubmitting = false,
@@ -125,21 +113,23 @@ const FormInput = <TFieldValues extends FieldValues>({
   // Get the registered field with validation rules
   const registeredField = register(name as Path<TFieldValues>, {
     required: requiredMessage ? { value: true, message: requiredMessage } : undefined,
-    pattern:
-      patternValue && patternMessage ? { value: patternValue, message: patternMessage } : undefined,
-    minLength:
-      minLengthValue && minLengthMessage
-        ? { value: minLengthValue, message: minLengthMessage }
-        : undefined,
-    maxLength:
-      maxLengthValue && maxLengthMessage
-        ? { value: maxLengthValue, message: maxLengthMessage }
-        : undefined,
     validate: (value) => {
-      if (validateFn) return validateFn(value);
+      /* Fixed by Codex on 2026-02-27
+         Who: Codex
+         What: Chain custom and schema validators instead of returning from the first one.
+         Why: Fields that need both rules (for example, year format + start/end ordering) were skipping schema checks.
+         How: Run custom validation first, and only continue to schema validation when custom validation passes. */
+      if (validateFn) {
+        const customValidationResult = validateFn(value);
+        if (customValidationResult !== true) {
+          return customValidationResult;
+        }
+      }
       if (schema) {
         const result = schema.safeParse(value);
-        if (!result.success) return result.error.issues[0]?.message ?? 'Invalid value';
+        if (!result.success) {
+          return result.error.issues[0]?.message ?? 'Invalid input';
+        }
       }
       return true;
     },

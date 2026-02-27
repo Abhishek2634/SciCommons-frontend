@@ -1,3 +1,15 @@
+## 2026-02-27 - Zod Migration Regression Fixes (Auth + Profile Validation)
+
+Problem: The Zod migration branch introduced multiple regressions: confirm-password checks could throw runtime regex errors, login/resend blocked dot usernames, profile end-year format validation was bypassed, optional profile links became effectively required, signup password complexity checks were weakened, and password-visibility icon semantics were inverted.
+
+Root Cause: Validation behavior depended on regex construction from user input, username regex was narrowed too far, `FormInput` short-circuited validation when `validateFn` existed, strict URL schemas were applied directly to optional profile fields, password schema dropped the complexity regex, and visibility icon rendering used reversed conditions.
+
+Solution: Replaced regex-based password matching with direct string comparison in `matchPassword`, widened `emailOrUsernameSchema` username handling to accept dots, chained `validateFn` and schema validation in `FormInput`, introduced optional URL schema variants and wired them into `PersonalLinks`, restored password complexity checks in `passwordSchema` using the existing shared regex, and swapped visibility icons to `Eye` (hidden) / `EyeOff` (visible) semantics. Added targeted schema regression tests for these fixes.
+
+Result: Auth and profile validation behavior now aligns with expected UX and prior constraints, runtime regex exceptions are removed, optional profile links no longer block saves when blank, and visual password-toggle semantics are corrected.
+
+Files Modified: `src/constants/zod-schema.tsx`, `src/components/common/FormInput.tsx`, `src/app/(authentication)/auth/register/page.tsx`, `src/app/(authentication)/auth/resetpassword/[token]/page.tsx`, `src/app/(main)/(users)/myprofile/PersonalLinks.tsx`, `src/tests/__tests__/zodSchema.test.ts`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-27 - Discussion Summary Delete Dialog UX/A11y Hardening
 
 Problem: The new in-app delete confirmation for discussion summaries closed immediately after clicking `Delete`, even before API success, and lacked robust keyboard/focus behavior.
