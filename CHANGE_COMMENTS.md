@@ -1,3 +1,17 @@
+## 2026-02-27 - Auth Revalidation vs Hard Expiry Separation
+
+Problem: Auth-guarded pages could show "Session Expired" even when the token itself had not expired.
+
+Root Cause: `isTokenExpired()` mixed two signals (hard token expiry + 5-minute server revalidation window), while `withAuthRedirect` interpreted any `true` result as immediate session expiry/logout.
+
+Solution: Separated responsibilities in auth store logic by moving periodic server revalidation into `initializeAuth` and limiting forced logout to explicit auth failures (`401`/`403`) during revalidation. Simplified `isTokenExpired()` to hard-expiry only. Added a regression test that advances time past 5 minutes but before token expiry and asserts no hard-expiry state.
+
+Result: Frontend auth guards no longer force false "session expired" flows on stale revalidation windows; users are only logged out on actual token expiry or backend auth failure.
+
+Files Modified: `src/stores/authStore.ts`, `src/tests/__tests__/authStore.test.ts`, `CHANGE_COMMENTS.md` (commit reference: pending local commit)
+
+Follow-up (same day): Added a tiny development-only auth debug logger in `authStore` to trace hard-expiry validation and periodic server-revalidation decisions during QA without affecting production behavior.
+
 ## 2026-02-27 - Zod Validation Follow-up Hardening (Email/URL/Profile Normalization)
 
 Problem: After the initial Zod migration fixes, several validation gaps remained: login/resend rejected valid long-TLD emails, URL validation rejected valid query/hash URLs, optional profile links could be submitted as whitespace-only raw strings, and professional status accepted whitespace-only values.
