@@ -171,3 +171,69 @@ Validation:
 
 So yes: the Docker error you posted is fixed in code. Re-run your Docker build; if anything else fails, share the new log and I’ll handle the next blocker.
 
+
+[2026-02-27 00:26:34 -05:00]
+`--force-with-lease` rejected because your local view of `origin/sureshDev` is stale (or the remote moved after your last fetch).
+
+Run this:
+`git fetch origin`
+`git rev-parse origin/sureshDev`
+
+Then force-push with an explicit lease (replace `<REMOTE_SHA>` with the value from `origin/sureshDev`):
+`git push --force-with-lease=refs/heads/sureshDev:<REMOTE_SHA> origin sureshDev:refs/heads/sureshDev`
+
+If that still rejects, someone pushed again after your fetch. Re-run `git fetch origin`, get the new SHA, and retry. Only use plain `--force` if you intentionally want to overwrite regardless of remote changes.
+
+[2026-02-27 00:27:34 -05:00]
+`origin/sureshDev` is currently at the merge commit (`036ee27`), so you can use an explicit lease now.
+
+If your local `HEAD` is already `ba3847b`, run:
+`git push --force-with-lease=refs/heads/sureshDev:036ee27482af4fe002b52922945f1ac4ae966cc4 origin sureshDev:refs/heads/sureshDev`
+
+If you have not reset local yet, do this first:
+`git reset --hard ba3847b`
+then run the same push command above.
+
+That will move remote `sureshDev` back to `ba3847b` and remove the merge from that branch’s history.
+
+[2026-02-27 00:28:37 -05:00]
+That error means GitHub branch protection is blocking history rewrites on `sureshDev`.
+
+You now have only 2 options:
+
+1. Keep protection on (most common): undo with a normal commit
+`git checkout sureshDev`
+`git revert -m 1 036ee27`
+`git push origin sureshDev`
+
+2. Truly drop merge history from `sureshDev`: an admin must temporarily allow force-push (or unprotect the branch), then you can push the reset commit (`ba3847b`) with `--force-with-lease`.
+
+Without changing branch protection, you cannot remove that merge commit from remote `sureshDev` history.
+
+[2026-02-27 00:30:14 -05:00]
+To allow force-push temporarily on GitHub:
+
+1. Open the repo on GitHub.
+2. Go to `Settings`.
+3. Open `Branches` (or `Rules` -> `Rulesets`, if your repo uses rulesets).
+4. Edit the rule/ruleset that targets `sureshDev`.
+5. Turn on `Allow force pushes`.
+6. Under who can force-push, allow yourself (or your team).
+7. Save.
+
+Then run your `--force-with-lease` push, and turn `Allow force pushes` back off afterward.
+
+If you cannot see or change this, you need repo admin (or org owner) permission.
+
+[2026-02-27 00:37:26 -05:00]
+Added only `LICENSE` to `sureshDev`, sourced from `test1`.
+
+Checks:
+- `main` has no `LICENSE` in current history.
+- `test1:LICENSE` blob hash matches local `LICENSE` exactly: `f288702d2fa16d3cdf0035b15a9fcbc552cd88e7`.
+
+Current local changes:
+- `A  LICENSE`
+- `M  codexOutput.md` (logging only)
+
+No other project files changed.
