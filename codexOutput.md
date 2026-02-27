@@ -432,3 +432,19 @@ Validation run:
 - `npx eslint src/components/articles/SubmitArticleForm.tsx src/constants/zod-schema.tsx "src/app/(main)/(users)/myprofile/page.tsx" src/tests/__tests__/zodSchema.test.ts` passed.
 - `yarn test --runInBand src/tests/__tests__/zodSchema.test.ts` passed (10/10).
 - `yarn check-types:fast` passed.
+
+[2026-02-27 12:10:12 -05:00]
+Short answer: not in the most recent commit.
+
+- Latest commit is `dc4e879` (`linting/output`), and it changes only `codexOutput.md`.
+- The Zod/validation fixes are in the previous commit `79a3db8` (`more zod fixes and cleanup`).
+
+`79a3db8` includes the files we cared about:
+- `src/components/articles/SubmitArticleForm.tsx`
+- `src/constants/zod-schema.tsx`
+- `src/app/(main)/(users)/myprofile/page.tsx`
+- `src/tests/__tests__/zodSchema.test.ts`
+- `CHANGE_COMMENTS.md`
+
+So everything is committed on `sureshDev`, but not in HEAD commit `dc4e879`; it is in `79a3db8`.
+
