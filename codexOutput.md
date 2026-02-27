@@ -584,3 +584,22 @@ Validation
 
 If you want, I can also apply the same pattern to any other card components that have long-title crowding risk.
 
+
+[2026-02-27 18:42:07]
+Done. I applied the same pattern to the other cards that have real title-vs-right-column crowding risk.
+
+Updated
+- [ItemCard.tsx](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/app/(main)/(users)/mycontributions/ItemCard.tsx:57)
+  - Added `min-w-0 flex-1` content wrapper.
+  - Kept link narrow (`inline-block max-w-full`).
+  - Added robust wrapping (`break-words` + `overflow-wrap:anywhere`).
+- [ContributionCard.tsx](/C:/Users/Suresh/scicommons/Scicommons-Frontend/src/app/(main)/(users)/mycontributions/ContributionCard.tsx:23)
+  - Hardened header row with `min-w-0` + flexible title.
+  - Made right-side count `shrink-0` so it doesn’t get crowded.
+- [CHANGE_COMMENTS.md](/C:/Users/Suresh/scicommons/Scicommons-Frontend/CHANGE_COMMENTS.md:13)
+  - Added same-day follow-up summary for these cross-card changes.
+
+Validation
+- Ran `npx eslint src/components/articles/ArticleCard.tsx 'src/app/(main)/(users)/mycontributions/ItemCard.tsx' 'src/app/(main)/(users)/mycontributions/ContributionCard.tsx'`
+- Result: pass.
+

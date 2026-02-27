@@ -10,6 +10,8 @@ Result: Long titles no longer crowd action icons, and the title link remains sco
 
 Files Modified: `src/components/articles/ArticleCard.tsx`, `CHANGE_COMMENTS.md` (commit reference: pending local commit)
 
+Follow-up (same day): Applied the same overflow-safe width/click-target pattern to contribution cards with trailing columns. Updated `ItemCard` (title + role icon row) and `ContributionCard` (title + count row) to use `min-w-0` layout wrappers, robust word wrapping, and shrink-protected trailing elements so long titles no longer crowd right-side metadata.
+
 ## 2026-02-27 - Auth Revalidation vs Hard Expiry Separation
 
 Problem: Auth-guarded pages could show "Session Expired" even when the token itself had not expired.
