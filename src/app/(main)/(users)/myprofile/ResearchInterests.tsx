@@ -29,7 +29,7 @@ const ResearchInterests: React.FC<ResearchInterestsProps> = ({ editMode }) => {
             for (const item of value) {
               const result = researchInterestItemSchema.safeParse(item.label);
               if (!result.success) {
-                return result.error.errors[0].message;
+                return result.error.issues[0]?.message ?? 'Invalid research interest';
               }
             }
             return true;

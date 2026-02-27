@@ -139,7 +139,7 @@ const FormInput = <TFieldValues extends FieldValues>({
       if (validateFn) return validateFn(value);
       if (schema) {
         const result = schema.safeParse(value);
-        if (!result.success) return result.error.errors[0].message;
+        if (!result.success) return result.error.issues[0]?.message ?? 'Invalid value';
       }
       return true;
     },

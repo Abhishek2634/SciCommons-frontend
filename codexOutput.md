@@ -142,3 +142,32 @@ Non-blocking local workspace note:
 
 - `src/app/(main)/(users)/myprofile/page.tsx` appears modified only due LF/CRLF line-ending noise (empty content diff).
 - `codexOutput.md` is modified due logging entries.
+
+[2026-02-26 23:17:59]
+Not really.
+
+In this repo, `zod` is already present transitively, and `yarn why zod` reports about **800KB** unpacked. If you add it as a direct dependency, it usually won’t duplicate anything or materially increase Docker image size.
+
+So for image size: impact is typically negligible here.
+
+Note: the bigger effect is usually client JS bundle size (if used in client components), not Docker layer size.
+
+
+[2026-02-26 23:27:19]
+Root cause confirmed: after `yarn add zod`, your project now resolves `zod@4.3.6`, and the code still had a few Zod v3-only APIs.
+
+I fixed the breaking points:
+- [ResearchInterests.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/ResearchInterests.tsx): `result.error.errors[0].message` -> `result.error.issues[0]?.message ?? 'Invalid research interest'`
+- [FormInput.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/FormInput.tsx): `result.error.errors[0].message` -> `result.error.issues[0]?.message ?? 'Invalid value'`
+- [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx):
+  - `z.string({ required_error, invalid_type_error })` -> `z.string({ error: 'Username must be a string' }).min(1, { message: 'Username is required' })`
+
+Also logged this in [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md).
+
+Validation:
+- `npx eslint "src/constants/zod-schema.tsx" "src/components/common/FormInput.tsx" "src/app/(main)/(users)/myprofile/ResearchInterests.tsx"` passed
+- `yarn tsc --noEmit` passed
+- `npm run build` now gets past compile/type-error stage; local run then fails on a Windows `spawn EPERM` worker issue (environmental), not the Zod type error from your Docker log.
+
+So yes: the Docker error you posted is fixed in code. Re-run your Docker build; if anything else fails, share the new log and I’ll handle the next blocker.
+

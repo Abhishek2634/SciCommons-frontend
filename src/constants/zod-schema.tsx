@@ -195,10 +195,8 @@ export const emailOrUsernameSchema = z
   });
 
 export const usernameSchema = z
-  .string({
-    required_error: 'Username is required',
-    invalid_type_error: 'Username must be a string',
-  })
+  .string({ error: 'Username must be a string' })
+  .min(1, { message: 'Username is required' })
   .min(3, { message: 'Username must be at least 3 characters' })
   .max(30, { message: 'Username cannot exceed 30 characters' })
   .regex(/^[a-z0-9._]+$/, {

@@ -1,3 +1,15 @@
+## 2026-02-27 - Zod v4 Compatibility Fix for Profile Validation Build
+
+Problem: After adding `zod` as a direct dependency, Docker/Next builds failed in profile validation with TypeScript errors on `ZodError.errors`.
+
+Root Cause: The code used `result.error.errors[0].message`, which is not available in Zod v4 (uses `issues`).
+
+Solution: Updated profile validation error extraction in `FormInput` and `ResearchInterests` to use `result.error.issues[0]?.message` with safe fallback messages.
+
+Result: Profile validation now compiles correctly with direct `zod@4` and no longer blocks `next build`/Docker build on this API mismatch.
+
+Files Modified: `src/components/common/FormInput.tsx`, `src/app/(main)/(users)/myprofile/ResearchInterests.tsx`, `CHANGE_COMMENTS.md`
+
 ## 2026-02-27 - Profile Validation Consistency Follow-up (Zod + International Names)
 
 Problem: The latest profile-validation commits introduced two consistency issues: name validation still rejected many international names, and the new `schema` prop typing in `FormInput` triggered lint warnings (`no-explicit-any`).
