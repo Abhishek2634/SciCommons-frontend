@@ -152,12 +152,12 @@ So for image size: impact is typically negligible here.
 
 Note: the bigger effect is usually client JS bundle size (if used in client components), not Docker layer size.
 
-
 [2026-02-26 23:27:19]
 Root cause confirmed: after `yarn add zod`, your project now resolves `zod@4.3.6`, and the code still had a few Zod v3-only APIs.
 
 I fixed the breaking points:
-- [ResearchInterests.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/ResearchInterests.tsx): `result.error.errors[0].message` -> `result.error.issues[0]?.message ?? 'Invalid research interest'`
+
+- [ResearchInterests.tsx](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(users)/myprofile/ResearchInterests.tsx>): `result.error.errors[0].message` -> `result.error.issues[0]?.message ?? 'Invalid research interest'`
 - [FormInput.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/FormInput.tsx): `result.error.errors[0].message` -> `result.error.issues[0]?.message ?? 'Invalid value'`
 - [zod-schema.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/constants/zod-schema.tsx):
   - `z.string({ required_error, invalid_type_error })` -> `z.string({ error: 'Username must be a string' }).min(1, { message: 'Username is required' })`
@@ -165,12 +165,12 @@ I fixed the breaking points:
 Also logged this in [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md).
 
 Validation:
+
 - `npx eslint "src/constants/zod-schema.tsx" "src/components/common/FormInput.tsx" "src/app/(main)/(users)/myprofile/ResearchInterests.tsx"` passed
 - `yarn tsc --noEmit` passed
 - `npm run build` now gets past compile/type-error stage; local run then fails on a Windows `spawn EPERM` worker issue (environmental), not the Zod type error from your Docker log.
 
 So yes: the Docker error you posted is fixed in code. Re-run your Docker build; if anything else fails, share the new log and I’ll handle the next blocker.
-
 
 [2026-02-27 00:26:34 -05:00]
 `--force-with-lease` rejected because your local view of `origin/sureshDev` is stale (or the remote moved after your last fetch).
@@ -202,9 +202,9 @@ That error means GitHub branch protection is blocking history rewrites on `sures
 You now have only 2 options:
 
 1. Keep protection on (most common): undo with a normal commit
-`git checkout sureshDev`
-`git revert -m 1 036ee27`
-`git push origin sureshDev`
+   `git checkout sureshDev`
+   `git revert -m 1 036ee27`
+   `git push origin sureshDev`
 
 2. Truly drop merge history from `sureshDev`: an admin must temporarily allow force-push (or unprotect the branch), then you can push the reset commit (`ba3847b`) with `--force-with-lease`.
 
@@ -229,10 +229,12 @@ If you cannot see or change this, you need repo admin (or org owner) permission.
 Added only `LICENSE` to `sureshDev`, sourced from `test1`.
 
 Checks:
+
 - `main` has no `LICENSE` in current history.
 - `test1:LICENSE` blob hash matches local `LICENSE` exactly: `f288702d2fa16d3cdf0035b15a9fcbc552cd88e7`.
 
 Current local changes:
+
 - `A  LICENSE`
 - `M  codexOutput.md` (logging only)
 
@@ -247,9 +249,11 @@ Implemented.
 - Added required changelog entry in [CHANGE_COMMENTS.md](/C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md).
 
 Validation:
+
 - `npx eslint src/components/articles/DiscussionSummary.tsx` passed.
 
 Files changed:
+
 - [src/components/articles/DiscussionSummary.tsx](/C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/articles/DiscussionSummary.tsx)
 - [CHANGE_COMMENTS.md](/C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md)
 
