@@ -920,6 +920,7 @@ Validation run:
 I couldn’t run a full browser paste flow from the terminal, so please retry pasting a JPG now; this patch targets the 403 path caused by direct browser upload/origin handling and JPEG alias mismatches.
 
 ## 2026-02-28 18:11:05
+
 Applied a targeted fix for this upload-origin error in the frontend proxy.
 
 - Added origin-block detection and a one-time retry with explicit `Origin`/`Referer` headers (set to backend origin) in [src/app/api/uploads/image/route.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/api/uploads/image/route.ts#L64) and [src/app/api/uploads/image/route.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/api/uploads/image/route.ts#L160).
@@ -931,6 +932,7 @@ Validation: `yarn tsc --noEmit` passed.
 Retry the upload and share the new exact error text if it still fails.
 
 ## 2026-02-28 18:11:31
+
 1. Yes, very likely. The backend upload endpoint enforces origin rules, and `localhost` testing against a hosted backend is a common trigger for this exact error.
 
 2. In the current implementation, pasted images are uploaded immediately and the markdown stores the returned `public_url` before you hit submit. So they do not stay purely local until final submit.
@@ -938,46 +940,55 @@ Retry the upload and share the new exact error text if it still fails.
 This is intentional in the current flow (so the editor can insert a real URL right away), but we can change it to deferred upload-on-submit if you want. That would require storing local temp files/refs in the editor and uploading/replacing links during submit.
 
 ## 2026-02-28 18:12:23
+
 Yes, method 2 can largely avoid problem 1, **if** image upload happens at submit time through a server-side proxy route (not browser-direct to backend).
 
 That removes the `localhost -> backend` browser-origin check during editing. But it is not a guaranteed fix by itself: if backend policy still strictly requires specific `Origin/Referer` values, you still need backend allowlisting or trusted-proxy handling.
 
 ## 2026-02-28 18:14:11
+
 I checked.
 
 1. Post create/update API is JSON-only and has no image/file field. [postCreateSchema.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/api/schemas/postCreateSchema.ts:8) defines only `content`, `hashtags`, and `title`; [posts.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/api/posts/posts.ts:37) and [posts.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/api/posts/posts.ts:314) send `application/json`.
-2. Post composer is plain textarea, not markdown image upload. See [createpost/page.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(posts)/posts/createpost/page.tsx:179).
-3. Post rendering is plain text through `TruncateText`: [post detail](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(posts)/posts/[postId]/page.tsx:152), [post card](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/posts/PostCard.tsx:93), and `isHTML = false` default in [TruncateText.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/TruncateText.tsx:12).
+2. Post composer is plain textarea, not markdown image upload. See [createpost/page.tsx](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(posts)/posts/createpost/page.tsx:179>).
+3. Post rendering is plain text through `TruncateText`: [post detail](<C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/(main)/(posts)/posts/[postId]/page.tsx:152>), [post card](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/posts/PostCard.tsx:93), and `isHTML = false` default in [TruncateText.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/TruncateText.tsx:12).
 
 So if a backend image URL is predictable, you can paste it as text, but the current Posts API/UI does not handle images as first-class post media.
 
 ## 2026-02-28 18:18:37
+
 Yes, it returns a URL, and this is the exact path:
 
 1. Client upload call
+
 - MDX editor calls `POST /api/uploads/image` from the browser: [InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:178).
 - It expects `public_url` in JSON: [InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:198).
 
 2. Server-side proxy call
+
 - Next route resolves backend target as `${NEXT_PUBLIC_BACKEND_URL}/api/uploads/image`: [route.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/api/uploads/image/route.ts:27).
 - Then it `fetch`es that backend upload endpoint: [route.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/api/uploads/image/route.ts:101).
 - On success it returns backend payload (including `public_url`) to client: [route.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/api/uploads/image/route.ts:206).
 
 3. Where 403 is coming from
+
 - The backend upload API itself has an origin restriction documented in generated client comments: [uploads.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/api/uploads/uploads.ts:35).
 - Proxy route detects this specific origin-block 403 and retries once with explicit `Origin/Referer`: [route.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/api/uploads/image/route.ts:172).
 - If backend still rejects, proxy passes that error back: [route.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/api/uploads/image/route.ts:186).
 
 4. Is this JSON upload?
+
 - No. The file upload is `multipart/form-data` (`FormData` with `file`), not JSON binary: [InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:175), [route.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/api/uploads/image/route.ts:157).
 - Only the response is JSON (`{ public_url: ... }`).
 
 So: not “just JSON upload”; it is multipart image upload, and your 403 is backend origin policy, not the browser CORS error screen.
 
 ## 2026-02-28 18:29:57
+
 Yes. The `test` branch clearly defines a custom upload-origin policy, and it is stricter than general Django CORS.
 
 What `test` branch does (`origin/test:myapp/upload_api.py`):
+
 - Hardcoded allowlist:
   - `https://scicommons.org`
   - `https://www.scicommons.org`
@@ -988,21 +999,26 @@ What `test` branch does (`origin/test:myapp/upload_api.py`):
 - If no match: raises `HttpError(403, "Upload not allowed from this origin")`.
 
 Key implication:
+
 - `https://backendtest.scicommons.org` is **not** in that upload allowlist.
 - So this 403 can happen even if generic CORS config allows more origins.
 
 Why this differs from CORS settings:
+
 - `CORS_ALLOWED_ORIGINS` in [settings.py](C:/Users/Suresh/scicommons/SciCommons-frontend/backend/SciCommons-backend/myapp/settings.py:103) includes localhost entries ([settings.py](C:/Users/Suresh/scicommons/SciCommons-frontend/backend/SciCommons-backend/myapp/settings.py:109)).
 - But upload endpoint adds its own origin gate in `origin/test:myapp/upload_api.py`, which is what throws your message.
 
 Deployment note:
+
 - `test` deploy workflow writes `.env.test` but does not set `DEBUG` ([test-deploy.yml](C:/Users/Suresh/scicommons/SciCommons-frontend/backend/SciCommons-backend/.github/workflows/test-deploy.yml:49), [test-deploy.yml](C:/Users/Suresh/scicommons/SciCommons-frontend/backend/SciCommons-backend/.github/workflows/test-deploy.yml:57)).
 - `DEBUG` defaults to `False` in [settings.py](C:/Users/Suresh/scicommons/SciCommons-frontend/backend/SciCommons-backend/myapp/settings.py:33), so localhost is not allowed there unless explicitly enabled.
 
 ## 2026-02-28 18:32:04
+
 Yes, this helps a lot. It explains the failure.
 
 The upload endpoint is doing an app-level origin check (not just CORS), and it only allows those 4 frontend origins. So:
+
 - If you test from `http://localhost:3000` with `DEBUG=False` on backend, it gets 403.
 - If request origin is `https://backendtest.scicommons.org`, it also gets 403 because that domain is not in `ALLOWED_ORIGINS` for upload.
 
@@ -1013,15 +1029,18 @@ Also, this means my frontend retry that sets `Origin` to backend origin (`backen
 Correct backend fix is to make upload allowed origins environment-driven and include the real frontend origins used in that environment (and localhost for dev/testing when needed).
 
 ## 2026-02-28 18:32:54
+
 Mostly yes, **if** the backend sees `Origin` (or `Referer` origin) as exactly `https://test.scicommons.org`.
 
 Two caveats:
+
 1. It must be that exact origin (not another subdomain, not `http`).
 2. With the current frontend proxy route, those headers are not reliably forwarded to backend, so it may still 403 unless we forward incoming `Origin/Referer` to backend.
 
 So deployment behind `test.scicommons.org` is necessary, but with current code it is not always sufficient.
 
 ## 2026-02-28 18:33:44
+
 Not directly from normal browser JS on `localhost`.
 
 - Browser `Origin` is derived from the page URL, so `http://localhost:3000` sends localhost origin.
@@ -1029,6 +1048,7 @@ Not directly from normal browser JS on `localhost`.
 - You can also spoof `Origin` server-side in your proxy, but that is a policy bypass and should be dev-only.
 
 ## 2026-02-28 18:36:33
+
 Implemented. The upload proxy is now robust for frontend deployment behind `https://test.scicommons.org`.
 
 - It now forwards browser `Origin`/`Referer` headers to backend first: [route.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/api/uploads/image/route.ts:131) and [route.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/api/uploads/image/route.ts:248).
@@ -1041,38 +1061,47 @@ Validation: `yarn tsc --noEmit` passed.
 This should work for visitors served from `https://test.scicommons.org`, as long as backend’s upload allowlist still includes that origin.
 
 ## 2026-02-28 18:41:51
+
 Deep audit completed. I removed the localhost-driven overfixes and kept only the behavior that matches backend policy.
 
 **Findings**
+
 1. Commit `070b6ec` correctly introduced the proxy upload path, but later follow-up logic added complexity aimed at bypassing origin 403s.
 2. The backend (`test` branch) enforces its own app-level `Origin/Referer` allowlist for `/api/uploads/image`; this is not just Django CORS.
 3. The previous proxy fallback/retry pattern (including backend-origin fallback) was unnecessary for production and risked policy inconsistency.
 
 **What I changed**
+
 1. Simplified upload forwarding to one deterministic strategy in [route.ts](C:/Users/Suresh/scicommons/SciCommons-frontend/src/app/api/uploads/image/route.ts:105):
+
 - Forward browser `Origin`/`Referer` to backend.
 - If browser origin is absent, fall back to `request.nextUrl.origin`.
 - No backend-origin spoof fallback.
 - No origin retry loop.
+
 2. Kept existing error pass-through behavior so backend messages/statuses remain visible.
 3. Fixed stale inline documentation in [InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:233) to match actual proxy upload behavior.
 4. Updated changelog summary in [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md:1) to reflect the audit and simplification.
 
 **Why this is safer and more consistent**
+
 1. Aligns frontend behavior with backend’s real allowlist model instead of trying to bypass it.
 2. Reduces regression surface (fewer branches/retries/header permutations).
 3. Preserves correct behavior when frontend is served behind `https://test.scicommons.org`.
 
 **Validation run**
+
 1. `yarn tsc --noEmit` passed.
 2. `npx eslint src/app/api/uploads/image/route.ts src/components/common/MarkdownEditor/InitializedMDXEditor.tsx` passed.
 
 If you want, I can now do a second pass focused only on user-visible consistency (for example, reconcile any messaging like “Up to 5 images” vs throttle constraints) before you commit.
 
 ## 2026-02-28 18:43:53
+
 Completed. I did the consistency pass and removed the remaining misleading upload guidance.
 
 1. Updated MDX editor guidance text to match enforced limits in [InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:62) and [InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:722):
+
 - Now says: `3MB` per image and `10 uploads/minute`.
 - Removed the inconsistent "Up to 5 images" wording.
 
@@ -1085,7 +1114,30 @@ Completed. I did the consistency pass and removed the remaining misleading uploa
 5. Updated changelog documentation in [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md:1) and [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-frontend/CHANGE_COMMENTS.md:39).
 
 Validation:
+
 - `yarn tsc --noEmit` passed.
 - `npx eslint src/components/common/MarkdownEditor/InitializedMDXEditor.tsx src/app/api/uploads/image/route.ts` passed.
 
 Next check: test one upload from a page served under `https://test.scicommons.org` and confirm no origin 403.
+
+## 2026-02-28 18:45:42
+
+Yes. With the current proxy changes, if the app is actually served from `https://alphatest.scicommons.org` (or any origin in the backend upload allowlist), uploads should work.
+
+Requirements:
+
+1. The page origin must exactly match the allowed value (`https` + host).
+2. Requests must include a valid auth token.
+3. Backend allowlist must still include that domain.
+
+The proxy now forwards the caller’s `Origin`/`Referer` (instead of spoofing backend origin), so behavior stays consistent across allowed frontend domains.
+
+## 2026-02-28 18:46:15
+
+It means: the upload endpoint is authenticated, so the user must be logged in.
+
+In practice:
+
+1. Frontend sends `Authorization: Bearer <access_token>` when uploading.
+2. If token is missing/expired/invalid, upload is rejected (typically 401).
+3. So anonymous visitors cannot upload images.

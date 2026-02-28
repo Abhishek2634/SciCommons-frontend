@@ -201,8 +201,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            upstreamUpload.message ??
-            `Upload failed with status ${upstreamUpload.response.status}`,
+            upstreamUpload.message ?? `Upload failed with status ${upstreamUpload.response.status}`,
         },
         { status: upstreamUpload.response.status }
       );
