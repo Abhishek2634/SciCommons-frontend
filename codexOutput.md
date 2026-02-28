@@ -665,3 +665,82 @@ git status
 
 Do not use `assume-unchanged`/`skip-worktree` for this; those can hide real future edits.
 
+[2026-02-27 21:47:31]
+You're likely not hitting it because this machine can resolve 	s-node from outside the repo:
+
+- equire.resolve('ts-node') -> C:\Users\Suresh\node_modules\ts-node\dist\index.js
+- This repo's package.json does not include 	s-node.
+- 	slib is already present transitively in this repo (
+ode_modules/tslib), even if not declared directly.
+
+So your collaborator's failure is still valid for a clean machine/CI. If you want deterministic behavior for everyone, add 	s-node to devDependencies in this branch (and only add 	slib directly if you actually import it directly).
+
+[2026-02-27 21:48:22]
+In this repo it’s in [package.json](C:\Users\Suresh\scicommons\SciCommons-Frontend\package.json), starting at line 103, right after the dependencies block.
+
+[2026-02-27 21:49:10]
+Short answer: adding 	s-node to devDependencies should not make your final runtime image meaningfully bigger in your current Docker setup.
+
+From [Dockerfile](C:\Users\Suresh\scicommons\SciCommons-Frontend\Dockerfile):
+- deps stage installs all deps (including dev deps) for build time.
+- unner stage only copies .next/standalone and static assets.
+
+So impact is mainly:
+- Slightly larger/slower build stage.
+- Usually little to no increase in final production image size.
+
+Yes, it should work in Docker. In fact, adding 	s-node makes clean environments (like CI/docker test containers) more reliable when Jest needs to read jest.config.ts.
+
+[2026-02-27 21:51:03]
+`-D` means `--dev`, so the package is added to `devDependencies`.
+For `ts-node` (and usually `tslib` here), that’s appropriate because they’re needed for test/config tooling, not app runtime.
+If you want either package available as a production runtime dependency, we should add it without `-D`.
+
+[2026-02-27 21:51:43]
+These are peer-dependency warnings, not hard errors.
+
+What to do:
+1. Add the missing peer deps as dev deps:
+   `yarn add -D @types/node@^20 openapi-types`
+2. Keep `ts-node` in `devDependencies`.
+3. Run `yarn test:fix` again.
+
+Notes:
+- `ts-node` expects `@types/node` for Node typings.
+- `orval -> swagger-parser` warning about `openapi-types` is usually harmless, but adding it removes warning noise and avoids edge-case type issues.
+
+[2026-02-27 21:52:13]
+If you don’t add them, it may still work on your machine now.
+
+- Local tests can pass because of hoisted/global packages.
+- CI or a teammate on a clean install can fail (or keep warning).
+- Future dependency updates can make these warnings become real breakages.
+
+So it’s not mandatory for this second, but adding them in `devDependencies` is the safer, deterministic setup.
+
+[2026-02-27 21:52:52]
+You’re right to avoid dependency creep.
+
+Minimal/safe approach:
+1. Add only `ts-node` and `@types/node` in `devDependencies`.
+2. Skip direct `tslib` for now (it’s already transitive here).
+3. Ignore the `openapi-types` peer warning unless `orval` actually fails in CI.
+
+This keeps installs lean while covering the real Jest/config risk.
+
+[2026-02-27 21:53:36]
+Because they sit at different points in your actual execution path.
+
+- `@types/node` is a direct peer for `ts-node`, and `ts-node` is in your Jest/config path (`jest.config.ts`). If missing, clean environments are more likely to fail or behave inconsistently.
+- `openapi-types` is a peer warning from a transitive dependency (`orval -> swagger-parser`). It often doesn’t affect runtime or tests unless you hit a specific Orval/parser type path.
+
+So:
+- `@types/node`: high-value, low-noise to add.
+- `openapi-types`: optional unless you see real Orval/CI issues.
+
+[2026-02-27 21:54:16]
+Run this from the repo root:
+`yarn add -D @types/node@^20`
+
+That will add `@types/node` under `devDependencies` in `package.json`.
+
