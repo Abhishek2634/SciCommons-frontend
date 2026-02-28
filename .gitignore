@@ -2,6 +2,8 @@
 
 /backend/
 
+codexOutput.md
+
 # dependencies
 /node_modules
 /.pnp
