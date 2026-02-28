@@ -819,19 +819,28 @@ The `â?` characters are just text-encoding artifacts from copied smart punctuat
 Implemented image upload across all `InitializedMDXEditor` usages with compression and a per-user throttle.
 
 Changes made
+
 1. Added server compression endpoint [src/app/api/compress-image/route.ts](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/app/api/compress-image/route.ts):5.
+
 - Accepts multipart `file`, validates mime/size, compresses to AVIF (quality binary search + dimension fallback), and returns compressed bytes.
+
 2. Updated editor upload flow in [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):52.
+
 - Wired real `imageUploadHandler` to validate files, call `/api/compress-image`, upload via `myappUploadApiUploadImage`, and return `public_url`.
 - Enabled toolbar image insertion via `InsertImage` at [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):619.
 - Added shared per-user throttle ledger (`10 uploads / 60s`) at [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):114.
+
 3. Added changelog summary at [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-Frontend/CHANGE_COMMENTS.md):1.
 
 Validation
+
 1. Ran `yarn test:fix`.
+
 - `prettier`, `next lint --fix`, and `tsc --skipLibCheck --noEmit` passed.
 - `jest` failed in this environment with `spawn EPERM` (worker process spawn restriction).
+
 2. Ran `yarn test --watch=false --runInBand`.
+
 - Passed: `9/9` suites, `39/39` tests.
 
 1. If you want, I can also add a server-side throttle on `/api/compress-image` (IP/session based) as defense-in-depth in addition to this editor-level per-user throttle.
@@ -840,6 +849,7 @@ Validation
 Implemented image upload across all `InitializedMDXEditor` usages with compression and a per-user throttle.
 
 Changes made
+
 1. Added server compression endpoint [src/app/api/compress-image/route.ts](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/app/api/compress-image/route.ts):5 that accepts multipart `file`, validates mime/size, compresses to AVIF (quality binary search + dimension fallback), and returns compressed bytes.
 2. Updated editor upload flow in [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):52 by wiring real `imageUploadHandler` to validate files, call `/api/compress-image`, upload via `myappUploadApiUploadImage`, and return `public_url`.
 3. Enabled toolbar image insertion via `InsertImage` at [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):619.
@@ -847,10 +857,11 @@ Changes made
 5. Added changelog summary at [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-Frontend/CHANGE_COMMENTS.md):1.
 
 Validation
+
 1. Ran `yarn test:fix`; `prettier`, `next lint --fix`, and `tsc --skipLibCheck --noEmit` passed, while `jest` failed in this environment with `spawn EPERM` (worker process spawn restriction).
 2. Ran `yarn test --watch=false --runInBand`; all tests passed (`9/9` suites, `39/39` tests).
 
-1. If you want, I can also add a server-side throttle on `/api/compress-image` (IP/session based) as defense-in-depth in addition to this editor-level per-user throttle.
+3. If you want, I can also add a server-side throttle on `/api/compress-image` (IP/session based) as defense-in-depth in addition to this editor-level per-user throttle.
 
 [2026-02-28 17:35:53]
 Implemented a site-aligned aesthetic pass for the MDX editor upload UI.
@@ -883,6 +894,7 @@ Validation: `yarn check-types:fast` and `yarn lint:fix` both passed.
 Yes.
 
 I implemented a client-side per-user throttle in [InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):
+
 - Limit is `10` uploads per `60s`: [InitializedMDXEditor.tsx:52](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:52)
 - Shared ledger key (across editor instances): [InitializedMDXEditor.tsx:54](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:54)
 - Sliding-window reservation logic: [InitializedMDXEditor.tsx:114](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:114)
@@ -890,4 +902,3 @@ I implemented a client-side per-user throttle in [InitializedMDXEditor.tsx](C:/U
 - Throttle error message: [InitializedMDXEditor.tsx:241](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:241)
 
 Note: the new helper text says "Up to 5 images...", but current enforced logic is still `10/minute`.
-
