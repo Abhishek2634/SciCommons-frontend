@@ -15,6 +15,7 @@ import {
   DiffSourceToggleWrapper,
   DirectiveDescriptor,
   InsertCodeBlock,
+  InsertImage,
   InsertTable,
   InsertThematicBreak,
   ListsToggle,
@@ -41,8 +42,133 @@ import {
 } from '@mdxeditor/editor';
 import '@mdxeditor/editor/style.css';
 
+import { myappUploadApiUploadImage } from '@/api/uploads/uploads';
+import { toast } from '@/components/ui/use-toast';
 import { markdownStyles } from '@/constants/common.constants';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/authStore';
+
+const MAX_SOURCE_IMAGE_SIZE_BYTES = 3 * 1024 * 1024; // 3MB
+const MAX_IMAGE_UPLOADS_PER_MINUTE = 10;
+const IMAGE_UPLOAD_WINDOW_MS = 60 * 1000;
+const IMAGE_UPLOAD_THROTTLE_STORAGE_KEY = 'mdx-editor-image-upload-throttle-v1';
+const ALLOWED_IMAGE_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/avif',
+];
+
+type UploadThrottleLedger = Record<string, number[]>;
+
+const getUploadThrottleUserKey = (userId: number | null, accessToken: string | null) => {
+  if (userId !== null) return `user:${userId}`;
+  if (accessToken) return `token:${accessToken.slice(-24)}`;
+  return null;
+};
+
+const pruneUploadTimestamps = (timestamps: number[], now: number) =>
+  timestamps.filter((timestamp) => now - timestamp < IMAGE_UPLOAD_WINDOW_MS);
+
+const readUploadThrottleLedger = (): UploadThrottleLedger => {
+  if (typeof window === 'undefined') return {};
+
+  try {
+    const raw = window.localStorage.getItem(IMAGE_UPLOAD_THROTTLE_STORAGE_KEY);
+    if (!raw) return {};
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return {};
+
+    const ledger: UploadThrottleLedger = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (!Array.isArray(value)) continue;
+      const numericTimestamps = value.filter((entry): entry is number => typeof entry === 'number');
+      if (numericTimestamps.length > 0) {
+        ledger[key] = numericTimestamps;
+      }
+    }
+
+    return ledger;
+  } catch {
+    return {};
+  }
+};
+
+const writeUploadThrottleLedger = (ledger: UploadThrottleLedger) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(IMAGE_UPLOAD_THROTTLE_STORAGE_KEY, JSON.stringify(ledger));
+  } catch {
+    // Ignore storage write failures and fall back to backend-enforced limits.
+  }
+};
+
+/* Fixed by Codex on 2026-02-28
+   Who: Codex
+   What: Added a shared per-user upload throttle ledger for all MDX editor instances.
+   Why: Image uploads must be capped to 10 files per minute per user across the app.
+   How: Persist a sliding-window timestamp ledger in localStorage and reserve an upload slot before compression/upload starts. */
+const reserveUploadSlot = (userKey: string, now = Date.now()) => {
+  const existingLedger = readUploadThrottleLedger();
+  const compactedLedger: UploadThrottleLedger = {};
+
+  for (const [key, timestamps] of Object.entries(existingLedger)) {
+    const pruned = pruneUploadTimestamps(timestamps, now);
+    if (pruned.length > 0) {
+      compactedLedger[key] = pruned;
+    }
+  }
+
+  const userTimestamps = compactedLedger[userKey] ?? [];
+  if (userTimestamps.length >= MAX_IMAGE_UPLOADS_PER_MINUTE) {
+    writeUploadThrottleLedger(compactedLedger);
+    const retryAfterMs = userTimestamps[0] + IMAGE_UPLOAD_WINDOW_MS - now;
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)),
+    };
+  }
+
+  compactedLedger[userKey] = [...userTimestamps, now];
+  writeUploadThrottleLedger(compactedLedger);
+  return { allowed: true, retryAfterSeconds: 0 };
+};
+
+async function compressImage(file: File): Promise<File> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch('/api/compress-image', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(errorPayload?.error ?? 'Failed to compress image');
+  }
+
+  const compressedBlob = await response.blob();
+  return new File([compressedBlob], file.name.replace(/\.[^.]+$/, '.avif'), {
+    type: 'image/avif',
+  });
+}
+
+async function uploadImage(file: File, accessToken: string | null): Promise<string> {
+  if (!accessToken) {
+    throw new Error('You must be logged in to upload images');
+  }
+
+  const response = await myappUploadApiUploadImage(
+    { file },
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  return response.data.public_url;
+}
 
 // Only import this to the next file
 export default function InitializedMDXEditor({
@@ -56,6 +182,8 @@ export default function InitializedMDXEditor({
   mentionCandidates?: string[];
 } & MDXEditorProps) {
   const { theme } = useTheme();
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const authenticatedUserId = useAuthStore((state) => state.user?.id ?? null);
   const editorRootRef = React.useRef<HTMLDivElement>(null);
   const editorMethodsRef = React.useRef<MDXEditorMethods | null>(null);
   const [activeMentionQuery, setActiveMentionQuery] = React.useState<string | null>(null);
@@ -66,6 +194,90 @@ export default function InitializedMDXEditor({
   );
   const [mentionMenuMaxHeight, setMentionMenuMaxHeight] = React.useState(160);
   const mentionOptionRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
+
+  /* Fixed by Codex on 2026-02-28
+     Who: Codex
+     What: Enabled end-to-end image uploads in MDX editor with pre-upload compression and auth-aware throttling.
+     Why: All editor surfaces need consistent image upload behavior with a strict per-user rate limit.
+     How: Validate client file constraints, reserve a 10/min user slot, compress via `/api/compress-image`,
+          upload through generated API client, and surface upload status via toast updates. */
+  const imageUploadHandler = React.useCallback(
+    async (image: File): Promise<string> => {
+      if (!accessToken) {
+        const message = 'You must be logged in to upload images';
+        toast({
+          title: 'Login required',
+          description: message,
+          variant: 'destructive',
+        });
+        throw new Error(message);
+      }
+
+      if (image.size > MAX_SOURCE_IMAGE_SIZE_BYTES) {
+        const limitInMb = MAX_SOURCE_IMAGE_SIZE_BYTES / 1024 / 1024;
+        const message = `Image size exceeds ${limitInMb}MB limit`;
+        toast({
+          title: 'Image too large',
+          description: message,
+          variant: 'destructive',
+        });
+        throw new Error(message);
+      }
+
+      if (!ALLOWED_IMAGE_MIME_TYPES.includes(image.type)) {
+        const message = `Invalid image type. Allowed: ${ALLOWED_IMAGE_MIME_TYPES.join(', ')}`;
+        toast({
+          title: 'Invalid image type',
+          description: message,
+          variant: 'destructive',
+        });
+        throw new Error(message);
+      }
+
+      const throttleUserKey = getUploadThrottleUserKey(authenticatedUserId, accessToken);
+      if (throttleUserKey) {
+        const throttleResult = reserveUploadSlot(throttleUserKey);
+        if (!throttleResult.allowed) {
+          const message = `Upload limit reached (max ${MAX_IMAGE_UPLOADS_PER_MINUTE} images/minute). Try again in ${throttleResult.retryAfterSeconds}s.`;
+          toast({
+            title: 'Upload throttled',
+            description: message,
+            variant: 'destructive',
+          });
+          throw new Error(message);
+        }
+      }
+
+      const uploadToast = toast({
+        title: 'Uploading image...',
+        description: 'Compressing and uploading your image',
+      });
+
+      try {
+        const compressedImage = await compressImage(image);
+        const publicUrl = await uploadImage(compressedImage, accessToken);
+
+        uploadToast.update({
+          id: uploadToast.id,
+          title: 'Image uploaded',
+          description: 'Your image has been uploaded successfully',
+        });
+
+        setTimeout(() => uploadToast.dismiss(), 2000);
+        return publicUrl;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to upload image';
+        uploadToast.update({
+          id: uploadToast.id,
+          title: 'Upload failed',
+          description: message,
+          variant: 'destructive',
+        });
+        throw error;
+      }
+    },
+    [accessToken, authenticatedUserId]
+  );
 
   const normalizedMentionCandidates = React.useMemo(() => {
     const dedupedNames = new Set<string>();
@@ -393,9 +605,15 @@ export default function InitializedMDXEditor({
   };
 
   const CustomToolbar = () => {
+    /* Fixed by Codex on 2026-02-28
+       Who: Codex
+       What: Tuned MDX toolbar shell styling to match SciCommons card/contrast aesthetics.
+       Why: The raw MDX toolbar looked visually detached from the rest of the site's controls.
+       How: Applied the app's border/background/shadow utility classes to the toolbar wrapper so
+            all built-in editor controls render inside a consistent container. */
     return (
       <DiffSourceToggleWrapper>
-        <div className="mdx-editor-toolbar flex gap-1 overflow-x-auto p-1">
+        <div className="mdx-editor-toolbar flex items-center gap-1 overflow-x-auto rounded-md border border-common-contrast bg-common-cardBackground/95 p-1 shadow-sm backdrop-blur-sm">
           <UndoRedo />
           <BlockTypeSelect />
           <BoldItalicUnderlineToggles />
@@ -404,7 +622,7 @@ export default function InitializedMDXEditor({
           <InsertCodeBlock />
           <ListsToggle />
           <CreateLink />
-          {/* <InsertImage /> */}
+          <InsertImage />
           <InsertTable />
           <InsertThematicBreak />
         </div>
@@ -420,7 +638,7 @@ export default function InitializedMDXEditor({
     linkPlugin(),
     linkDialogPlugin(),
     imagePlugin({
-      imageUploadHandler: async () => Promise.resolve(''),
+      imageUploadHandler,
       disableImageSettingsButton: true,
       EditImageToolbar: () => {
         return null;
@@ -460,6 +678,16 @@ export default function InitializedMDXEditor({
       onKeyUpCapture={handleEditorKeyUpCapture}
       onClickCapture={handleEditorClickCapture}
     >
+      {/* Fixed by Codex on 2026-02-28
+          Who: Codex
+          What: Added a concise, reusable image-upload guidance note above the editor.
+          Why: Product requested lightweight user guidance to discourage excessive/large image uploads.
+          How: Render helper text only for editable instances so read-only content views remain clean. */}
+      {!props.readOnly && (
+        <p className="mb-2 px-1 text-xxs text-text-tertiary">
+          Up to 5 images; use sparingly and keep image size small (kBs, not MBs).
+        </p>
+      )}
       <MDXEditor
         plugins={ALL_PLUGINS}
         {...props}

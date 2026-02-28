@@ -1,3 +1,19 @@
+## 2026-02-28 - MDX Editor Image Upload Pipeline + Per-User Throttle
+
+Problem: All `InitializedMDXEditor` usages lacked a real image upload pipeline, so users could not upload editor images directly and there was no frontend-side limit for upload bursts.
+
+Root Cause: `imagePlugin` was configured with a placeholder `imageUploadHandler` that returned an empty URL, and there was no shared throttle logic keyed by the authenticated user.
+
+Solution: Added a new Next.js route handler at `src/app/api/compress-image/route.ts` to validate/resize/compress uploads with `sharp` and return optimized AVIF files. Updated `InitializedMDXEditor` to validate files, enforce a shared per-user `10 uploads / 60 seconds` sliding-window throttle across all editor instances, call `/api/compress-image`, then upload via `myappUploadApiUploadImage` and return `public_url`. Re-enabled the toolbar image insert action so uploads are reachable from editor UI.
+
+Result: Image upload now works consistently across all pages using `InitializedMDXEditor`, while frontend throttling prevents users from exceeding 10 image uploads per minute before backend upload calls are sent.
+
+Files Modified: `src/components/common/MarkdownEditor/InitializedMDXEditor.tsx`, `src/app/api/compress-image/route.ts`, `CHANGE_COMMENTS.md` (commit reference: pending local commit)
+
+Follow-up (same day): Adjusted MDX editor aesthetics to match site visual language by re-theming MDXEditor token variables and control surfaces in `globals.css`, and by styling the custom editor toolbar wrapper with existing card/border utilities. This keeps upload behavior unchanged while making toolbar, popovers, and dialogs consistent with SciCommons design tokens.
+
+Follow-up (same day): Added a short helper note above editable markdown editors ("Up to 5 images; use sparingly and keep image size small (kBs, not MBs).") to provide lightweight upload guidance across all `InitializedMDXEditor` usages.
+
 ## 2026-02-27 - Article Card Title Overflow Without Wide Link Hitbox
 
 Problem: Very long/unbroken article titles in card lists could crowd the right-side bookmark/preview actions.

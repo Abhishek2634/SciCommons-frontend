@@ -614,28 +614,33 @@ Checked.
   - `24f84dd` (`long title fix`)
 
 Current working tree is not fully clean:
+
 - Real uncommitted change: [codexOutput.md](/C:/Users/Suresh/scicommons/Scicommons-Frontend/codexOutput.md)
 - `src/components/articles/ArticleCard.tsx`, `src/stores/authStore.ts`, and `src/tests/__tests__/authStore.test.ts` show as modified but `git diff` is empty (LF/CRLF noise only).
 
 So: code fixes are committed; only `codexOutput.md` has actual pending content.
 
-
 [2026-02-27 18:51:57]
 Yes. Safe/reliable way is to fix line-ending policy, not hide files.
 
 Right now your repo has:
+
 - `core.autocrlf=true`
 - no EOL rules in `.gitattributes`
 
 That combination causes this noise.
 
 Recommended (safe) setup:
+
 1. Set local git behavior:
+
 ```bash
 git config core.autocrlf false
 git config core.safecrlf warn
 ```
+
 2. Add `.gitattributes` EOL rules (example):
+
 ```gitattributes
 * text=auto
 *.ts text eol=lf
@@ -651,13 +656,16 @@ git config core.safecrlf warn
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
 ```
+
 3. One-time normalize:
+
 ```bash
 git add --renormalize .
 git commit -m "Normalize line endings"
 ```
 
 For immediate current noise:
+
 ```bash
 git update-index --refresh
 git status
@@ -666,30 +674,32 @@ git status
 Do not use `assume-unchanged`/`skip-worktree` for this; those can hide real future edits.
 
 [2026-02-27 21:47:31]
-You're likely not hitting it because this machine can resolve 	s-node from outside the repo:
+You're likely not hitting it because this machine can resolve s-node from outside the repo:
 
-- equire.resolve('ts-node') -> C:\Users\Suresh\node_modules\ts-node\dist\index.js
-- This repo's package.json does not include 	s-node.
-- 	slib is already present transitively in this repo (
-ode_modules/tslib), even if not declared directly.
+- equire.resolve('ts-node') -> C:\Users\Suresh\node_modules\ts-node\dist\index.js
+- This repo's package.json does not include s-node.
+-     slib is already present transitively in this repo (
+  ode_modules/tslib), even if not declared directly.
 
-So your collaborator's failure is still valid for a clean machine/CI. If you want deterministic behavior for everyone, add 	s-node to devDependencies in this branch (and only add 	slib directly if you actually import it directly).
+So your collaborator's failure is still valid for a clean machine/CI. If you want deterministic behavior for everyone, add s-node to devDependencies in this branch (and only add slib directly if you actually import it directly).
 
 [2026-02-27 21:48:22]
 In this repo it’s in [package.json](C:\Users\Suresh\scicommons\SciCommons-Frontend\package.json), starting at line 103, right after the dependencies block.
 
 [2026-02-27 21:49:10]
-Short answer: adding 	s-node to devDependencies should not make your final runtime image meaningfully bigger in your current Docker setup.
+Short answer: adding s-node to devDependencies should not make your final runtime image meaningfully bigger in your current Docker setup.
 
 From [Dockerfile](C:\Users\Suresh\scicommons\SciCommons-Frontend\Dockerfile):
+
 - deps stage installs all deps (including dev deps) for build time.
-- unner stage only copies .next/standalone and static assets.
+- unner stage only copies .next/standalone and static assets.
 
 So impact is mainly:
+
 - Slightly larger/slower build stage.
 - Usually little to no increase in final production image size.
 
-Yes, it should work in Docker. In fact, adding 	s-node makes clean environments (like CI/docker test containers) more reliable when Jest needs to read jest.config.ts.
+Yes, it should work in Docker. In fact, adding s-node makes clean environments (like CI/docker test containers) more reliable when Jest needs to read jest.config.ts.
 
 [2026-02-27 21:51:03]
 `-D` means `--dev`, so the package is added to `devDependencies`.
@@ -700,12 +710,14 @@ If you want either package available as a production runtime dependency, we shou
 These are peer-dependency warnings, not hard errors.
 
 What to do:
+
 1. Add the missing peer deps as dev deps:
    `yarn add -D @types/node@^20 openapi-types`
 2. Keep `ts-node` in `devDependencies`.
 3. Run `yarn test:fix` again.
 
 Notes:
+
 - `ts-node` expects `@types/node` for Node typings.
 - `orval -> swagger-parser` warning about `openapi-types` is usually harmless, but adding it removes warning noise and avoids edge-case type issues.
 
@@ -722,6 +734,7 @@ So it’s not mandatory for this second, but adding them in `devDependencies` is
 You’re right to avoid dependency creep.
 
 Minimal/safe approach:
+
 1. Add only `ts-node` and `@types/node` in `devDependencies`.
 2. Skip direct `tslib` for now (it’s already transitive here).
 3. Ignore the `openapi-types` peer warning unless `orval` actually fails in CI.
@@ -735,6 +748,7 @@ Because they sit at different points in your actual execution path.
 - `openapi-types` is a peer warning from a transitive dependency (`orval -> swagger-parser`). It often doesn’t affect runtime or tests unless you hit a specific Orval/parser type path.
 
 So:
+
 - `@types/node`: high-value, low-noise to add.
 - `openapi-types`: optional unless you see real Orval/CI issues.
 
@@ -748,6 +762,7 @@ That will add `@types/node` under `devDependencies` in `package.json`.
 Yes, this makes sense overall.
 
 How the pieces fit:
+
 1. `src/app/api/compress-image/route.ts` (your `armaancode`) is a Next.js server API endpoint. It receives a file from the browser, validates type/size, compresses/resizes with `sharp`, and returns compressed image bytes.
 2. `InitializedMDXEditor` uses MDXEditor’s `imageUploadHandler`. When a user inserts an image, it validates client-side, calls `/api/compress-image`, then uploads the compressed file using generated `myappUploadApiUploadImage`, and returns `public_url` so the editor can insert the image URL.
 
@@ -764,6 +779,7 @@ Your generated upload API docs currently allow `image/jpeg`, `image/png`, `image
 Yes, this makes sense overall.
 
 How the pieces fit:
+
 1. `armaancode` is a Next.js server API endpoint (to be placed at [src/app/api/compress-image/route.ts](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/app/api/compress-image/route.ts)). It receives a file from the browser, validates type/size, compresses/resizes with `sharp`, and returns compressed image bytes.
 2. `InitializedMDXEditor` uses MDXEditor’s `imageUploadHandler`. When a user inserts an image, it validates client-side, calls `/api/compress-image`, then uploads the compressed file using generated `myappUploadApiUploadImage`, and returns `public_url` so the editor can insert the image URL.
 
@@ -782,4 +798,96 @@ That line in the Orval-generated docblock says:
 `**Allowed Types:** image/jpeg, image/png, image/gif, image/webp`
 
 So I inferred it from the OpenAPI-derived generated client docs after `yarn generate-api`.
+
+[2026-02-28 17:21:17]
+Confirmed. `image/avif` is now present in the generated API docs:
+[src/api/uploads/uploads.ts:31](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/api/uploads/uploads.ts:31)
+
+Current line:
+`**Allowed Types:** image/jpeg, image/png, image/gif, image/webp, image/avif`
+
+[2026-02-28 17:22:22]
+Yes, that is correct.
+
+Your understanding is right:
+
+1. Put the endpoint at `src/app/api/compress-image/route.ts` (not `app/api/...`).
+2. `InitializedMDXEditor` calls `/api/compress-image`, then uploads the returned file to `/api/uploads/image`.
+
+The `â?` characters are just text-encoding artifacts from copied smart punctuation; they are not part of the intended code.
+[2026-02-28 17:32:08]
+Implemented image upload across all `InitializedMDXEditor` usages with compression and a per-user throttle.
+
+Changes made
+1. Added server compression endpoint [src/app/api/compress-image/route.ts](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/app/api/compress-image/route.ts):5.
+- Accepts multipart `file`, validates mime/size, compresses to AVIF (quality binary search + dimension fallback), and returns compressed bytes.
+2. Updated editor upload flow in [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):52.
+- Wired real `imageUploadHandler` to validate files, call `/api/compress-image`, upload via `myappUploadApiUploadImage`, and return `public_url`.
+- Enabled toolbar image insertion via `InsertImage` at [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):619.
+- Added shared per-user throttle ledger (`10 uploads / 60s`) at [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):114.
+3. Added changelog summary at [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-Frontend/CHANGE_COMMENTS.md):1.
+
+Validation
+1. Ran `yarn test:fix`.
+- `prettier`, `next lint --fix`, and `tsc --skipLibCheck --noEmit` passed.
+- `jest` failed in this environment with `spawn EPERM` (worker process spawn restriction).
+2. Ran `yarn test --watch=false --runInBand`.
+- Passed: `9/9` suites, `39/39` tests.
+
+1. If you want, I can also add a server-side throttle on `/api/compress-image` (IP/session based) as defense-in-depth in addition to this editor-level per-user throttle.
+
+[2026-02-28 17:32:25]
+Implemented image upload across all `InitializedMDXEditor` usages with compression and a per-user throttle.
+
+Changes made
+1. Added server compression endpoint [src/app/api/compress-image/route.ts](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/app/api/compress-image/route.ts):5 that accepts multipart `file`, validates mime/size, compresses to AVIF (quality binary search + dimension fallback), and returns compressed bytes.
+2. Updated editor upload flow in [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):52 by wiring real `imageUploadHandler` to validate files, call `/api/compress-image`, upload via `myappUploadApiUploadImage`, and return `public_url`.
+3. Enabled toolbar image insertion via `InsertImage` at [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):619.
+4. Added shared per-user throttle ledger (`10 uploads / 60s`) at [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):114.
+5. Added changelog summary at [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-Frontend/CHANGE_COMMENTS.md):1.
+
+Validation
+1. Ran `yarn test:fix`; `prettier`, `next lint --fix`, and `tsc --skipLibCheck --noEmit` passed, while `jest` failed in this environment with `spawn EPERM` (worker process spawn restriction).
+2. Ran `yarn test --watch=false --runInBand`; all tests passed (`9/9` suites, `39/39` tests).
+
+1. If you want, I can also add a server-side throttle on `/api/compress-image` (IP/session based) as defense-in-depth in addition to this editor-level per-user throttle.
+
+[2026-02-28 17:35:53]
+Implemented a site-aligned aesthetic pass for the MDX editor upload UI.
+
+1. Updated the editor toolbar shell styling in [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:612](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:612) so upload controls sit inside the same card/border visual language as the rest of the app.
+2. Added MDXEditor theme overrides in [src/app/globals.css:993](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/app/globals.css:993) to align toolbar buttons, select triggers, popovers, dialogs, and embedded image framing with site tokens.
+3. Documented the aesthetics follow-up in [CHANGE_COMMENTS.md:13](C:/Users/Suresh/scicommons/SciCommons-Frontend/CHANGE_COMMENTS.md:13).
+
+Validation: `yarn check-types:fast` and `yarn lint:fix` both passed.
+
+[2026-02-28 17:37:14]
+Yes, I can add that.
+
+Per your repo rule, I have not applied changes yet because this was phrased as “can you…”.
+If you want me to proceed, reply with: `do this`.
+
+One quick check before I apply it: the current enforced limits are `10 images/minute` (throttle) and `3MB` input before compression, not `5 images` and `100KB each`. If you still want that exact note text, I’ll add it as-is.
+
+[2026-02-28 17:39:50]
+Added the note above all editable uses of `InitializedMDXEditor`:
+`Up to 5 images; use sparingly and keep image size small (kBs, not MBs).`
+
+- Render location: [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:688](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:688)
+- It only appears when the editor is editable (`!props.readOnly`).
+- Changelog follow-up: [CHANGE_COMMENTS.md:15](C:/Users/Suresh/scicommons/SciCommons-Frontend/CHANGE_COMMENTS.md:15)
+
+Validation: `yarn check-types:fast` and `yarn lint:fix` both passed.
+
+[2026-02-28 17:40:33]
+Yes.
+
+I implemented a client-side per-user throttle in [InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx):
+- Limit is `10` uploads per `60s`: [InitializedMDXEditor.tsx:52](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:52)
+- Shared ledger key (across editor instances): [InitializedMDXEditor.tsx:54](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:54)
+- Sliding-window reservation logic: [InitializedMDXEditor.tsx:114](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:114)
+- Enforcement before upload starts: [InitializedMDXEditor.tsx:237](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:237)
+- Throttle error message: [InitializedMDXEditor.tsx:241](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:241)
+
+Note: the new helper text says "Up to 5 images...", but current enforced logic is still `10/minute`.
 
