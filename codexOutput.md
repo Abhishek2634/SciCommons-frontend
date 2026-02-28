@@ -906,12 +906,14 @@ Note: the new helper text says "Up to 5 images...", but current enforced logic i
 Implemented a fix for the JPG paste upload 403 path in the markdown editor.
 
 What changed:
+
 - Added a same-origin upload proxy route that forwards auth + multipart uploads to backend, normalizes `image/jpg` to `image/jpeg`, ensures a safe filename for pasted blobs, and returns backend error details: [src/app/api/uploads/image/route.ts](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/app/api/uploads/image/route.ts).
 - Switched editor upload calls from direct generated-client upload to the new local `/api/uploads/image` route, with clearer error parsing: [src/components/common/MarkdownEditor/InitializedMDXEditor.tsx](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/components/common/MarkdownEditor/InitializedMDXEditor.tsx:170).
 - Updated compression MIME validation to accept JPEG alias normalization (`image/jpg` -> `image/jpeg`): [src/app/api/compress-image/route.ts](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/app/api/compress-image/route.ts:21).
 - Logged the change rationale in changelog comments: [CHANGE_COMMENTS.md](C:/Users/Suresh/scicommons/SciCommons-Frontend/CHANGE_COMMENTS.md:1).
 
 Validation run:
+
 - `npx tsc --skipLibCheck --noEmit` passed.
 - `npx eslint src/components/common/MarkdownEditor/InitializedMDXEditor.tsx src/app/api/uploads/image/route.ts src/app/api/compress-image/route.ts` passed.
 

@@ -49,9 +49,11 @@ const readUpstreamErrorMessage = async (upstreamResponse: Response) => {
   const contentType = upstreamResponse.headers.get('content-type') ?? '';
 
   if (contentType.includes('application/json')) {
-    const payload = (await upstreamResponse.json().catch(() => null)) as
-      | { error?: string; detail?: string; message?: string }
-      | null;
+    const payload = (await upstreamResponse.json().catch(() => null)) as {
+      error?: string;
+      detail?: string;
+      message?: string;
+    } | null;
     return payload?.error ?? payload?.detail ?? payload?.message ?? null;
   }
 
@@ -119,11 +121,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const uploadPayload = (await upstreamResponse.json().catch(() => null)) as
-      | { public_url?: string }
-      | null;
+    const uploadPayload = (await upstreamResponse.json().catch(() => null)) as {
+      public_url?: string;
+    } | null;
     if (!uploadPayload?.public_url) {
-      return NextResponse.json({ error: 'Upload succeeded but no image URL was returned' }, { status: 502 });
+      return NextResponse.json(
+        { error: 'Upload succeeded but no image URL was returned' },
+        { status: 502 }
+      );
     }
 
     return NextResponse.json(uploadPayload);

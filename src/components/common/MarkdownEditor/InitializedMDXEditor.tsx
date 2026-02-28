@@ -182,9 +182,11 @@ async function uploadImage(file: File, accessToken: string | null): Promise<stri
   });
 
   if (!response.ok) {
-    const errorPayload = (await response.json().catch(() => null)) as
-      | { error?: string; detail?: string; message?: string }
-      | null;
+    const errorPayload = (await response.json().catch(() => null)) as {
+      error?: string;
+      detail?: string;
+      message?: string;
+    } | null;
     throw new Error(
       errorPayload?.error ??
         errorPayload?.detail ??
