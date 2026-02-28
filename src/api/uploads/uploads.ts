@@ -28,9 +28,9 @@ type SecondParameter<T extends (...args: any) => any> = Parameters<T>[1];
 
 **Size Limit:** 500KB
 
-**Allowed Types:** image/jpeg, image/png, image/gif, image/webp
+**Allowed Types:** image/jpeg, image/png, image/gif, image/webp, image/avif
 
-**Rate Limit:** 30 uploads per minute per user
+**Rate Limit:** 10 uploads per minute per user
 
 **Origin Restriction:** Only requests from scicommons.org domains are allowed.
 

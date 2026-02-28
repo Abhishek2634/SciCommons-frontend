@@ -744,3 +744,42 @@ Run this from the repo root:
 
 That will add `@types/node` under `devDependencies` in `package.json`.
 
+[2026-02-28 17:00:00]
+Yes, this makes sense overall.
+
+How the pieces fit:
+1. `src/app/api/compress-image/route.ts` (your `armaancode`) is a Next.js server API endpoint. It receives a file from the browser, validates type/size, compresses/resizes with `sharp`, and returns compressed image bytes.
+2. `InitializedMDXEditor` uses MDXEditor’s `imageUploadHandler`. When a user inserts an image, it validates client-side, calls `/api/compress-image`, then uploads the compressed file using generated `myappUploadApiUploadImage`, and returns `public_url` so the editor can insert the image URL.
+
+About “create `app/api/compress-image/route.ts`”:
+In this repo, API route handlers are under `src/app/api` (you already have `src/app/api/proxy-arxiv/route.ts`). So the correct path is:
+`src/app/api/compress-image/route.ts`
+
+Then `fetch('/api/compress-image')` will hit that `POST` handler.
+
+Important caveat to verify:
+Your generated upload API docs currently allow `image/jpeg`, `image/png`, `image/gif`, `image/webp` (no AVIF), but your compressor returns `image/avif`. If backend still enforces that list, AVIF uploads will fail. In that case either output `webp` from compressor, or have backend allow AVIF.
+
+[2026-02-28 17:00:18]
+Yes, this makes sense overall.
+
+How the pieces fit:
+1. `armaancode` is a Next.js server API endpoint (to be placed at [src/app/api/compress-image/route.ts](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/app/api/compress-image/route.ts)). It receives a file from the browser, validates type/size, compresses/resizes with `sharp`, and returns compressed image bytes.
+2. `InitializedMDXEditor` uses MDXEditor’s `imageUploadHandler`. When a user inserts an image, it validates client-side, calls `/api/compress-image`, then uploads the compressed file using generated `myappUploadApiUploadImage`, and returns `public_url` so the editor can insert the image URL.
+
+About “create `app/api/compress-image/route.ts`”:
+In this repo, API route handlers are under `src/app/api` (you already have [src/app/api/proxy-arxiv/route.ts](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/app/api/proxy-arxiv/route.ts)). So the correct path is [src/app/api/compress-image/route.ts](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/app/api/compress-image/route.ts).
+
+Then `fetch('/api/compress-image')` will hit that `POST` handler.
+
+Important caveat to verify:
+Your generated upload API docs currently allow `image/jpeg`, `image/png`, `image/gif`, `image/webp` (no AVIF), but your compressor returns `image/avif`. If backend still enforces that list, AVIF uploads will fail. In that case either output `webp` from compressor, or have backend allow AVIF.
+
+[2026-02-28 17:03:47]
+From your generated file [src/api/uploads/uploads.ts:31](C:/Users/Suresh/scicommons/SciCommons-Frontend/src/api/uploads/uploads.ts:31).
+
+That line in the Orval-generated docblock says:
+`**Allowed Types:** image/jpeg, image/png, image/gif, image/webp`
+
+So I inferred it from the OpenAPI-derived generated client docs after `yarn generate-api`.
+
