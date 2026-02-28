@@ -48,6 +48,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 
 const MAX_SOURCE_IMAGE_SIZE_BYTES = 3 * 1024 * 1024; // 3MB
+const MAX_SOURCE_IMAGE_SIZE_MB = MAX_SOURCE_IMAGE_SIZE_BYTES / 1024 / 1024;
 const MAX_IMAGE_UPLOADS_PER_MINUTE = 10;
 const IMAGE_UPLOAD_WINDOW_MS = 60 * 1000;
 const IMAGE_UPLOAD_THROTTLE_STORAGE_KEY = 'mdx-editor-image-upload-throttle-v1';
@@ -58,6 +59,7 @@ const ALLOWED_IMAGE_MIME_TYPES = [
   'image/webp',
   'image/avif',
 ];
+const IMAGE_UPLOAD_GUIDANCE_TEXT = `Image uploads are limited to ${MAX_SOURCE_IMAGE_SIZE_MB}MB each and ${MAX_IMAGE_UPLOADS_PER_MINUTE} images per minute. Use images sparingly.`;
 
 type UploadThrottleLedger = Record<string, number[]>;
 
@@ -233,7 +235,7 @@ export default function InitializedMDXEditor({
      What: Enabled end-to-end image uploads in MDX editor with pre-upload compression and auth-aware throttling.
      Why: All editor surfaces need consistent image upload behavior with a strict per-user rate limit.
      How: Validate client file constraints, reserve a 10/min user slot, compress via `/api/compress-image`,
-          upload through generated API client, and surface upload status via toast updates. */
+          upload through the local `/api/uploads/image` proxy, and surface upload status via toast updates. */
   const imageUploadHandler = React.useCallback(
     async (image: File): Promise<string> => {
       if (!accessToken) {
@@ -247,8 +249,7 @@ export default function InitializedMDXEditor({
       }
 
       if (image.size > MAX_SOURCE_IMAGE_SIZE_BYTES) {
-        const limitInMb = MAX_SOURCE_IMAGE_SIZE_BYTES / 1024 / 1024;
-        const message = `Image size exceeds ${limitInMb}MB limit`;
+        const message = `Image size exceeds ${MAX_SOURCE_IMAGE_SIZE_MB}MB limit`;
         toast({
           title: 'Image too large',
           description: message,
@@ -714,13 +715,11 @@ export default function InitializedMDXEditor({
     >
       {/* Fixed by Codex on 2026-02-28
           Who: Codex
-          What: Added a concise, reusable image-upload guidance note above the editor.
-          Why: Product requested lightweight user guidance to discourage excessive/large image uploads.
-          How: Render helper text only for editable instances so read-only content views remain clean. */}
+          What: Aligned editor upload guidance copy with actual enforced upload limits.
+          Why: Previous “Up to 5 images” hint conflicted with real runtime constraints and could mislead users.
+          How: Render a reusable helper string derived from size/throttle constants only for editable editor instances. */}
       {!props.readOnly && (
-        <p className="mb-2 px-1 text-xxs text-text-tertiary">
-          Up to 5 images; use sparingly and keep image size small (kBs, not MBs).
-        </p>
+        <p className="mb-2 px-1 text-xxs text-text-tertiary">{IMAGE_UPLOAD_GUIDANCE_TEXT}</p>
       )}
       <MDXEditor
         plugins={ALL_PLUGINS}

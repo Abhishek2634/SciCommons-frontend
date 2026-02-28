@@ -1,3 +1,15 @@
+## 2026-02-28 - Upload Proxy Origin Handling Audit and Simplification
+
+Problem: Follow-up localhost-oriented upload fixes introduced extra proxy complexity (multi-context retries and backend-origin fallback), which increased maintenance burden and could create policy inconsistency against backend origin checks.
+
+Root Cause: The quick 403 mitigations focused on bypassing origin-block symptoms instead of preserving the request's true frontend origin context end-to-end.
+
+Solution: Performed a post-change audit and simplified `src/app/api/uploads/image/route.ts` to one deterministic strategy: forward browser `Origin`/`Referer` to backend, with a safe fallback to `request.nextUrl.origin` when browser origin is missing. Removed backend-origin spoof fallback and origin-retry loops.
+
+Result: Upload behavior is now consistent with backend allowlist policy, robust for real deployments behind approved frontend domains (for example `https://test.scicommons.org`), and lower risk for regression/security drift.
+
+Files Modified: `src/app/api/uploads/image/route.ts`, `CHANGE_COMMENTS.md` (commit reference: pending local commit)
+
 ## 2026-02-28 - MDX JPG Paste Upload 403 Hardening (Proxy + MIME Alias)
 
 Problem: Pasting JPG images into the markdown editor could fail with `403` upload errors and user-facing "request failed" messages.
@@ -24,7 +36,7 @@ Files Modified: `src/components/common/MarkdownEditor/InitializedMDXEditor.tsx`,
 
 Follow-up (same day): Adjusted MDX editor aesthetics to match site visual language by re-theming MDXEditor token variables and control surfaces in `globals.css`, and by styling the custom editor toolbar wrapper with existing card/border utilities. This keeps upload behavior unchanged while making toolbar, popovers, and dialogs consistent with SciCommons design tokens.
 
-Follow-up (same day): Added a short helper note above editable markdown editors ("Up to 5 images; use sparingly and keep image size small (kBs, not MBs).") to provide lightweight upload guidance across all `InitializedMDXEditor` usages.
+Follow-up (same day): Updated the helper note above editable markdown editors to match enforced runtime constraints (`3MB` source image limit and `10 uploads/minute` throttle) instead of the earlier "Up to 5 images" wording.
 
 ## 2026-02-27 - Article Card Title Overflow Without Wide Link Hitbox
 
