@@ -42,7 +42,6 @@ import {
 } from '@mdxeditor/editor';
 import '@mdxeditor/editor/style.css';
 
-import { myappUploadApiUploadImage } from '@/api/uploads/uploads';
 import { toast } from '@/components/ui/use-toast';
 import { markdownStyles } from '@/constants/common.constants';
 import { cn } from '@/lib/utils';
@@ -61,6 +60,12 @@ const ALLOWED_IMAGE_MIME_TYPES = [
 ];
 
 type UploadThrottleLedger = Record<string, number[]>;
+
+const normalizeImageMimeType = (mimeType: string) => {
+  const normalizedMimeType = mimeType.trim().toLowerCase();
+  if (normalizedMimeType === 'image/jpg') return 'image/jpeg';
+  return normalizedMimeType;
+};
 
 const getUploadThrottleUserKey = (userId: number | null, accessToken: string | null) => {
   if (userId !== null) return `user:${userId}`;
@@ -157,17 +162,43 @@ async function compressImage(file: File): Promise<File> {
   });
 }
 
+/* Fixed by Codex on 2026-02-28
+   Who: Codex
+   What: Routed MDX image upload requests through the local upload proxy endpoint.
+   Why: Direct browser uploads could fail backend origin checks and hide backend-provided error details.
+   How: Send FormData to `/api/uploads/image`, parse structured JSON error payloads, and return `public_url` from proxy response. */
 async function uploadImage(file: File, accessToken: string | null): Promise<string> {
   if (!accessToken) {
     throw new Error('You must be logged in to upload images');
   }
 
-  const response = await myappUploadApiUploadImage(
-    { file },
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
+  const formData = new FormData();
+  formData.append('file', file);
 
-  return response.data.public_url;
+  const response = await fetch('/api/uploads/image', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorPayload = (await response.json().catch(() => null)) as
+      | { error?: string; detail?: string; message?: string }
+      | null;
+    throw new Error(
+      errorPayload?.error ??
+        errorPayload?.detail ??
+        errorPayload?.message ??
+        `Upload failed with status ${response.status}`
+    );
+  }
+
+  const payload = (await response.json().catch(() => null)) as { public_url?: string } | null;
+  if (!payload?.public_url) {
+    throw new Error('Upload succeeded but no image URL was returned');
+  }
+
+  return payload.public_url;
 }
 
 // Only import this to the next file
@@ -224,7 +255,8 @@ export default function InitializedMDXEditor({
         throw new Error(message);
       }
 
-      if (!ALLOWED_IMAGE_MIME_TYPES.includes(image.type)) {
+      const normalizedImageMimeType = normalizeImageMimeType(image.type);
+      if (!ALLOWED_IMAGE_MIME_TYPES.includes(normalizedImageMimeType)) {
         const message = `Invalid image type. Allowed: ${ALLOWED_IMAGE_MIME_TYPES.join(', ')}`;
         toast({
           title: 'Invalid image type',

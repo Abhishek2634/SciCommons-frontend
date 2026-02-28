@@ -18,6 +18,12 @@ const ALLOWED_INPUT_MIME_TYPES = [
   'image/avif',
 ];
 
+const normalizeImageMimeType = (mimeType: string) => {
+  const normalizedMimeType = mimeType.trim().toLowerCase();
+  if (normalizedMimeType === 'image/jpg') return 'image/jpeg';
+  return normalizedMimeType;
+};
+
 const compressToAvif = async (
   sourceBuffer: Buffer,
   quality: number,
@@ -60,7 +66,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!ALLOWED_INPUT_MIME_TYPES.includes(file.type)) {
+    const normalizedMimeType = normalizeImageMimeType(file.type);
+    if (!ALLOWED_INPUT_MIME_TYPES.includes(normalizedMimeType)) {
       return NextResponse.json(
         { error: `Invalid file type. Allowed: ${ALLOWED_INPUT_MIME_TYPES.join(', ')}` },
         { status: 400 }

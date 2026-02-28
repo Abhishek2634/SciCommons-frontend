@@ -1,3 +1,15 @@
+## 2026-02-28 - MDX JPG Paste Upload 403 Hardening (Proxy + MIME Alias)
+
+Problem: Pasting JPG images into the markdown editor could fail with `403` upload errors and user-facing "request failed" messages.
+
+Root Cause: The editor upload path sent multipart uploads directly from the browser to backend image upload API, which is sensitive to origin/restriction checks. Also, some clipboard JPEG payloads use the `image/jpg` alias, which can be rejected when only canonical `image/jpeg` is accepted.
+
+Solution: Added a same-origin upload proxy route at `src/app/api/uploads/image/route.ts` to forward authenticated multipart uploads server-side to the backend and return backend error details cleanly. Updated `InitializedMDXEditor` to upload through that proxy route instead of direct generated-client calls. Added MIME normalization for `image/jpg` -> `image/jpeg` in both editor validation and `/api/compress-image` validation.
+
+Result: Markdown editor image uploads now stay on same-origin browser requests, backend-origin 403 risks are reduced, and pasted JPG clipboard aliases are accepted consistently.
+
+Files Modified: `src/components/common/MarkdownEditor/InitializedMDXEditor.tsx`, `src/app/api/uploads/image/route.ts`, `src/app/api/compress-image/route.ts`, `CHANGE_COMMENTS.md` (commit reference: pending local commit)
+
 ## 2026-02-28 - MDX Editor Image Upload Pipeline + Per-User Throttle
 
 Problem: All `InitializedMDXEditor` usages lacked a real image upload pipeline, so users could not upload editor images directly and there was no frontend-side limit for upload bursts.
