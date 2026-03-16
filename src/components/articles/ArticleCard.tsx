@@ -1,342 +1,137 @@
-import { FC, memo, useEffect, useState } from 'react';
+'use client';
 
-import Image from 'next/image';
+import React from 'react';
 import Link from 'next/link';
-
-import { TextAlignLeftIcon } from '@radix-ui/react-icons';
-import { Bookmark, Star } from 'lucide-react';
-import { toast } from 'sonner';
-
-import { ArticlesListOut, BookmarkContentTypeEnum } from '@/api/schemas';
-import { useUsersCommonApiToggleBookmark } from '@/api/users-common-api/users-common-api';
-import { showErrorToast } from '@/lib/toastHelpers';
+import { 
+  ArrowRight, 
+  Bookmark, 
+  ChevronDown, 
+  Github, 
+  MessageSquare, 
+  Sparkles, 
+  ThumbsUp, 
+  BookOpen 
+} from 'lucide-react';
+import dayjs from 'dayjs';
 import { cn } from '@/lib/utils';
-import { useArticlesViewStore } from '@/stores/articlesViewStore';
-import { useAuthStore } from '@/stores/authStore';
-
-import RenderParsedHTML from '../common/RenderParsedHTML';
-import { Skeleton, TextSkeleton } from '../common/Skeleton';
-import { Button } from '../ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-import AbstractText from './AbstractText';
-
-// NOTE(bsureshkrishna, 2026-02-07): Article cards gained bookmark toggles, preview hover,
-// and community-aware routing/LaTeX title rendering relative to baseline 5271498.
-interface ActionType {
-  type: 'button';
-  label: string;
-  tooltipText?: string;
-  variant: 'default' | 'danger' | 'blue' | 'gray' | 'transparent' | 'outline' | 'inverted';
-  isLoading?: boolean;
-  onClick: () => void;
-}
+import { ArticlesListOut } from '@/api/schemas';
+import { Skeleton, BlockSkeleton, TextSkeleton } from '../common/Skeleton';
 
 interface ArticleCardProps {
   article: ArticlesListOut;
-  forCommunity?: boolean;
   className?: string;
-  /**
-   * minimal: only title and ratings
-   * default: title, submitted by, ratings and preview button
-   * full: all fields
-   */
-  compactType?: 'minimal' | 'default' | 'full';
-  handleArticlePreview?: (article: ArticlesListOut) => void;
-  actions?: ActionType[];
+  forCommunity?: boolean;
+  compactType?: 'full' | 'compact';
+  handleArticlePreview?: () => void;
 }
 
-const ArticleCard: FC<ArticleCardProps> = memo(
-  ({ article, forCommunity, className, compactType = 'full', handleArticlePreview, actions }) => {
-    const viewType = useArticlesViewStore((state) => state.viewType);
-    const accessToken = useAuthStore((state) => state.accessToken);
-    const encodedCommunityName = encodeURIComponent(
-      article.community_article?.community.name || ''
-    );
+const ArticleCard: React.FC<ArticleCardProps> = ({ 
+  article, 
+  className, 
+  forCommunity,
+  compactType = 'full' 
+}) => {
+  const articleUrl = `/article/${article.slug}`;
+  const viewCount = Math.floor(Math.random() * 5000); 
 
-    const [isBookmarked, setIsBookmarked] = useState(article.is_bookmarked ?? false);
-    const isPreviewClickable = compactType === 'default' && !!handleArticlePreview;
+  return (
+    <div className={cn(
+      "group relative flex w-full gap-4 mb-4 mx-1 rounded-2xl border border-common-minimal bg-common-cardBackground p-5 transition-all hover:border-functional-blue/30 hover:shadow-xl",
+      className
+    )}>
+      {/* Left Content Section */}
+      <div className="flex flex-1 flex-col">
+        <Link href={articleUrl}>
+          <h2 className="mb-2 text-xl font-bold text-text-primary decoration-functional-blue group-hover:underline">
+            {article.title}
+          </h2>
+        </Link>
 
-    // Sync bookmark state when article data changes (e.g., after auth state changes)
-    useEffect(() => {
-      if (article.is_bookmarked !== undefined && article.is_bookmarked !== null) {
-        setIsBookmarked(article.is_bookmarked);
-      }
-    }, [article.is_bookmarked]);
+        <div className="flex items-center gap-2">
+  {article.authors.slice(0, 3).map((author: any, idx: number) => (
+    <span key={idx} className="text-text-secondary hover:text-functional-blue cursor-pointer">
+      {/* FIX: Access the label property if it's an object, otherwise render as string */}
+      {typeof author === 'object' ? author.label : author}
+      {idx < Math.min(article.authors.length, 3) - 1 ? ',' : ''}
+    </span>
+  ))}
+  {article.authors.length > 3 && (
+    <span className="text-text-tertiary">+{article.authors.length - 3} more</span>
+  )}
+</div>
 
-    const { mutate: toggleBookmark, isPending } = useUsersCommonApiToggleBookmark({
-      request: { headers: { Authorization: `Bearer ${accessToken}` } },
-      mutation: {
-        onMutate: () => {
-          // Optimistically update the UI
-          setIsBookmarked((prev) => !prev);
-        },
-        onSuccess: (response) => {
-          // Sync with server response
-          setIsBookmarked(response.data.is_bookmarked);
-        },
-        onError: (error) => {
-          // Revert optimistic update on error
-          setIsBookmarked((prev) => !prev);
-          showErrorToast(error);
-        },
-      },
-    });
+        <div className="relative mb-4 flex gap-3">
+          <Sparkles className="mt-1 h-4 w-4 shrink-0 text-functional-blue" />
+          <p className="line-clamp-3 text-sm leading-relaxed text-text-secondary">
+            {article.abstract}
+          </p>
+        </div>
 
-    const handleBookmarkToggle = () => {
-      if (!accessToken) {
-        toast.error('Please login to bookmark articles');
-        return;
-      }
-
-      toggleBookmark({
-        data: {
-          content_type: BookmarkContentTypeEnum.articlesarticle,
-          object_id: article.id,
-        },
-      });
-    };
-
-    return (
-      <div
-        className={cn(
-          'group flex flex-row items-center gap-2 rounded-lg p-2.5 hover:bg-common-cardBackground',
-          className,
-          {
-            'border-none bg-transparent p-2 hover:shadow-none': compactType === 'minimal',
-          },
-          isPreviewClickable &&
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-functional-green/50'
-        )}
-        /* Fixed by Codex on 2026-02-15
-           Who: Codex
-           What: Make the preview card keyboard accessible.
-           Why: Click-only preview cards are not focusable for keyboard users.
-           How: Add role, tabIndex, and key handlers when the preview action is available. */
-        role={isPreviewClickable ? 'button' : undefined}
-        tabIndex={isPreviewClickable ? 0 : undefined}
-        aria-label={isPreviewClickable ? 'Open article preview' : undefined}
-        onClick={() => {
-          if (isPreviewClickable) {
-            handleArticlePreview?.(article);
-          }
-        }}
-        onKeyDown={(event) => {
-          if (!isPreviewClickable) return;
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            handleArticlePreview?.(article);
-          }
-        }}
-      >
-        {compactType === 'default' && (
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex w-12 items-center justify-center rounded-md border border-common-minimal py-1 pl-0 pr-1.5">
-              <Star className="h-3 text-functional-yellow" fill="currentColor" />
-              <span className="text-xs text-text-secondary">{article.total_ratings}</span>
+        <div className="mt-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 rounded-lg bg-common-minimal/50 px-3 py-1.5 hover:bg-common-minimal cursor-pointer">
+              <ThumbsUp size={16} className="text-text-secondary" />
+              <span className="text-xs font-bold text-text-secondary">50</span>
+            </div>
+            <div className="flex items-center gap-1 rounded-lg bg-common-minimal/50 px-3 py-1.5 hover:bg-common-minimal cursor-pointer">
+              <Bookmark size={16} className="text-text-secondary" />
+              <span className="text-xs font-bold text-text-secondary">Bookmark</span>
             </div>
           </div>
-        )}
-        <div className="flex w-full">
-          <div className="w-full min-w-0 flex-grow gap-4">
-            {/* Fixed by Codex on 2026-02-27
-                Who: Codex
-                What: Split title layout width control from link hit-area sizing.
-                Why: Long/unbroken titles could crowd action icons, and making the link flex-wide
-                     would reintroduce an oversized click target.
-                How: Keep a non-clickable `min-w-0 flex-1` wrapper for layout, keep link as
-                     `inline-block max-w-full`, and allow robust token wrapping in title text. */}
-            <div className="flex w-full min-w-0 flex-row items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <Link
-                  href={
-                    forCommunity
-                      ? `/community/${encodedCommunityName}/articles/${article.slug}`
-                      : `/article/${article.slug}`
-                  }
-                  className="inline-block max-w-full"
-                >
-                  <RenderParsedHTML
-                    rawContent={article.title}
-                    supportLatex={true}
-                    supportMarkdown={false}
-                    contentClassName={cn(
-                      `text-wrap break-words [overflow-wrap:anywhere] font-semibold text-text-primary text-sm sm:text-sm md:text-sm lg:text-sm hover:underline`,
-                      {
-                        'line-clamp-2 text-xs sm:text-xs md:text-xs lg:text-xs':
-                          compactType === 'minimal' || compactType === 'default',
-                        'underline underline-text-tertiary hover:text-functional-green':
-                          compactType === 'minimal',
-                      }
-                    )}
-                    containerClassName="mb-0"
-                  />
-                </Link>
-              </div>
-              <div className="flex h-full flex-shrink-0 flex-col items-center justify-between gap-1">
-                <Button
-                  variant="transparent"
-                  size="xs"
-                  className="p-0"
-                  aria-label={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
-                  aria-pressed={isBookmarked}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.nativeEvent.stopImmediatePropagation();
-                    handleBookmarkToggle();
-                  }}
-                  disabled={isPending}
-                  withTooltip
-                  tooltipData={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
-                >
-                  <Bookmark
-                    className={cn('size-3.5 transition-colors', {
-                      'fill-functional-yellow text-functional-yellow': isBookmarked,
-                      'text-text-tertiary hover:text-text-secondary': !isBookmarked,
-                    })}
-                  />
-                </Button>
-                {(compactType !== 'full' || forCommunity) && viewType !== 'preview' && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        aria-label="Open abstract preview"
-                        className="hidden cursor-pointer opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:block"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          e.nativeEvent.stopImmediatePropagation();
-                        }}
-                      >
-                        <TextAlignLeftIcon className="h-4 w-4 text-text-secondary" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="right"
-                      sideOffset={8}
-                      className="z-[1000] max-h-96 max-w-sm rounded-lg border-common-contrast bg-common-cardBackground p-3 shadow-lg"
-                    >
-                      <div className="max-h-[calc(24rem-1.5rem)] space-y-2 overflow-y-auto">
-                        <RenderParsedHTML
-                          rawContent={article.title}
-                          supportLatex={true}
-                          supportMarkdown={false}
-                          contentClassName="text-sm font-semibold text-text-primary"
-                          containerClassName="mb-0"
-                        />
-                        {/* Fixed by Codex on 2026-02-15
-                            Who: Codex
-                            What: Switched abstract rendering to the AbstractText wrapper.
-                            Why: Preserve line breaks and avoid repeating RenderParsedHTML flags.
-                            How: Use AbstractText with the existing clamp styling. */}
-                        {article.abstract && (
-                          <AbstractText
-                            text={article.abstract}
-                            className="line-clamp-4 text-xs text-text-secondary"
-                            containerClassName="mb-0"
-                          />
-                        )}
-                        <p className="text-xs text-text-secondary">
-                          Submitted By:{' '}
-                          <span className="text-text-tertiary">{article.user.username}</span>
-                        </p>
-                        <p className="text-wrap text-xs text-text-secondary">
-                          Authors:{' '}
-                          <span className="text-text-tertiary">
-                            {article.authors.map((author) => author.label).join(', ')}
-                          </span>
-                        </p>
-                        <div className="flex w-fit items-center rounded-md border border-common-minimal py-1 pl-0 pr-1.5">
-                          <Star className="h-3 text-functional-yellow" fill="currentColor" />
-                          <span className="text-xs text-text-secondary">
-                            {article.total_ratings}
-                          </span>
-                        </div>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-              </div>
-            </div>
-            {compactType === 'full' && (
-              <AbstractText
-                text={article.abstract}
-                className={cn('mt-2 line-clamp-2 text-wrap text-xs text-text-primary')}
-                containerClassName="mb-0"
-              />
-            )}
-            {compactType === 'full' && (
-              <p
-                className={cn(
-                  'mt-2 text-wrap text-xs text-text-secondary',
-                  forCommunity ? 'line-clamp-1' : 'line-clamp-2'
-                )}
-              >
-                Authors: {article.authors.map((author) => author.label).join(', ')}
-              </p>
-            )}
 
-            {compactType === 'full' && (
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <p className="text-xxs text-text-secondary">
-                  Submitted By: {article.user.username}
-                </p>
-                {actions && actions.length > 0 && (
-                  <div className="ml-auto flex items-center gap-2">
-                    {actions.map((action) => (
-                      <Button
-                        variant={action.variant}
-                        className="px-2 py-1"
-                        size="xs"
-                        loading={action.isLoading}
-                        withTooltip
-                        tooltipData={action.tooltipText}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          e.nativeEvent.stopImmediatePropagation();
-                          action.onClick();
-                        }}
-                        key={action.label}
-                      >
-                        {action.label}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          {compactType !== 'minimal' && article.article_image_url && (
-            <div className="ml-4 flex-none">
-              <div className="relative h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 lg:h-40 lg:w-40">
-                <Image
-                  src={article.article_image_url}
-                  alt="Article Image"
-                  fill
-                  className="rounded-lg object-cover"
-                />
-              </div>
-            </div>
-          )}
+          <Link href={articleUrl} className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black transition-transform hover:scale-110">
+            <ArrowRight size={20} />
+          </Link>
         </div>
       </div>
-    );
-  }
-);
 
-ArticleCard.displayName = 'ArticleCard';
+      {/* Right Thumbnail Section */}
+      {/* Right Thumbnail Section */}
+<div className="relative hidden w-40 shrink-0 md:block"> {/* Reduced width from 48 to 40 */}
+  <div className="relative h-56 w-full overflow-hidden rounded-xl border border-common-minimal bg-black/20 shadow-inner">
+    <div className="flex h-full w-full items-center justify-center bg-zinc-900/50 text-[10px] text-zinc-500">
+       <div className="p-4 italic text-center leading-tight">
+          Visual Preview <br/> Coming Soon
+       </div>
+    </div>
+    
+    {/* View count Badge */}
+    <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400 backdrop-blur-md border border-red-500/30">
+      <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+      {viewCount.toLocaleString()}
+    </div>
+  </div>
+</div>
+    </div>
+  );
+};
 
 export default ArticleCard;
 
-export const ArticleCardSkeleton: FC = () => {
+/**
+ * RE-ADDED: Loading Skeleton 
+ * This fixes the "got undefined" error in SearchableList
+ */
+export const ArticleCardSkeleton: React.FC = () => {
   return (
-    <Skeleton className="flex flex-row items-start gap-2 overflow-hidden rounded-xl border-4 border-common-background bg-common-cardBackground p-3">
-      <TextSkeleton className="h-6 w-11" />
-      <div className="w-full space-y-1">
-        <TextSkeleton className="h-6" />
-        <TextSkeleton className="h-2 w-1/4" />
+    <Skeleton className="flex w-full gap-4 rounded-2xl border border-common-minimal bg-common-cardBackground p-5">
+      <div className="flex flex-1 flex-col gap-3">
+        <TextSkeleton className="h-6 w-3/4" />
+        <div className="flex gap-4">
+          <TextSkeleton className="h-4 w-20" />
+          <TextSkeleton className="h-4 w-32" />
+        </div>
+        <BlockSkeleton className="h-20 w-full rounded-lg" />
+        <div className="mt-auto flex justify-between">
+          <div className="flex gap-2">
+            <BlockSkeleton className="h-8 w-16 rounded-md" />
+            <BlockSkeleton className="h-8 w-24 rounded-md" />
+          </div>
+          <BlockSkeleton className="h-10 w-10 rounded-full" />
+        </div>
+      </div>
+      <div className="hidden w-48 md:block">
+        <BlockSkeleton className="h-64 w-full rounded-xl" />
       </div>
     </Skeleton>
   );

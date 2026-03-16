@@ -261,7 +261,7 @@ const CommunityArticlesInner: React.FC<CommunityArticlesProps> = ({
             setGridCount={setGridCount}
             allowedViewTypes={['grid', 'preview']}
             listContainerClassName={cn(
-              'grid grid-cols-1',
+              'grid grid-cols-1 gap-6',
               viewType === 'preview'
                 ? 'h-full md:grid-cols-1 lg:grid-cols-1'
                 : {

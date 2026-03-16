@@ -1,33 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
-import Link from 'next/link';
+import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
-
-import { List } from 'lucide-react';
 
 import { withAuthRedirect } from '@/HOCs/withAuthRedirect';
 import { useArticlesApiGetArticle } from '@/api/articles/articles';
-import { useArticlesReviewApiListReviews } from '@/api/reviews/reviews';
-import DiscussionForum from '@/components/articles/DiscussionForum';
-import DisplayArticle, { DisplayArticleSkeleton } from '@/components/articles/DisplayArticle';
-import ReviewsTabBody from '@/components/articles/ReviewsTabBody';
-import CommunityBreadcrumb from '@/components/communities/CommunityBreadcrumb';
-import { Button, ButtonIcon, ButtonTitle } from '@/components/ui/button';
-import TabNavigation from '@/components/ui/tab-navigation';
+import PreprintViewer from '@/components/articles/PreprintViewer';
+import { DisplayArticleSkeleton } from '@/components/articles/DisplayArticle';
 import { FIFTEEN_MINUTES_IN_MS } from '@/constants/common.constants';
 import { buildSciCommonsTitle } from '@/lib/pageTitle';
 import { showErrorToast } from '@/lib/toastHelpers';
-import { useArticlesViewStore } from '@/stores/articlesViewStore';
 import { useAuthStore } from '@/stores/authStore';
 
 const CommunityArticleDisplayPage: React.FC = () => {
   const accessToken = useAuthStore((state) => state.accessToken);
   const params = useParams<{ articleSlug: string; slug: string }>();
-  const setViewType = useArticlesViewStore((state) => state.setViewType);
-  const [submitReview, setSubmitReview] = useState(false);
 
+  // Fetch Article Data
   const { data, error, isPending } = useArticlesApiGetArticle(
     params?.articleSlug || '',
     { community_name: params?.slug || '' },
@@ -43,174 +32,51 @@ const CommunityArticleDisplayPage: React.FC = () => {
     }
   );
 
-  // Performance: Parallel loading optimization - fetch reviews immediately when article ID available
-  // This prevents sequential loading waterfall (article → reviews)
-  const {
-    data: reviewsData,
-    error: reviewsError,
-    isPending: reviewsIsPending,
-    refetch: reviewsRefetch,
-  } = useArticlesReviewApiListReviews(
-    data?.data.id || 0,
-    { community_id: data?.data.community_article?.community.id || 0 },
-    {
-      query: {
-        enabled: !!accessToken && !!data?.data.id,
-        refetchOnWindowFocus: true,
-        refetchOnMount: true,
-        staleTime: FIFTEEN_MINUTES_IN_MS,
-      },
-      request: { headers: { Authorization: `Bearer ${accessToken}` } },
-    }
-  );
-
-  /* Fixed by Codex on 2026-03-08
-     Who: Codex
-     What: Added client-side article title updates for community article detail tabs.
-     Why: Community article tabs should follow the same "<Article Title>: SciCommons" pattern with short browser titles.
-     How: Set `document.title` from fetched article title and apply shared truncation fallback when content is still loading. */
+  /**
+   * Browser Title Update
+   * Follows the pattern: "<Article Title> | SciCommons"
+   */
   useEffect(() => {
-    if (typeof document === 'undefined') return;
-
-    document.title = buildSciCommonsTitle(data?.data?.title ?? 'Article', {
-      fallbackSegment: 'Article',
-      truncate: true,
-    });
+    if (data?.data?.title) {
+      document.title = buildSciCommonsTitle(data.data.title, {
+        fallbackSegment: 'Article',
+        truncate: true,
+      });
+    }
   }, [data?.data?.title]);
 
+  // Error Handling
   useEffect(() => {
     if (error) {
       showErrorToast(error);
     }
   }, [error]);
 
-  useEffect(() => {
-    if (reviewsError) {
-      showErrorToast(reviewsError);
-    }
-  }, [reviewsError]);
-
-  const hasUserReviewed = reviewsData?.data.items.some((review) => review.is_author) || false;
-
-  // Performance: Lazy-loaded tab content using functions
-  // Discussions won't render until user switches to that tab
-  const tabs = data
-    ? [
-        {
-          title: 'Reviews',
-          content: () => (
-            /* Fixed by Codex on 2026-02-21
-               Who: Codex
-               What: Reused shared ReviewsTabBody for community article reviews tab.
-               Why: Keep review interactions identical across community/article/discussions contexts.
-               How: Inject community scope and local submit state through shared component props. */
-            <ReviewsTabBody
-              articleId={Number(data.data.id)}
-              reviews={reviewsData?.data.items}
-              reviewsIsPending={reviewsIsPending}
-              reviewsRefetch={reviewsRefetch}
-              hasUserReviewed={hasUserReviewed}
-              isReviewFormOpen={submitReview}
-              onReviewFormToggle={() => setSubmitReview((prev) => !prev)}
-              onReviewSubmitSuccess={() => setSubmitReview(false)}
-              communityId={data?.data.community_article?.community.id}
-              isSubmitter={data.data.is_submitter}
-              reviewFormContainerId="community-article-review-form"
-              className="gap-2"
-              showHeading={false}
-            />
-          ),
-        },
-        {
-          title: 'Discussions',
-          content: () => (
-            <DiscussionForum
-              articleId={data?.data.id || 0}
-              communityId={data?.data.community_article?.community.id}
-              communitySlug={params?.slug || ''}
-              communityArticleId={data?.data.community_article?.id}
-              showSubscribeButton={true}
-              isAdmin={data?.data.community_article?.is_admin || false}
-            />
-          ),
-        },
-        // {
-        //   title: 'FAQs',
-        //   content: <DisplayFAQs faqs={data.data.faqs || []} />,
-        // },
-      ]
-    : [];
-
-  useEffect(() => {
-    if (error) {
-      showErrorToast(error);
-    }
-  }, [error]);
-
-  /* Fixed by Codex on 2026-02-23
-     Who: Codex
-     What: Added a direct "List View" convenience action on community article detail pages.
-     Why: Users navigating from community article grids needed a quick way to return to list mode.
-     How: Add a right-aligned action back to the community page, force grid mode on click, and keep it icon-only on mobile with accessible labeling. */
-  const handleGoToListView = () => {
-    setViewType('grid');
-  };
-
-  const communityListHref =
-    data?.data.id && params?.slug
-      ? `/community/${params.slug}?articleId=${data.data.id}`
-      : `/community/${params?.slug}`;
-
-  return (
-    <div className="w-full p-4 py-4 md:px-6">
-      <CommunityBreadcrumb
-        communityName={data?.data.community_article?.community.name}
-        communitySlug={params?.slug}
-        articleTitle={data?.data.title}
-        isLoading={isPending}
-      />
-      {!isPending && (
-        <div className="mb-3 flex justify-end">
-          <Button
-            asChild
-            withTooltip
-            tooltipData="List View"
-            variant="outline"
-            size="xs"
-            className="border border-common-minimal/70 bg-common-cardBackground px-2 hover:bg-common-minimal sm:px-3"
-            aria-label="Switch to community articles list view"
-          >
-            <Link href={communityListHref} onClick={handleGoToListView}>
-              <ButtonIcon>
-                <List size={14} className="text-text-secondary" />
-              </ButtonIcon>
-              <ButtonTitle className="hidden text-text-secondary sm:flex">List View</ButtonTitle>
-            </Link>
-          </Button>
-        </div>
-      )}
-      {isPending ? (
+  if (isPending) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-common-background">
         <DisplayArticleSkeleton />
-      ) : (
-        data && (
-          <div className="flex flex-col">
-            <DisplayArticle article={data.data} />
-            <div className="mt-3 inline-block rounded-md bg-functional-blue/10 px-2 py-0.5 sm:mt-5 sm:rounded-xl sm:px-3 sm:py-1">
-              <span className="block text-xs leading-snug text-functional-blueContrast">
-                {data.data.community_article?.is_pseudonymous
-                  ? 'Community admin has enabled pseudonymous reviews & discussions. Your name won’t be shown.'
-                  : 'Community admin has disabled pseudonymous reviews & discussions. Your name will be visible.'}
-              </span>
-            </div>
-          </div>
-        )
-      )}
-      {data && (
-        <div className="mt-4">
-          <TabNavigation tabs={tabs} />
-        </div>
-      )}
-    </div>
+      </div>
+    );
+  }
+
+  if (!data?.data) {
+    return (
+      <div className="flex h-screen items-center justify-center text-text-tertiary bg-common-background">
+        Article not found
+      </div>
+    );
+  }
+
+  /**
+   * Main Layout:
+   * We wrap the PreprintViewer in a container that occupies the full height 
+   * minus the global navbar (64px) and prevents body scrolling.
+   */
+  return (
+    <main className="h-[calc(100vh-64px)] w-full overflow-hidden bg-common-background">
+      <PreprintViewer article={data.data} />
+    </main>
   );
 };
 
